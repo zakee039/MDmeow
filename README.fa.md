@@ -88,7 +88,7 @@ Markdownِ ساده و قابل‌حمل است.
 
 ### 👁️ نمای منبع
 
-با `Ctrl/Cmd+Shift+C` بین ویرایشگرِ غنی و **Markdownِ خام** در یک ناحیهٔ متنیِ ساده
+با `Ctrl/Cmd+/` بین ویرایشگرِ غنی و **Markdownِ خام** در یک ناحیهٔ متنیِ ساده
 جابه‌جا شوید. `Tab` / `Shift+Tab` خطوط انتخاب‌شده را تورفتگی می‌دهند و برمی‌گردانند،
 و واگردِ بومی همچنان کار می‌کند. موقعیتِ خواندن هنگام جابه‌جایی حفظ می‌شود.
 
@@ -163,7 +163,7 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 | ذخیره با نام                      | `Ctrl/Cmd+Shift+S` |
 | بستن زبانه                        | `Ctrl/Cmd+W`       |
 | خروجی (HTML / PDF)                | `Ctrl/Cmd+E`       |
-| تعویض نمای منبع                   | `Ctrl/Cmd+Shift+C` |
+| تعویض نمای منبع                   | `Ctrl/Cmd+/` |
 | جست‌وجو                           | `Ctrl/Cmd+F`       |
 | جایگزینی                          | `Ctrl/Cmd+H`       |
 | پیوند از کلیپ‌بورد                | `Ctrl/Cmd+K`       |
@@ -204,7 +204,6 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit

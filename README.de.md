@@ -95,7 +95,7 @@ samt Scrollpositionen — sind zurück. (In der Konfiguration abschaltbar.)
 
 ### 👁️ Quelltextansicht
 
-Mit `Strg/Cmd+Shift+C` zwischen dem formatierten Editor und dem **rohen Markdown**
+Mit `Strg/Cmd+/` zwischen dem formatierten Editor und dem **rohen Markdown**
 in einem einfachen Textfeld umschalten. `Tab` / `Shift+Tab` rücken markierte
 Zeilen ein und aus, und das native Rückgängig funktioniert weiter. Die
 Leseposition wird beim Umschalten übernommen.
@@ -126,11 +126,11 @@ Dazu der Rest von GFM: Aufgabenlisten, Fußnoten, Durchstreichen, Autolinks.
   eingebettet.
 - **PDF** über den System‑Druckdialog
 
-### 🎨 Themes & Erscheinungsbild
+### 🎨 Miku Cream & Erscheinungsbild
 
-Helles und dunkles Theme, folgt standardmäßig dem Betriebssystem, mit manuellem
-Umschalter. Editor‑Schrift, Schriftgröße, Quelltext‑Schrift und Akzentfarbe sind
-konfigurierbar.
+Mowl verwendet **Miku Cream** als einheitliches Rendering für Dokumente,
+Codeblöcke, KaTeX-Formeln, Tabellen, Zitate, Listen und Bilder. Editor‑Schrift,
+Schriftgröße, Quelltext‑Schrift und Akzentfarbe sind konfigurierbar.
 
 ### 🗂️ Dateizuordnungen
 
@@ -176,7 +176,7 @@ Einstellungen).
 | Speichern unter                  | `Strg/Cmd+Shift+S` |
 | Tab schließen                    | `Strg/Cmd+W`       |
 | Export (HTML / PDF)              | `Strg/Cmd+E`       |
-| Quelltextansicht umschalten      | `Strg/Cmd+Shift+C` |
+| Quelltextansicht umschalten      | `Strg/Cmd+/` |
 | Suchen                           | `Strg/Cmd+F`       |
 | Ersetzen                         | `Strg/Cmd+H`       |
 | Link aus Zwischenablage          | `Strg/Cmd+K`       |
@@ -217,7 +217,6 @@ Abschnitt ist für die Bearbeitung von Hand gedacht und wird live neu geladen
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit

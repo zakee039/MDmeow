@@ -23,7 +23,7 @@ Mowl is a **Tauri v2** desktop app:
 │  no framework                                  │
 │  • Milkdown "Crepe" editor (WYSIWYG)           │
 │  • tab strip, source-view textarea            │
-│  • toolbar, block (⠿) menu, theme, RTL         │
+│  • toolbar, block (⠿) menu, Miku Cream, RTL    │
 └───────────────────────────────────────────────┘
 ```
 
@@ -44,7 +44,7 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/main.ts` | **Orchestrator.** App state, all wiring, every command call. Start here. |
 | `src/editor.ts` | Thin wrapper over one Crepe instance (`init` / `setContent` / `getMarkdown` / `setDirection` / `setSpellcheck` / `setDocPath` / `runBlockAction` / `insertText` / `retranslate`). Also the image `proxyDomURL` hook — see §4, `.use(emojiInputRule)`, and the translated `Placeholder` feature text. |
 | `src/tabs.ts` | `Tab` model + `TabBar` (renders the strip, fires `onActivate` / `onCloseRequest` / `onStructureChange`). |
-| `src/theme.ts` | Resolves `system`/`light`/`dark`, swaps the compiled Crepe theme stylesheet at runtime. |
+| `src/miku-cream.ts` | Installs Crepe's structural frame CSS; `styles.css` owns the single built-in Miku Cream document rendering. |
 | `src/link-clipboard.ts` | ProseMirror `$prose` plugin: paste a URL over a selection / `Ctrl+K` → link it. |
 | `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert table / image / divider / blank line, duplicate, delete). Raw ProseMirror commands. Exports `runBlockAction(crepe, id)` — the turn‑into entries reachable by `Ctrl/Cmd+0`–`7` from `main.ts`, built from the live selection via `targetFromSelection`. |
 | `src/emoji.ts` | `:shortcode:` input rule (`$prose`, same class as `find.ts`) + `EmojiPicker` popup (`#emoji-picker`, `Ctrl/Cmd+.`), backend‑agnostic like `find-bar.ts`. |
@@ -54,14 +54,14 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/markdown-serializer.ts` | `remarkStringifyOptionsCtx` tweaks: bullet‑list marker (`*`/`-`/`+`) and link/image handlers that stop `&` in URLs being escaped. Applied in `Editor.init` via `crepe.editor.config`. |
 | `src/find.ts` | `$prose` plugin for WYSIWYG find: scans text nodes for the query, decorates matches, exposes state via `findKey`. |
 | `src/find-bar.ts` | The find / replace bar UI (`#find-bar`). Backend‑agnostic — `main.ts` hands it a `FindTarget` for the editor or the source textarea. |
-| `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu + emoji picker. Theme tokens on `:root`. |
+| `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu + emoji picker + the Miku Cream rendering for headings, code, math, tables, quotes, lists and images. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
 | `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`, `read_image_data_url` (+ a local base64 encoder — no crate). `get_settings`'s payload also carries `version` (`CARGO_PKG_VERSION`) for the About panel. |
-| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (language, theme, direction, spellcheck, fonts, accent, quit_on_escape, list_marker, show_path, open_last_session, always_show_tabbar) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
+| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (language, direction, spellcheck, fonts, accent, shortcuts, quit_on_escape, list_marker, show_path, open_last_session, always_show_tabbar) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
 | `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
 | `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
 | `src-tauri/src/mdfmt.rs` | `format_tables`: pretty‑prints GFM tables in a Markdown string. |
-| `src-tauri/assets/export/` | Bundled (offline) KaTeX + highlight.js + template/CSS, `include_str!`‑ed by `export.rs`. |
+| `src-tauri/assets/export/` | Bundled (offline) KaTeX + highlight.js + Miku Cream export CSS/template, `include_str!`‑ed by `export.rs`. |
 | `src-tauri/tauri.conf.json` | Window config, bundle config, CSP. |
 | `src-tauri/capabilities/default.json` | Tauri permission allow‑list. **Add a permission here whenever you call a new `window.*` / plugin API.** |
 | `.github/workflows/release.yml` | CI: 5‑target matrix (win x64/arm64, mac universal, linux x64/arm64), `tauri-action`, draft release + checksums. |
@@ -76,11 +76,11 @@ folder is read‑only, they fall back to the OS config dir and the app shows a
 hint bar.
 
 - **`settings.toml`** — the only settings file. Top half is hand‑editable
-  (theme, direction, spellcheck, fonts, sizes, accent, `quit_on_escape`,
+  (language, direction, spellcheck, fonts, sizes, accent, shortcuts, `quit_on_escape`,
   `list_marker`, `show_path`, `open_last_session`); bottom
   half is app‑managed (window geometry, open tabs). The app writes it
   debounced (800 ms) and on quit; a 1 Hz watcher (`settings::watch`) picks up
-  **external** edits and emits `settings-changed` → `main.ts` re‑applies theme /
+  **external** edits and emits `settings-changed` → `main.ts` re‑applies
   direction / appearance without a restart. The watcher skips the app's own
   writes by comparing a size+mtime signature (`AppState.last_write`).
   Text editing does **not** trigger a settings write.

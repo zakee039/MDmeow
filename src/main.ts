@@ -6,12 +6,18 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { Editor } from "./editor";
 import { TabBar, baseName, type Tab } from "./tabs";
-import { applyTheme, nextTheme, onSystemThemeChange, type ThemePref } from "./theme";
+import { installMikuCreamRendering } from "./miku-cream";
 import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
 import { EmojiPicker } from "./emoji";
 import { SettingsPanel, type SettingKey } from "./settings-panel";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
 import type { BlockActionId } from "./block-menu";
+import {
+  formatShortcut,
+  matchesShortcut,
+  withDefaultShortcuts,
+  type ShortcutSettings,
+} from "./shortcuts";
 import {
   t,
   setLang,
@@ -29,9 +35,8 @@ interface WindowState {
 }
 
 interface Settings {
-  /** UI language: "system" (OS locale) | "en" | "de". */
+  /** UI language: "system" (OS locale) | "en" | "de" | "zh-CN". */
   language: LangPref;
-  theme: ThemePref;
   /** Default writing direction for new tabs; per-file direction lives on each tab. */
   direction: "ltr" | "rtl";
   spellcheck: boolean;
@@ -49,6 +54,8 @@ interface Settings {
   source_font: string;
   source_font_size: number;
   accent: string;
+  shortcuts: ShortcutSettings;
+  open_with_prompt_dismissed: boolean;
   open_files: string[];
   /** "ltr"/"rtl" per open_files entry — restores per-file direction. */
   open_dirs: ("ltr" | "rtl")[];
@@ -64,9 +71,16 @@ interface SettingsPayload {
   version: string;
 }
 
+interface OpenWithStatus {
+  available: boolean;
+  registered: boolean;
+}
+
 const win = getCurrentWindow();
 const editorHost = document.getElementById("editor") as HTMLElement;
+const sourceShell = document.getElementById("source-shell") as HTMLElement;
 const sourceEl = document.getElementById("source") as HTMLTextAreaElement;
+const sourceGutter = document.getElementById("source-gutter") as HTMLElement;
 const titleEl = document.getElementById("doc-title") as HTMLElement;
 const editor = new Editor(editorHost);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
@@ -75,9 +89,20 @@ const emojiPicker = new EmojiPicker();
 const settingsPanel = new SettingsPanel(() => settings);
 
 let settings: Settings;
+let openWithStatus: OpenWithStatus = { available: false, registered: false };
 let switching = false;
 let sourceMode = false;
 let persistTimer: number | undefined;
+
+function refreshSourceGutter(): void {
+  const count = Math.max(1, sourceEl.value.split("\n").length);
+  sourceGutter.textContent = Array.from({ length: count }, (_, i) => String(i + 1)).join("\n");
+  sourceGutter.scrollTop = sourceEl.scrollTop;
+}
+
+function syncSourceGutter(): void {
+  sourceGutter.scrollTop = sourceEl.scrollTop;
+}
 
 /** Current document text, from whichever view is active. */
 function readView(): string {
@@ -88,7 +113,9 @@ function readView(): string {
 function writeView(md: string, scrollTop = 0): void {
   if (sourceMode) {
     sourceEl.value = md;
+    refreshSourceGutter();
     sourceEl.scrollTop = scrollTop;
+    syncSourceGutter();
     return;
   }
   switching = true;
@@ -162,7 +189,7 @@ onLangChange(() => {
   settingsPanel.retranslate();
   tabBar.render();
   updateSourceButton();
-  updateThemeButton();
+  updateShortcutTitles();
   updateDirButtons();
   updateTitle();
 });
@@ -225,6 +252,44 @@ function persistSoon(): void {
   persistTimer = window.setTimeout(() => {
     void invoke("save_settings", { settings });
   }, 800);
+}
+
+async function refreshOpenWithStatus(): Promise<OpenWithStatus> {
+  openWithStatus = await invoke<OpenWithStatus>("get_open_with_status");
+  settingsPanel.setOpenWithStatus(openWithStatus.available, openWithStatus.registered);
+  return openWithStatus;
+}
+
+async function setOpenWithRegistration(register: boolean): Promise<void> {
+  try {
+    openWithStatus = await invoke<OpenWithStatus>(
+      register ? "register_open_with" : "unregister_open_with",
+    );
+    settingsPanel.setOpenWithStatus(openWithStatus.available, openWithStatus.registered);
+    settings.open_with_prompt_dismissed = register ? false : true;
+    persistSoon();
+  } catch (err) {
+    await message(t("dialog.openWithError", { err: String(err) }), {
+      title: "Mowl",
+      kind: "error",
+    });
+  }
+}
+
+async function initializeOpenWithIntegration(): Promise<void> {
+  const status = await refreshOpenWithStatus();
+  if (!status.available || status.registered || settings.open_with_prompt_dismissed) return;
+
+  const register = await ask(t("dialog.openWithPrompt"), {
+    title: "Mowl",
+    kind: "info",
+  });
+  if (register) {
+    await setOpenWithRegistration(true);
+  } else {
+    settings.open_with_prompt_dismissed = true;
+    persistSoon();
+  }
 }
 
 /** Crepe may reformat Markdown on load; adopt that as the tab's baseline so a
@@ -308,10 +373,6 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "language":
       applyLanguage(value as LangPref);
       break;
-    case "theme":
-      applyTheme(settings.theme);
-      updateThemeButton();
-      break;
     case "spellcheck":
       editor.setSpellcheck(settings.spellcheck);
       break;
@@ -346,11 +407,22 @@ settingsPanel.onChange = (key: SettingKey, value) => {
   }
   persistSoon();
 };
+settingsPanel.onShortcutChange = (action, value) => {
+  settings.shortcuts[action] = value;
+  updateShortcutTitles();
+  settingsPanel.refresh();
+  persistSoon();
+};
+settingsPanel.onOpenWithToggle = async () => {
+  await setOpenWithRegistration(!openWithStatus.registered);
+};
 settingsPanel.onClose = () => (sourceMode ? sourceEl : editor).focus();
 
 sourceEl.addEventListener("input", () => {
+  refreshSourceGutter();
   if (sourceMode) markDirtyFromView();
 });
+sourceEl.addEventListener("scroll", syncSourceGutter, { passive: true });
 
 /** Edit the textarea via `execCommand` so it stays on the native undo stack
  *  (`setRangeText` / `value =` wipe undo history). Falls back if unsupported. */
@@ -565,36 +637,34 @@ function updateSourceButton(): void {
   const btn = document.getElementById("btn-source");
   if (!btn) return;
   btn.innerHTML = sourceMode ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
-  btn.setAttribute(
-    "title",
-    sourceMode ? t("toolbar.sourceBack.title") : t("toolbar.source.title"),
-  );
+  const label = sourceMode ? t("toolbar.sourceBack.title") : t("toolbar.source.title");
+  const shortcut = settings?.shortcuts?.toggle_source;
+  btn.setAttribute("title", shortcut ? `${label} (${formatShortcut(shortcut)})` : label);
 }
 
-// --- theme button -----------------------------------------------------
-
-const SVG_OPEN =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">';
-const THEME_ICON: Record<ThemePref, string> = {
-  // "auto": half-lit circle
-  system: `${SVG_OPEN}<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>`,
-  // sun
-  light: `${SVG_OPEN}<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
-  // moon
-  dark: `${SVG_OPEN}<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`,
-};
-const THEME_LABEL_KEY: Record<ThemePref, "theme.label.system" | "theme.label.light" | "theme.label.dark"> = {
-  system: "theme.label.system",
-  light: "theme.label.light",
-  dark: "theme.label.dark",
-};
-
-function updateThemeButton(): void {
-  const btn = document.getElementById("btn-theme");
-  if (!btn) return;
-  const pref = settings?.theme ?? "system";
-  btn.innerHTML = THEME_ICON[pref];
-  btn.setAttribute("title", t(THEME_LABEL_KEY[pref]));
+function updateShortcutTitles(): void {
+  if (!settings?.shortcuts) return;
+  const openBtn = document.getElementById("btn-open");
+  if (openBtn) {
+    openBtn.title = `${t("menu.new")} / ${t("menu.open")} (${formatShortcut(
+      settings.shortcuts.new_tab,
+    )}, ${formatShortcut(settings.shortcuts.open)})`;
+  }
+  const saveBtn = document.getElementById("btn-save");
+  if (saveBtn) {
+    saveBtn.title = `${t("toolbar.save.aria")} (${formatShortcut(settings.shortcuts.save)})`;
+  }
+  const exportBtn = document.getElementById("btn-export");
+  if (exportBtn) {
+    exportBtn.title = `${t("toolbar.export.aria")} (${formatShortcut(settings.shortcuts.export)})`;
+  }
+  const settingsBtn = document.getElementById("btn-settings");
+  if (settingsBtn) {
+    settingsBtn.title = `${t("toolbar.settings.aria")} (${formatShortcut(
+      settings.shortcuts.settings,
+    )})`;
+  }
+  updateSourceButton();
 }
 
 function toggleSource(): void {
@@ -608,7 +678,7 @@ function toggleSource(): void {
 
   sourceMode = !sourceMode;
   editorHost.hidden = sourceMode;
-  sourceEl.hidden = !sourceMode;
+  sourceShell.hidden = !sourceMode;
 
   writeView(md);
   adoptNormalized(tab);
@@ -665,13 +735,13 @@ function makeSourceFindTarget(): FindTarget {
     const start = positions[active];
     sourceEl.focus();
     sourceEl.setSelectionRange(start, start + query.length);
-    const lines = sourceEl.value.split("\n");
     const row = sourceEl.value.slice(0, start).split("\n").length - 1;
-    const lineHeight = sourceEl.scrollHeight / Math.max(1, lines.length);
+    const lineHeight = Number.parseFloat(getComputedStyle(sourceEl).lineHeight) || 24;
     sourceEl.scrollTop = Math.max(
       0,
-      row * lineHeight - sourceEl.clientHeight / 2,
+      row * lineHeight - sourceEl.clientHeight / 2 + lineHeight,
     );
+    syncSourceGutter();
   };
 
   const status = (): FindStatus => ({
@@ -801,6 +871,10 @@ function wireShortcuts(): void {
   window.addEventListener(
     "keydown",
     (e) => {
+      // Let the focused shortcut control capture the key before app shortcuts
+      // (this listener runs in capture phase on window).
+      if (settingsPanel.isCapturingShortcut) return;
+
       // Esc-to-quit (opt-in). Runs after the block menu's own Esc handler,
       // which stops propagation while it is open.
       if (
@@ -839,44 +913,42 @@ function wireShortcuts(): void {
         }
       }
 
-      const mod = e.ctrlKey || e.metaKey;
-      if (!mod) return;
-      const k = e.key.toLowerCase();
-      if (k === "s" && !e.shiftKey) {
+      if (matchesShortcut(e, settings.shortcuts.save)) {
         e.preventDefault();
         void saveDoc();
-      } else if (k === "s" && e.shiftKey) {
+      } else if (matchesShortcut(e, settings.shortcuts.save_as)) {
         e.preventDefault();
         void saveAs();
-      } else if (k === "o") {
+      } else if (matchesShortcut(e, settings.shortcuts.open)) {
         e.preventDefault();
         void openDialog();
-      } else if (k === "n") {
+      } else if (matchesShortcut(e, settings.shortcuts.new_tab)) {
         e.preventDefault();
         newTab();
-      } else if (k === "w") {
+      } else if (matchesShortcut(e, settings.shortcuts.close_tab)) {
         e.preventDefault();
         void closeActiveTab();
-      } else if (k === "e") {
+      } else if (matchesShortcut(e, settings.shortcuts.export)) {
         e.preventDefault();
         void chooseExport();
-      } else if (e.shiftKey && k === "c") {
+      } else if (matchesShortcut(e, settings.shortcuts.toggle_source)) {
         e.preventDefault();
         toggleSource();
-      } else if (k === "f" && !e.shiftKey) {
+      } else if (matchesShortcut(e, settings.shortcuts.find)) {
         e.preventDefault();
         openFind(false);
-      } else if (k === "h" && !e.shiftKey) {
+      } else if (matchesShortcut(e, settings.shortcuts.replace)) {
         e.preventDefault();
         openFind(true);
-      } else if (k === "." && !e.shiftKey && !e.altKey) {
+      } else if (matchesShortcut(e, settings.shortcuts.emoji)) {
         e.preventDefault();
         emojiPicker.open(sourceMode ? null : editor.caretRect());
-      } else if (k === "," && !e.shiftKey && !e.altKey) {
+      } else if (matchesShortcut(e, settings.shortcuts.settings)) {
         e.preventDefault();
         if (settingsPanel.isOpen) settingsPanel.close();
         else settingsPanel.open();
       } else if (
+        (e.ctrlKey || e.metaKey) &&
         !e.shiftKey && !e.altKey &&
         e.key >= "0" && e.key <= "7" && e.key.length === 1
       ) {
@@ -900,13 +972,6 @@ function wireButtons(): void {
   document.getElementById("btn-source")?.addEventListener("click", () => toggleSource());
   document.getElementById("btn-ltr")?.addEventListener("click", () => setDirection("ltr"));
   document.getElementById("btn-rtl")?.addEventListener("click", () => setDirection("rtl"));
-  document.getElementById("btn-theme")?.addEventListener("click", () => {
-    settings.theme = nextTheme(settings.theme);
-    applyTheme(settings.theme);
-    updateThemeButton();
-    settingsPanel.refresh();
-    persistSoon();
-  });
   document.getElementById("btn-settings")?.addEventListener("click", () => {
     if (settingsPanel.isOpen) settingsPanel.close();
     else settingsPanel.open();
@@ -1046,22 +1111,22 @@ async function restoreTabs(): Promise<void> {
 async function bootstrap(): Promise<void> {
   const payload = await invoke<SettingsPayload>("get_settings");
   settings = payload.settings;
+  settings.shortcuts = withDefaultShortcuts(settings.shortcuts);
   if (!isListMarker(settings.list_marker)) settings.list_marker = "*";
 
   setLang(settings.language ?? "system");
   applyStaticI18n();
   settingsPanel.setPath(payload.location);
+  settingsPanel.refresh();
   applyAppearance();
-  applyTheme(settings.theme);
+  installMikuCreamRendering();
   editor.setListMarker(settings.list_marker);
   tabBar.setAlwaysShow(settings.always_show_tabbar);
-  onSystemThemeChange(() => {});
 
   // React to hand edits of settings.toml (the file watcher emits this).
   void listen<Settings>("settings-changed", (e) => {
     const ext = e.payload;
     settings.language = ext.language ?? "system";
-    settings.theme = ext.theme;
     settings.direction = ext.direction;
     settings.spellcheck = ext.spellcheck;
     settings.quit_on_escape = ext.quit_on_escape;
@@ -1074,10 +1139,11 @@ async function bootstrap(): Promise<void> {
     settings.source_font = ext.source_font;
     settings.source_font_size = ext.source_font_size;
     settings.accent = ext.accent;
+    settings.shortcuts = withDefaultShortcuts(ext.shortcuts);
+    settings.open_with_prompt_dismissed = ext.open_with_prompt_dismissed;
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
-    applyTheme(settings.theme);
-    updateThemeButton();
+    updateShortcutTitles();
     // `direction` in settings.toml is only the default for new tabs now; the
     // active document keeps its own direction. Just refresh the buttons.
     if (!sourceMode) applyDirection(tabBar.active?.direction ?? "ltr");
@@ -1138,10 +1204,14 @@ async function bootstrap(): Promise<void> {
   wireAbout();
   wireOpenMenu();
   updateSourceButton();
-  updateThemeButton();
+  updateShortcutTitles();
   updateDirButtons();
   wireShortcuts();
   await wireWindowState();
+
+  // Do not block first paint on registry inspection. The lightweight Windows
+  // Open With check runs only after the main window and editor are ready.
+  void initializeOpenWithIntegration();
 }
 
 bootstrap().catch(async (e) => {

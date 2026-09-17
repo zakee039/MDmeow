@@ -1,15 +1,20 @@
-// The settings GUI: a full-screen overlay that flips in over the editor
+// The settings GUI: a full-screen overlay that fades in over the editor
 // (Ctrl/Cmd+, or the gear button). One control per hand-editable settings.toml
 // key. The panel is "dumb" — it renders controls and reports every change via
 // `onChange`; main.ts owns the settings object, the apply-functions and the
 // debounced save. App-managed keys (window geometry, open files) are not shown.
 
 import { t, type I18nKey } from "./i18n";
+import {
+  formatShortcut,
+  shortcutFromEvent,
+  type ShortcutAction,
+  type ShortcutSettings,
+} from "./shortcuts";
 
 /** The subset of `Settings` (main.ts) the panel reads/writes. */
 export interface PanelSettings {
   language: string;
-  theme: string;
   direction: string;
   spellcheck: boolean;
   quit_on_escape: boolean;
@@ -22,6 +27,7 @@ export interface PanelSettings {
   source_font: string;
   source_font_size: number;
   accent: string;
+  shortcuts: ShortcutSettings;
 }
 
 export type SettingKey = keyof PanelSettings;
@@ -37,7 +43,9 @@ type Field =
     }
   | { key: SettingKey; kind: "text"; label: I18nKey; placeholder?: I18nKey }
   | { key: SettingKey; kind: "number"; label: I18nKey; min: number; max: number }
-  | { key: SettingKey; kind: "color"; label: I18nKey };
+  | { key: SettingKey; kind: "color"; label: I18nKey }
+  | { action: ShortcutAction; kind: "shortcut"; label: I18nKey }
+  | { action: "open_with"; kind: "action"; label: I18nKey };
 
 interface Section {
   title: I18nKey;
@@ -56,16 +64,7 @@ const SECTIONS: Section[] = [
           { value: "system", label: "settings.language.system" },
           { value: "en", label: "settings.language.en" },
           { value: "de", label: "settings.language.de" },
-        ],
-      },
-      {
-        key: "theme",
-        kind: "select",
-        label: "settings.theme",
-        options: [
-          { value: "system", label: "settings.theme.system" },
-          { value: "light", label: "settings.theme.light" },
-          { value: "dark", label: "settings.theme.dark" },
+          { value: "zh-CN", label: "settings.language.zh-CN" },
         ],
       },
       {
@@ -115,6 +114,26 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    title: "settings.section.shortcuts",
+    fields: [
+      { action: "new_tab", kind: "shortcut", label: "settings.shortcut.newTab" },
+      { action: "open", kind: "shortcut", label: "settings.shortcut.open" },
+      { action: "save", kind: "shortcut", label: "settings.shortcut.save" },
+      { action: "save_as", kind: "shortcut", label: "settings.shortcut.saveAs" },
+      { action: "close_tab", kind: "shortcut", label: "settings.shortcut.closeTab" },
+      { action: "export", kind: "shortcut", label: "settings.shortcut.export" },
+      {
+        action: "toggle_source",
+        kind: "shortcut",
+        label: "settings.shortcut.toggleSource",
+      },
+      { action: "find", kind: "shortcut", label: "settings.shortcut.find" },
+      { action: "replace", kind: "shortcut", label: "settings.shortcut.replace" },
+      { action: "emoji", kind: "shortcut", label: "settings.shortcut.emoji" },
+      { action: "settings", kind: "shortcut", label: "settings.shortcut.settings" },
+    ],
+  },
+  {
     title: "settings.section.fonts",
     fields: [
       {
@@ -145,6 +164,12 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    title: "settings.section.system",
+    fields: [
+      { action: "open_with", kind: "action", label: "settings.openWith" },
+    ],
+  },
 ];
 
 export class SettingsPanel {
@@ -152,10 +177,16 @@ export class SettingsPanel {
   #open = false;
   #get: () => PanelSettings;
   #path = "";
+  #capturingShortcut: ShortcutAction | null = null;
+  #openWithAvailable = false;
+  #openWithRegistered = false;
+  #openWithBusy = false;
 
   /** Reports every user change. main.ts applies + persists. */
   onChange: (key: SettingKey, value: string | number | boolean) => void =
     () => {};
+  onShortcutChange: (action: ShortcutAction, value: string) => void = () => {};
+  onOpenWithToggle: () => void | Promise<void> = () => {};
   /** Return focus to the editor after closing. */
   onClose: () => void = () => {};
 
@@ -183,6 +214,32 @@ export class SettingsPanel {
     return this.#open;
   }
 
+  get isCapturingShortcut(): boolean {
+    return this.#capturingShortcut !== null;
+  }
+
+  setOpenWithStatus(available: boolean, registered: boolean): void {
+    this.#openWithAvailable = available;
+    this.#openWithRegistered = registered;
+    this.#refreshOpenWithControl();
+  }
+
+  setOpenWithBusy(busy: boolean): void {
+    this.#openWithBusy = busy;
+    this.#refreshOpenWithControl();
+  }
+
+  #refreshOpenWithControl(): void {
+    const row = this.#el.querySelector<HTMLElement>('[data-system-action="open_with"]');
+    const btn = row?.querySelector<HTMLButtonElement>(".settings-action");
+    if (!row || !btn) return;
+    row.hidden = !this.#openWithAvailable;
+    btn.disabled = this.#openWithBusy;
+    btn.textContent = t(
+      this.#openWithRegistered ? "settings.openWith.remove" : "settings.openWith.register",
+    );
+  }
+
   open(): void {
     this.#el.hidden = false;
     this.refresh();
@@ -197,6 +254,7 @@ export class SettingsPanel {
 
   close(): void {
     if (!this.#open) return;
+    this.#capturingShortcut = null;
     this.#open = false;
     this.#el.classList.remove("open");
     document.getElementById("app")?.classList.remove("settings-open");
@@ -205,7 +263,7 @@ export class SettingsPanel {
       this.#el.removeEventListener("transitionend", done);
     };
     this.#el.addEventListener("transitionend", done);
-    window.setTimeout(done, 500); // fallback if transitionend is missed
+    window.setTimeout(done, 180); // fallback if transitionend is missed
     this.onClose();
   }
 
@@ -214,6 +272,21 @@ export class SettingsPanel {
     const s = this.#get();
     for (const section of SECTIONS) {
       for (const f of section.fields) {
+        if (f.kind === "action") {
+          this.#refreshOpenWithControl();
+          continue;
+        }
+        if (f.kind === "shortcut") {
+          const btn = this.#el.querySelector<HTMLButtonElement>(
+            `[data-shortcut="${f.action}"]`,
+          );
+          if (btn && this.#capturingShortcut !== f.action) {
+            btn.textContent = formatShortcut(s.shortcuts[f.action]);
+            btn.classList.remove("listening", "conflict");
+            btn.title = "";
+          }
+          continue;
+        }
         const ctl = this.#el.querySelector<HTMLElement>(`[data-key="${f.key}"]`);
         if (!ctl) continue;
         const raw = s[f.key];
@@ -233,6 +306,7 @@ export class SettingsPanel {
 
   /** Re-label everything after a language change. */
   retranslate(): void {
+    this.#capturingShortcut = null;
     this.#build();
     this.refresh();
   }
@@ -279,7 +353,9 @@ export class SettingsPanel {
   }
 
   #control(f: Field): HTMLElement {
-    const row = document.createElement("label");
+    const row = document.createElement(
+      f.kind === "shortcut" || f.kind === "action" ? "div" : "label",
+    );
     row.className = "settings-row settings-row--" + f.kind;
 
     const labelText = document.createElement("span");
@@ -305,6 +381,86 @@ export class SettingsPanel {
     }
 
     row.append(labelText);
+
+    if (f.kind === "action") {
+      row.dataset.systemAction = f.action;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "settings-action";
+      btn.addEventListener("click", async () => {
+        if (this.#openWithBusy) return;
+        this.setOpenWithBusy(true);
+        try {
+          await this.onOpenWithToggle();
+        } finally {
+          this.setOpenWithBusy(false);
+        }
+      });
+      row.append(btn);
+      this.#refreshOpenWithControl();
+      return row;
+    }
+
+    if (f.kind === "shortcut") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "settings-shortcut";
+      btn.dataset.shortcut = f.action;
+      // Settings are loaded asynchronously after this panel is constructed;
+      // `refresh()` fills the real binding once bootstrap has the payload.
+      btn.textContent = "—";
+      btn.addEventListener("click", () => {
+        this.#capturingShortcut = f.action;
+        this.#el.querySelectorAll<HTMLButtonElement>(".settings-shortcut").forEach((other) => {
+          if (other !== btn) {
+            other.classList.remove("listening", "conflict");
+            const action = other.dataset.shortcut as ShortcutAction;
+            other.textContent = formatShortcut(this.#get().shortcuts[action]);
+            other.title = "";
+          }
+        });
+        btn.classList.add("listening");
+        btn.classList.remove("conflict");
+        btn.textContent = t("settings.shortcut.capture");
+        btn.title = t("settings.shortcut.cancelHint");
+        btn.focus();
+      });
+      btn.addEventListener("keydown", (e) => {
+        if (this.#capturingShortcut !== f.action) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === "Escape" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+          this.#capturingShortcut = null;
+          btn.classList.remove("listening", "conflict");
+          btn.textContent = formatShortcut(this.#get().shortcuts[f.action]);
+          btn.title = "";
+          return;
+        }
+        const binding = shortcutFromEvent(e);
+        if (!binding) return;
+        const duplicate = Object.entries(this.#get().shortcuts).find(
+          ([action, value]) => action !== f.action && value === binding,
+        );
+        if (duplicate) {
+          btn.classList.add("conflict");
+          btn.textContent = t("settings.shortcut.conflict");
+          window.setTimeout(() => {
+            if (this.#capturingShortcut === f.action) {
+              btn.classList.remove("conflict");
+              btn.textContent = t("settings.shortcut.capture");
+            }
+          }, 900);
+          return;
+        }
+        this.#capturingShortcut = null;
+        btn.classList.remove("listening", "conflict");
+        btn.textContent = formatShortcut(binding);
+        btn.title = "";
+        this.onShortcutChange(f.action, binding);
+      });
+      row.append(btn);
+      return row;
+    }
 
     if (f.kind === "select") {
       const sel = document.createElement("select");

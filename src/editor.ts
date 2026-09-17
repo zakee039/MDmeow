@@ -21,6 +21,8 @@ import {
   type ListMarker,
 } from "./markdown-serializer";
 import { patchImageBlockMarkdown } from "./image-block-markdown";
+import { patchHtmlMarkdown, resolveRawHtmlImages } from "./html-markdown";
+import { mikuCreamCodeMirrorTheme } from "./miku-cream";
 import {
   findKey,
   findPlugin,
@@ -34,6 +36,12 @@ export class Editor {
   private crepe: Crepe | null = null;
   private blockMenu: BlockMenuHandle | null = null;
   private readonly host: HTMLElement;
+  private lineNumberFrame: number | null = null;
+  private readonly codeLineObserver: MutationObserver;
+  private readonly copyFeedbackTimers = new WeakMap<
+    HTMLButtonElement,
+    [number, number]
+  >();
   private listMarker: ListMarker = "*";
   /** Path of the document in the active tab — the base for relative images. */
   private docPath: string | null = null;
@@ -45,7 +53,116 @@ export class Editor {
 
   constructor(host: HTMLElement) {
     this.host = host;
+    this.host.addEventListener("click", this.handleCodeToolClick);
+    this.codeLineObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        const target =
+          mutation.target instanceof Element
+            ? mutation.target
+            : mutation.target.parentElement;
+        if (target?.closest(".mowl-code-line-numbers")) continue;
+
+        if (target?.closest(".milkdown-code-block")) {
+          this.scheduleExternalCodeLineNumbers();
+          return;
+        }
+
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          if (
+            node.matches(".milkdown-code-block, .cm-content, .cm-line") ||
+            node.querySelector(".milkdown-code-block, .cm-content, .cm-line")
+          ) {
+            this.scheduleExternalCodeLineNumbers();
+            return;
+          }
+        }
+      }
+    });
+    this.codeLineObserver.observe(this.host, {
+      childList: true,
+      subtree: true,
+    });
   }
+
+  private scheduleExternalCodeLineNumbers(): void {
+    if (this.lineNumberFrame !== null) {
+      window.cancelAnimationFrame(this.lineNumberFrame);
+    }
+    this.lineNumberFrame = window.requestAnimationFrame(() => {
+      this.lineNumberFrame = null;
+      this.renderExternalCodeLineNumbers();
+    });
+  }
+
+  private renderExternalCodeLineNumbers(): void {
+    for (const block of this.host.querySelectorAll<HTMLElement>(
+      ".milkdown-code-block",
+    )) {
+      const content = block.querySelector<HTMLElement>(".cm-content");
+      const lines = content?.querySelectorAll<HTMLElement>(".cm-line");
+      if (!content || !lines?.length) {
+        block.querySelector(":scope > .mowl-code-line-numbers")?.remove();
+        continue;
+      }
+
+      let rail = block.querySelector<HTMLElement>(
+        ":scope > .mowl-code-line-numbers",
+      );
+      if (!rail) {
+        rail = document.createElement("div");
+        rail.className = "mowl-code-line-numbers";
+        rail.setAttribute("aria-hidden", "true");
+        block.appendChild(rail);
+      }
+
+      const blockRect = block.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      rail.style.top = `${contentRect.top - blockRect.top}px`;
+      rail.style.height = `${contentRect.height}px`;
+
+      const fragment = document.createDocumentFragment();
+      lines.forEach((line, index) => {
+        const lineRect = line.getBoundingClientRect();
+        const number = document.createElement("span");
+        number.textContent = String(index + 1);
+        number.style.top = `${lineRect.top - contentRect.top}px`;
+        number.style.height = `${lineRect.height}px`;
+        number.style.lineHeight = `${lineRect.height}px`;
+        fragment.appendChild(number);
+      });
+      rail.replaceChildren(fragment);
+    }
+  }
+
+  private handleCodeToolClick = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const button = target.closest<HTMLButtonElement>(
+      ".milkdown-code-block .tools-button-group button",
+    );
+    if (!button) return;
+
+    const previous = this.copyFeedbackTimers.get(button);
+    if (previous) {
+      window.clearTimeout(previous[0]);
+      window.clearTimeout(previous[1]);
+    }
+
+    button.classList.remove("mowl-copy-returning");
+    button.classList.add("mowl-copy-success");
+
+    const returnTimer = window.setTimeout(() => {
+      button.classList.add("mowl-copy-returning");
+    }, 620);
+    const resetTimer = window.setTimeout(() => {
+      button.classList.remove("mowl-copy-success", "mowl-copy-returning");
+      this.copyFeedbackTimers.delete(button);
+    }, 900);
+
+    this.copyFeedbackTimers.set(button, [returnTimer, resetTimer]);
+  };
 
   /** Bullet-list marker written on save. Applied on the next `init()`. */
   setListMarker(marker: ListMarker): void {
@@ -93,6 +210,7 @@ export class Editor {
       // lossy image handling (see image-block-markdown.ts).
       defaultValue: "",
       featureConfigs: {
+        [Crepe.Feature.CodeMirror]: { theme: mikuCreamCodeMirrorTheme },
         [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
         [Crepe.Feature.Placeholder]: { text: t("editor.placeholder") },
       },
@@ -104,13 +222,18 @@ export class Editor {
       .use(findPlugin)
       .use(emojiInputRule);
     crepe.on((listener) => {
-      listener.markdownUpdated(() => this.onChange());
+      listener.markdownUpdated(() => {
+        this.onChange();
+        this.scheduleExternalCodeLineNumbers();
+      });
     });
     await crepe.create();
     this.crepe = crepe;
     patchImageBlockMarkdown(crepe);
+    patchHtmlMarkdown(crepe);
     this.blockMenu = installBlockMenu(crepe);
     if (markdown) this.setContent(markdown);
+    else this.scheduleExternalCodeLineNumbers();
   }
 
   /** Rebuild the instance in place, keeping the current content. */
@@ -122,6 +245,8 @@ export class Editor {
   /** Replace the whole document without tearing the instance down. */
   setContent(markdown: string): void {
     this.crepe?.editor.action(replaceAll(markdown, true));
+    resolveRawHtmlImages(this.host, this.resolveImageSrc);
+    this.scheduleExternalCodeLineNumbers();
   }
 
   getMarkdown(): string {
@@ -265,6 +390,10 @@ export class Editor {
   }
 
   async destroy(): Promise<void> {
+    if (this.lineNumberFrame !== null) {
+      window.cancelAnimationFrame(this.lineNumberFrame);
+      this.lineNumberFrame = null;
+    }
     this.blockMenu?.dispose();
     this.blockMenu = null;
     if (this.crepe) {

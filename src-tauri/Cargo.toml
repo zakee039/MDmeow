@@ -24,6 +24,9 @@ toml = "0.8"
 comrak = "0.54"
 anyhow = "1"
 
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
 [profile.release]
 codegen-units = 1
 lto = true

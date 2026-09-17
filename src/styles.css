@@ -1,22 +1,14 @@
 :root {
-  --bg: #ffffff;
-  --fg: #1f2328;
-  --bar-bg: #f6f8fa;
-  --bar-fg: #59636e;
-  --border: #d1d9e0;
-  --hover: #eaeef2;
+  --bg: #fcfbfa;
+  --fg: #141413;
+  --bar-bg: #f3f0ee;
+  --bar-fg: #696969;
+  --border: #d1cdc7;
+  --hover: #e2f4f1;
+  --accent: #39c5bb;
   --editor-font-size: 16px;
   --source-font-size: 15px;
   color-scheme: light;
-}
-:root[data-theme="dark"] {
-  --bg: #1a1a1a;
-  --fg: #e6edf3;
-  --bar-bg: #1f1f1f;
-  --bar-fg: #9198a1;
-  --border: #2f2f2f;
-  --hover: #2a2a2a;
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -174,6 +166,353 @@ body {
   --crepe-font-title: var(--editor-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   --crepe-color-primary: var(--accent, #4a7dff);
 }
+#editor .milkdown {
+  --crepe-color-background: #fcfbfa;
+  --crepe-color-on-background: #141413;
+  --crepe-color-surface: #f3f0ee;
+  --crepe-color-surface-low: #e9e5e1;
+  --crepe-color-on-surface: #141413;
+  --crepe-color-on-surface-variant: #696969;
+  --crepe-color-outline: #d1cdc7;
+  --crepe-color-primary: var(--accent, #39c5bb);
+  --crepe-color-secondary: #d8f1ee;
+  --crepe-color-on-secondary: #141413;
+  --crepe-color-inverse: #141413;
+  --crepe-color-on-inverse: #fcfbfa;
+  --crepe-color-inline-code: #cf4500;
+  --crepe-color-error: #cf4500;
+  --crepe-color-hover: #e2f4f1;
+  --crepe-color-selected: #ccece8;
+  --crepe-color-inline-area: #d1cdc7;
+}
+
+/* --- Miku Cream document typography ----------------------------------- */
+#editor .milkdown .ProseMirror {
+  color: #141413;
+  line-height: 1.72;
+}
+#editor .milkdown .ProseMirror h1,
+#editor .milkdown .ProseMirror h2,
+#editor .milkdown .ProseMirror h3,
+#editor .milkdown .ProseMirror h4,
+#editor .milkdown .ProseMirror h5,
+#editor .milkdown .ProseMirror h6 {
+  color: #141413;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+#editor .milkdown .ProseMirror h1 {
+  font-size: 2.25em;
+  margin-top: 1.15em;
+  margin-bottom: 0.28em;
+}
+#editor .milkdown .ProseMirror h2 {
+  font-size: 1.75em;
+  margin-top: 1.1em;
+  margin-bottom: 0.25em;
+  padding-bottom: 0.18em;
+  border-bottom: 1px solid #ded9d3;
+}
+#editor .milkdown .ProseMirror h3 {
+  font-size: 1.4em;
+  margin-top: 1em;
+  margin-bottom: 0.2em;
+}
+#editor .milkdown .ProseMirror h4,
+#editor .milkdown .ProseMirror h5,
+#editor .milkdown .ProseMirror h6 {
+  font-size: 1.08em;
+  margin-top: 0.9em;
+}
+#editor .milkdown .ProseMirror p {
+  line-height: 1.72;
+  padding: 5px 0;
+}
+#editor .milkdown .ProseMirror strong {
+  font-weight: 700;
+}
+#editor .milkdown .ProseMirror a {
+  color: #17847c;
+  text-decoration-color: rgba(57, 197, 187, 0.55);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+#editor .milkdown .ProseMirror a:hover {
+  color: #126a64;
+  text-decoration-color: #39c5bb;
+}
+
+/* Quotes are quiet cream cards with a Miku accent rail. */
+#editor .milkdown .ProseMirror blockquote {
+  margin: 10px 0;
+  padding: 10px 16px 10px 18px;
+  background: #f3f0ee;
+  border-radius: 0 10px 10px 0;
+  color: #55514d;
+}
+#editor .milkdown .ProseMirror blockquote::before {
+  width: 3px;
+  top: 0;
+  bottom: 0;
+  background: #39c5bb;
+}
+
+/* Lists keep Crepe's editing behavior but use Miku Cream markers/checks. */
+#editor .milkdown .milkdown-list-item-block li {
+  gap: 8px;
+}
+#editor .milkdown .milkdown-list-item-block li .label-wrapper {
+  color: #17847c;
+}
+#editor .milkdown .milkdown-list-item-block li .label-wrapper svg {
+  fill: #39c5bb;
+}
+#editor .milkdown .ProseMirror ul,
+#editor .milkdown .ProseMirror ol {
+  margin: 4px 0;
+}
+
+/* Divider: thin taupe rule with an accent selection state. */
+#editor .milkdown .ProseMirror hr {
+  height: 17px;
+  padding: 8px 0;
+  background-color: #d1cdc7;
+}
+#editor .milkdown .ProseMirror hr.ProseMirror-selectednode {
+  background-color: #39c5bb;
+}
+
+/* Tables read like compact cream data cards. */
+#editor .milkdown .milkdown-table-block {
+  margin: 12px 0;
+  border: 1px solid #d8d3cd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fcfbfa;
+  box-shadow: 0 4px 16px rgba(20, 20, 19, 0.035);
+}
+#editor .milkdown .milkdown-table-block table {
+  border-collapse: collapse;
+}
+#editor .milkdown .milkdown-table-block th,
+#editor .milkdown .milkdown-table-block td {
+  border-color: #ded9d3;
+  padding: 7px 12px;
+}
+#editor .milkdown .milkdown-table-block th {
+  background: #f3f0ee;
+  color: #353330;
+  font-weight: 650;
+}
+#editor .milkdown .milkdown-table-block tr:nth-child(even) td {
+  background: rgba(243, 240, 238, 0.42);
+}
+#editor .milkdown .milkdown-table-block .selectedCell::after {
+  background: #39c5bb;
+  opacity: 0.13;
+}
+
+/* Images receive the same soft-card treatment as the reference theme. */
+#editor .milkdown .milkdown-image-block {
+  margin: 14px 0;
+}
+#editor .milkdown .milkdown-image-block > .image-wrapper img,
+#editor .milkdown .ProseMirror > img,
+#editor .milkdown .ProseMirror img[data-mowl-html-img="true"] {
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(20, 20, 19, 0.08);
+}
+#editor .milkdown [data-mowl-hidden-html="more"] {
+  display: none !important;
+}
+#editor .milkdown .milkdown-image-block > .caption-input {
+  color: #696969;
+  font-size: 0.875em;
+  margin-top: 6px;
+}
+#editor .milkdown .milkdown-image-inline .empty-image-inline,
+#editor .milkdown .milkdown-image-block > .image-edit {
+  background: #f3f0ee;
+  border: 1px solid #d1cdc7;
+  border-radius: 10px;
+}
+
+/* Miku Cream has its own document rendering, not just a palette swap. */
+#editor .milkdown .milkdown-code-block {
+  position: relative;
+  padding: 8px 20px 20px;
+  background: #fbfdfc;
+  color: #383a42;
+  border: 1px solid #bfdcd8;
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: visible;
+}
+#editor .milkdown .milkdown-code-block .cm-editor,
+#editor .milkdown .milkdown-code-block .cm-panel {
+  background: #fbfdfc;
+  color: #383a42;
+}
+#editor .milkdown .milkdown-code-block .cm-gutters {
+  display: none !important;
+}
+#editor .milkdown .milkdown-code-block .mowl-code-line-numbers {
+  position: absolute;
+  right: calc(100% + 10px);
+  width: 34px;
+  color: #8a9491;
+  font-family: Consolas, "Courier New", Courier, monospace;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+#editor .milkdown .milkdown-code-block .mowl-code-line-numbers > span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: block;
+}
+#editor .milkdown .milkdown-code-block .cm-scroller {
+  font-family: Consolas, "Courier New", Courier, monospace;
+  font-size: 14px;
+  line-height: 18px;
+}
+#editor .milkdown .milkdown-code-block .cm-content {
+  padding: 10px 0;
+}
+#editor .milkdown .milkdown-code-block .cm-line {
+  min-height: 18px;
+  padding: 0 14px 0 12px;
+}
+#editor .milkdown .milkdown-code-block .cm-line:nth-child(odd) {
+  background: #fbfdfc;
+}
+#editor .milkdown .milkdown-code-block .cm-line:nth-child(even) {
+  background: linear-gradient(
+    to right,
+    transparent 0 12px,
+    #e9f4f2 12px calc(100% - 14px),
+    transparent calc(100% - 14px)
+  );
+}
+#editor .milkdown .milkdown-code-block .cm-activeLine {
+  background: linear-gradient(
+    to right,
+    transparent 0 12px,
+    #e4f5f2 12px calc(100% - 14px),
+    transparent calc(100% - 14px)
+  );
+}
+#editor .milkdown .milkdown-code-block .cm-activeLineGutter {
+  background: transparent;
+}
+#editor .milkdown .milkdown-code-block .cm-selectionBackground,
+#editor .milkdown .milkdown-code-block .cm-content ::selection {
+  background: #c8ece8 !important;
+}
+#editor .milkdown .milkdown-code-block .language-button,
+#editor .milkdown .milkdown-code-block .tools-button-group button {
+  background: #ddf4f1;
+  color: #147a74;
+  border-color: #a8dad4;
+  font-family: "Segoe UI", sans-serif;
+  z-index: 2;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button {
+  position: relative;
+  min-width: 76px;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button::after {
+  content: "✔";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #248a55;
+  font-size: 16px;
+  font-weight: 700;
+  opacity: 0;
+  transform: scale(0.82);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button.mowl-copy-success {
+  color: transparent;
+  background: #e7f7ed;
+  border-color: #7fc79e;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button.mowl-copy-success svg {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button.mowl-copy-success::after {
+  opacity: 1;
+  transform: scale(1);
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button.mowl-copy-success.mowl-copy-returning {
+  color: #147a74;
+  background: #ddf4f1;
+  border-color: #a8dad4;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button.mowl-copy-success.mowl-copy-returning svg {
+  opacity: 1;
+}
+#editor .milkdown .milkdown-code-block .tools-button-group button.mowl-copy-success.mowl-copy-returning::after {
+  opacity: 0;
+  transform: scale(0.88);
+}
+#editor .milkdown .milkdown-code-block .list-wrapper {
+  background: #fcfbfa;
+  color: #141413;
+  border: 1px solid #d1cdc7;
+}
+
+/* Syntax colours are installed through CodeMirror's HighlightStyle in
+   miku-cream.ts so they follow semantic tokens across all supported languages. */
+
+/* Inline code gets a subtle cream chip with the theme accent. */
+#editor .milkdown .ProseMirror code:not(.cm-content code) {
+  color: #176f68;
+  background: #e2f4f1;
+  border: 1px solid #c6e9e5;
+  border-radius: 5px;
+  padding: 0.12em 0.34em;
+}
+
+/* KaTeX / LaTeX rendering: calm formula cards with a Miku accent rail. */
+#editor .milkdown span[data-type="math_inline"] {
+  color: #176f68;
+  background: #edf8f6;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+#editor .milkdown .katex-display {
+  margin: 1em 0;
+  padding: 14px 18px;
+  background: #fcfbfa;
+  border: 1px solid #ded9d3;
+  border-left: 3px solid #39c5bb;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+#editor .milkdown .katex,
+#editor .milkdown .katex-display {
+  color: #141413;
+}
+#editor .milkdown .milkdown-latex-inline-edit {
+  background: #fcfbfa;
+  color: #141413;
+  border: 1px solid #d1cdc7;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(20, 20, 19, 0.10);
+}
 
 /* Code stays left-to-right even when the document is RTL. */
 [dir="rtl"] .milkdown-code-block,
@@ -184,9 +523,35 @@ body {
   text-align: left;
 }
 
-#source {
+#source-shell {
   flex: 1;
   min-height: 0;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  background: var(--bg);
+}
+#source-shell[hidden] { display: none; }
+#source-gutter {
+  min-width: 56px;
+  height: 100%;
+  margin: 0;
+  padding: 28px 12px 28px 8px;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid #dce4e2;
+  background: #f1f4f3;
+  color: #98a19e;
+  text-align: right;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--source-font, Consolas, "Courier New", Courier, monospace);
+  font-size: var(--source-font-size, 15px);
+  font-weight: 400;
+  line-height: 1.6;
+}
+#source {
+  min-width: 0;
+  height: 100%;
   width: 100%;
   border: 0;
   outline: none;
@@ -194,9 +559,9 @@ body {
   padding: 28px max(28px, 50% - 400px);
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--source-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace);
+  font-family: var(--source-font, Consolas, "Courier New", Courier, monospace);
   font-size: var(--source-font-size, 15px);
-  line-height: 1.7;
+  line-height: 1.6;
   tab-size: 2;
 }
 
@@ -266,7 +631,7 @@ body {
 #tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden],
 #emoji-picker[hidden], #settings-panel[hidden] { display: none; }
 
-/* --- settings panel (flips in over the editor) --- */
+/* --- settings panel (fast fade over the editor) --- */
 #settings-panel {
   position: fixed;
   inset: 0;
@@ -275,22 +640,13 @@ body {
   padding: 32px 20px 48px;
   background: var(--bg);
   color: var(--fg);
-  transform-origin: left center;
-  transform: perspective(1400px) rotateY(-105deg);
   opacity: 0;
   pointer-events: none;
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 0.25s ease;
+  transition: opacity 0.14s ease-out;
 }
 #settings-panel.open {
-  transform: perspective(1400px) rotateY(0);
   opacity: 1;
   pointer-events: auto;
-}
-#app.settings-open #editor,
-#app.settings-open #source,
-#app.settings-open #tabs {
-  filter: brightness(0.55);
-  transition: filter 0.3s ease;
 }
 .settings-card {
   max-width: 560px;
@@ -356,6 +712,48 @@ body {
 .settings-row input[type="number"] { width: 72px; }
 .settings-row select:focus,
 .settings-row input:focus { outline: none; border-color: var(--accent, #4a7dff); }
+.settings-shortcut {
+  width: 180px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--bar-fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.settings-shortcut:hover { background: var(--hover); color: var(--fg); }
+.settings-shortcut:focus,
+.settings-shortcut.listening {
+  outline: none;
+  border-color: var(--accent, #4a7dff);
+}
+.settings-shortcut.listening {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent, #4a7dff) 10%, var(--bg));
+}
+.settings-shortcut.conflict {
+  border-color: #cf4500;
+  color: #cf4500;
+}
+.settings-action {
+  min-width: 88px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.settings-action:hover:not(:disabled) { background: var(--hover); }
+.settings-action:focus { outline: none; border-color: var(--accent, #39c5bb); }
+.settings-action:disabled { opacity: 0.55; cursor: default; }
 .settings-color { display: flex; align-items: center; gap: 6px; }
 .settings-color input[type="color"] {
   width: 28px;
@@ -533,15 +931,13 @@ body {
 }
 
 .mowl-find-hit {
-  background: rgba(255, 214, 0, 0.35);
+  background: rgba(57, 197, 187, 0.20);
   border-radius: 2px;
 }
 .mowl-find-hit--active {
-  background: #ff9632;
-  color: #1f2328;
+  background: #8de0d9;
+  color: #141413;
 }
-:root[data-theme="dark"] .mowl-find-hit { background: rgba(255, 214, 0, 0.22); }
-:root[data-theme="dark"] .mowl-find-hit--active { background: #d9772f; color: #1a1a1a; }
 
 #settings-hint {
   flex: none;
@@ -551,8 +947,6 @@ body {
   color: #664d03;
   border-top: 1px solid var(--border);
 }
-:root[data-theme="dark"] #settings-hint { background: #3a2f00; color: #f0e2a8; }
-
 /* --- About panel --- */
 #about {
   position: fixed;

@@ -20,8 +20,7 @@ const CONTENT = `# Mowl — example configuration
 # All of these can also be changed from the in-app settings screen (the settings
 # button in the toolbar, or Ctrl/Cmd+,).
 
-language = "system"         # "system" (follow the OS) | "en" | "de"
-theme = "system"            # "system" | "light" | "dark"
+language = "system"         # "system" (follow the OS) | "en" | "de" | "zh-CN"
 direction = "ltr"           # "ltr" | "rtl" — default for new tabs (each file keeps its own direction)
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor
 quit_on_escape = false      # when true, pressing Esc quits the app
@@ -36,7 +35,22 @@ source_font = ""            # Markdown source-view font ("" = built-in monospace
 source_font_size = 15       # source-view size in px
 accent = ""                 # accent colour, e.g. "#0969da" ("" = default)
 
+# App shortcuts. "Mod" means Ctrl on Windows/Linux and Cmd on macOS.
+[shortcuts]
+new_tab = "Mod+N"
+open = "Mod+O"
+save = "Mod+S"
+save_as = "Mod+Shift+S"
+close_tab = "Mod+W"
+export = "Mod+E"
+toggle_source = "Mod+/"
+find = "Mod+F"
+replace = "Mod+H"
+emoji = "Mod+."
+settings = "Mod+,"
+
 # --- written and managed by Mowl — no need to touch these ---
+# open_with_prompt_dismissed = false  # do not ask again after declining Open with registration
 # open_files = []            # files to reopen on next launch (session restore)
 # open_dirs = []             # "ltr"/"rtl" per open_files entry (per-file direction)
 # active_tab = 0             # index into open_files of the active tab

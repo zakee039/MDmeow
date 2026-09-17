@@ -4,7 +4,8 @@ use serde::Serialize;
 use tauri::State;
 
 use crate::settings::Settings;
-use crate::{assets, export, file_arg, mdfmt, AppState};
+use crate::windows_integration::OpenWithStatus;
+use crate::{assets, export, file_arg, mdfmt, windows_integration, AppState};
 
 #[derive(Serialize)]
 pub struct SettingsPayload {
@@ -41,6 +42,21 @@ pub fn save_settings(state: State<AppState>, settings: Settings) -> Result<(), S
         .map_err(|e| e.to_string())?;
     *state.last_write.lock().unwrap() = Some(sig);
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_open_with_status() -> OpenWithStatus {
+    windows_integration::open_with_status()
+}
+
+#[tauri::command]
+pub fn register_open_with() -> Result<OpenWithStatus, String> {
+    windows_integration::register_open_with().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn unregister_open_with() -> Result<OpenWithStatus, String> {
+    windows_integration::unregister_open_with().map_err(|e| e.to_string())
 }
 
 #[tauri::command]

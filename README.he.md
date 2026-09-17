@@ -81,7 +81,7 @@
 
 ### 👁️ תצוגת מקור
 
-החלף בין העורך העשיר ל־**Markdown הגולמי** באזור טקסט פשוט עם `Ctrl/Cmd+Shift+C`.
+החלף בין העורך העשיר ל־**Markdown הגולמי** באזור טקסט פשוט עם `Ctrl/Cmd+/`.
 `Tab` / `Shift+Tab` מזיזים פנימה והחוצה את השורות המסומנות, והביטול המקורי ממשיך
 לעבוד. מיקום הקריאה נשמר בעת המעבר.
 
@@ -152,7 +152,7 @@
 | שמירה בשם                 | `Ctrl/Cmd+Shift+S` |
 | סגירת לשונית              | `Ctrl/Cmd+W`       |
 | ייצוא (HTML / PDF)        | `Ctrl/Cmd+E`       |
-| החלפת תצוגת מקור          | `Ctrl/Cmd+Shift+C` |
+| החלפת תצוגת מקור          | `Ctrl/Cmd+/` |
 | חיפוש                     | `Ctrl/Cmd+F`       |
 | החלפה                     | `Ctrl/Cmd+H`       |
 | קישור מהלוח               | `Ctrl/Cmd+K`       |
@@ -190,7 +190,6 @@
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit

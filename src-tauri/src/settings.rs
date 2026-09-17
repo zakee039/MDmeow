@@ -1,6 +1,6 @@
 //! `settings.toml` — the single settings file, next to the executable (or in the
 //! OS config dir when the program folder is read-only). Holds both app-managed
-//! state (window, open tabs) and hand-editable preferences (theme, fonts,
+//! state (window, open tabs) and hand-editable preferences (language, fonts,
 //! accent). External edits are picked up live by `watch()`.
 
 use std::path::{Path, PathBuf};
@@ -42,12 +42,44 @@ impl Default for WindowState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+pub struct ShortcutSettings {
+    pub new_tab: String,
+    pub open: String,
+    pub save: String,
+    pub save_as: String,
+    pub close_tab: String,
+    pub export: String,
+    pub toggle_source: String,
+    pub find: String,
+    pub replace: String,
+    pub emoji: String,
+    pub settings: String,
+}
+
+impl Default for ShortcutSettings {
+    fn default() -> Self {
+        Self {
+            new_tab: "Mod+N".to_string(),
+            open: "Mod+O".to_string(),
+            save: "Mod+S".to_string(),
+            save_as: "Mod+Shift+S".to_string(),
+            close_tab: "Mod+W".to_string(),
+            export: "Mod+E".to_string(),
+            toggle_source: "Mod+/".to_string(),
+            find: "Mod+F".to_string(),
+            replace: "Mod+H".to_string(),
+            emoji: "Mod+.".to_string(),
+            settings: "Mod+,".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Settings {
     // --- hand-editable preferences ---
-    /// UI language: "system" (OS locale) | "en" | "de"
+    /// UI language: "system" (OS locale) | "en" | "de" | "zh-CN"
     pub language: String,
-    /// "system" | "light" | "dark"
-    pub theme: String,
     /// "ltr" | "rtl" — base writing direction of the editor.
     pub direction: String,
     pub spellcheck: bool,
@@ -70,8 +102,12 @@ pub struct Settings {
     pub source_font_size: u16,
     /// Accent colour ("" = default), e.g. "#0969da".
     pub accent: String,
+    /// User-configurable application shortcuts.
+    pub shortcuts: ShortcutSettings,
 
     // --- app-managed state ---
+    /// Suppress the startup prompt asking to register Mowl in Windows Open With.
+    pub open_with_prompt_dismissed: bool,
     /// Files to reopen on next launch (session restore).
     pub open_files: Vec<PathBuf>,
     /// Writing direction ("ltr"|"rtl") per entry in `open_files`, so a restored
@@ -86,7 +122,6 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             language: "system".to_string(),
-            theme: "system".to_string(),
             direction: "ltr".to_string(),
             spellcheck: true,
             quit_on_escape: false,
@@ -99,6 +134,8 @@ impl Default for Settings {
             source_font: String::new(),
             source_font_size: 15,
             accent: String::new(),
+            shortcuts: ShortcutSettings::default(),
+            open_with_prompt_dismissed: false,
             open_files: Vec::new(),
             open_dirs: Vec::new(),
             active_tab: 0,

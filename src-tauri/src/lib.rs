@@ -4,6 +4,7 @@ mod export;
 mod mdfmt;
 mod portable;
 mod settings;
+mod windows_integration;
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -84,6 +85,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
+            commands::get_open_with_status,
+            commands::register_open_with,
+            commands::unregister_open_with,
             commands::read_document,
             commands::write_document,
             commands::render_html,

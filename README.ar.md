@@ -83,7 +83,7 @@
 
 ### 👁️ عرض المصدر
 
-بدِّل بين المحرّر الغنيّ و**Markdown الخام** في منطقة نصّ عادية بـ`Ctrl/Cmd+Shift+C`.
+بدِّل بين المحرّر الغنيّ و**Markdown الخام** في منطقة نصّ عادية بـ`Ctrl/Cmd+/`.
 `Tab` / `Shift+Tab` يزيدان وينقصان إزاحة الأسطر المحدَّدة، ويظلّ التراجع الأصليّ
 يعمل. يُحفَظ موضع القراءة عند التبديل.
 
@@ -156,7 +156,7 @@
 | حفظ باسم                | `Ctrl/Cmd+Shift+S` |
 | إغلاق اللسان            | `Ctrl/Cmd+W`       |
 | تصدير (HTML / PDF)      | `Ctrl/Cmd+E`       |
-| تبديل عرض المصدر        | `Ctrl/Cmd+Shift+C` |
+| تبديل عرض المصدر        | `Ctrl/Cmd+/` |
 | بحث                     | `Ctrl/Cmd+F`       |
 | استبدال                 | `Ctrl/Cmd+H`       |
 | رابط من الحافظة         | `Ctrl/Cmd+K`       |
@@ -194,7 +194,6 @@
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
 direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit

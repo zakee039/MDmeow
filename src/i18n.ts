@@ -5,8 +5,8 @@
 //
 // No app imports — this is a leaf module.
 
-export type LangPref = "system" | "en" | "de";
-export type Lang = "en" | "de";
+export type LangPref = "system" | "en" | "de" | "zh-CN";
+export type Lang = "en" | "de" | "zh-CN";
 
 const EN = {
   "toolbar.about.title": "About Mowl",
@@ -23,7 +23,6 @@ const EN = {
   "toolbar.ltr.aria": "Left-to-right text",
   "toolbar.rtl.title": "Right-to-left",
   "toolbar.rtl.aria": "Right-to-left text",
-  "toolbar.theme.aria": "Toggle theme",
   "toolbar.settings.title": "Settings (Ctrl/Cmd+,)",
   "toolbar.settings.aria": "Settings",
 
@@ -70,10 +69,6 @@ const EN = {
   "emoji.search": "Search emoji…",
   "emoji.noMatches": "No matches",
 
-  "theme.label.system": "Theme: system — click for light",
-  "theme.label.light": "Theme: light — click for dark",
-  "theme.label.dark": "Theme: dark — click for system",
-
   "dialog.discardChanges": "Discard unsaved changes to {name}?",
   "dialog.unsavedQuit": "You have unsaved changes. Quit without saving?",
   "dialog.htmlExported": "HTML exported.",
@@ -81,6 +76,8 @@ const EN = {
   "dialog.exportTitle": "Export",
   "dialog.startupFailed": "Startup failed: {err}",
   "dialog.readonlyHint": "Program folder is read-only — settings saved to {path}",
+  "dialog.openWithPrompt": "Register Mowl in Windows ‘Open with’ for Markdown files? This will not change your default app.",
+  "dialog.openWithError": "Could not update Windows Open with registration: {err}",
 
   "editor.placeholder": "Write here — “/” for blocks, the ⠿ button to change the current one",
 
@@ -90,16 +87,15 @@ const EN = {
   "settings.section.appearance": "Language & appearance",
   "settings.section.editor": "Editor",
   "settings.section.behavior": "Behaviour",
+  "settings.section.shortcuts": "Shortcuts",
   "settings.section.fonts": "Fonts",
+  "settings.section.system": "System",
 
   "settings.language": "Language",
   "settings.language.system": "System",
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
-  "settings.theme": "Theme",
-  "settings.theme.system": "System",
-  "settings.theme.light": "Light",
-  "settings.theme.dark": "Dark",
+  "settings.language.zh-CN": "简体中文",
   "settings.direction": "Writing direction",
   "settings.direction.hint": "default for new files (each file keeps its own)",
   "settings.direction.ltr": "Left-to-right",
@@ -118,6 +114,23 @@ const EN = {
   "settings.sourceFontSize": "Source font size (px)",
   "settings.accent": "Accent colour",
   "settings.accent.clear": "Reset",
+  "settings.openWith": "Register in system Open with",
+  "settings.openWith.register": "Register",
+  "settings.openWith.remove": "Remove",
+  "settings.shortcut.newTab": "New tab",
+  "settings.shortcut.open": "Open",
+  "settings.shortcut.save": "Save",
+  "settings.shortcut.saveAs": "Save as",
+  "settings.shortcut.closeTab": "Close tab",
+  "settings.shortcut.export": "Export HTML / PDF",
+  "settings.shortcut.toggleSource": "Toggle source view",
+  "settings.shortcut.find": "Find",
+  "settings.shortcut.replace": "Replace",
+  "settings.shortcut.emoji": "Emoji picker",
+  "settings.shortcut.settings": "Settings",
+  "settings.shortcut.capture": "Press shortcut…",
+  "settings.shortcut.conflict": "This shortcut is already in use.",
+  "settings.shortcut.cancelHint": "Press Esc to cancel",
 };
 
 export type I18nKey = keyof typeof EN;
@@ -137,7 +150,6 @@ const DE: Partial<Record<I18nKey, string>> = {
   "toolbar.ltr.aria": "Text links nach rechts",
   "toolbar.rtl.title": "Rechts nach links",
   "toolbar.rtl.aria": "Text rechts nach links",
-  "toolbar.theme.aria": "Erscheinungsbild umschalten",
   "toolbar.settings.title": "Einstellungen (Strg/Cmd+,)",
   "toolbar.settings.aria": "Einstellungen",
 
@@ -184,10 +196,6 @@ const DE: Partial<Record<I18nKey, string>> = {
   "emoji.search": "Emoji suchen…",
   "emoji.noMatches": "Keine Treffer",
 
-  "theme.label.system": "Erscheinungsbild: System — klicken für Hell",
-  "theme.label.light": "Erscheinungsbild: Hell — klicken für Dunkel",
-  "theme.label.dark": "Erscheinungsbild: Dunkel — klicken für System",
-
   "dialog.discardChanges": "Ungespeicherte Änderungen an {name} verwerfen?",
   "dialog.unsavedQuit": "Es gibt ungespeicherte Änderungen. Ohne Speichern beenden?",
   "dialog.htmlExported": "HTML exportiert.",
@@ -210,10 +218,6 @@ const DE: Partial<Record<I18nKey, string>> = {
   "settings.language.system": "System",
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
-  "settings.theme": "Erscheinungsbild",
-  "settings.theme.system": "System",
-  "settings.theme.light": "Hell",
-  "settings.theme.dark": "Dunkel",
   "settings.direction": "Schreibrichtung",
   "settings.direction.hint": "Standard für neue Dateien (jede Datei behält ihre eigene)",
   "settings.direction.ltr": "Links nach rechts",
@@ -234,14 +238,146 @@ const DE: Partial<Record<I18nKey, string>> = {
   "settings.accent.clear": "Zurücksetzen",
 };
 
-const DICT: Record<Lang, Partial<Record<I18nKey, string>>> = { en: EN, de: DE };
+const ZH_CN: Partial<Record<I18nKey, string>> = {
+  "toolbar.about.title": "关于 Mowl",
+  "toolbar.open.title": "新建 / 打开（Ctrl/Cmd+N，Ctrl/Cmd+O）",
+  "toolbar.open.aria": "新建或打开文件",
+  "toolbar.save.title": "保存（Ctrl/Cmd+S）",
+  "toolbar.save.aria": "保存",
+  "toolbar.export.title": "导出 HTML / PDF",
+  "toolbar.export.aria": "导出",
+  "toolbar.source.title": "编辑 Markdown 源码",
+  "toolbar.sourceBack.title": "返回所见即所得视图",
+  "toolbar.source.aria": "切换源码视图",
+  "toolbar.ltr.title": "从左到右",
+  "toolbar.ltr.aria": "从左到右文本",
+  "toolbar.rtl.title": "从右到左",
+  "toolbar.rtl.aria": "从右到左文本",
+  "toolbar.settings.title": "设置（Ctrl/Cmd+,）",
+  "toolbar.settings.aria": "设置",
+
+  "menu.new": "新建",
+  "menu.open": "打开…",
+
+  "about.tagline": "便携式所见即所得 Markdown 编辑器",
+  "about.credit": "Ali Naderi · MIT License",
+  "about.close": "关闭",
+
+  "doc.untitled": "未命名",
+
+  "tab.close": "关闭标签页",
+  "tab.new": "新建标签页",
+
+  "block.text": "正文",
+  "block.h1": "一级标题",
+  "block.h2": "二级标题",
+  "block.h3": "三级标题",
+  "block.bulletList": "项目符号列表",
+  "block.numberedList": "编号列表",
+  "block.quote": "引用",
+  "block.codeBlock": "代码块",
+  "block.table": "表格",
+  "block.image": "图片",
+  "block.divider": "分隔线",
+  "block.insertAbove": "在上方插入一行",
+  "block.insertBelow": "在下方插入一行",
+  "block.duplicate": "复制",
+  "block.delete": "删除",
+
+  "find.find": "查找",
+  "find.replace": "替换",
+  "find.replaceWith": "替换为",
+  "find.prev": "上一个匹配项",
+  "find.next": "下一个匹配项",
+  "find.prev.title": "上一个匹配项（Shift+Enter）",
+  "find.next.title": "下一个匹配项（Enter）",
+  "find.matchCase": "区分大小写",
+  "find.close": "关闭（Esc）",
+  "find.replaceBtn": "替换",
+  "find.all": "全部",
+
+  "emoji.search": "搜索 Emoji…",
+  "emoji.noMatches": "没有匹配项",
+
+  "dialog.discardChanges": "放弃对 {name} 的未保存更改吗？",
+  "dialog.unsavedQuit": "仍有未保存的更改。确定不保存并退出吗？",
+  "dialog.htmlExported": "HTML 已导出。",
+  "dialog.chooseExport": "导出为 HTML 文件吗？（选择“否”将打印 / 另存为 PDF）",
+  "dialog.exportTitle": "导出",
+  "dialog.startupFailed": "启动失败：{err}",
+  "dialog.readonlyHint": "程序目录为只读，设置已保存到 {path}",
+  "dialog.openWithPrompt": "是否将 Mowl 注册到 Windows 的 Markdown 打开方式？这不会更改你的默认应用。",
+  "dialog.openWithError": "更新 Windows 打开方式注册失败：{err}",
+
+  "editor.placeholder": "在此输入 — 输入“/”插入内容块，点击 ⠿ 更改当前块类型",
+
+  "settings.title": "设置",
+  "settings.savedNote": "更改会立即保存。",
+  "settings.fileAt": "settings.toml：{path}",
+  "settings.section.appearance": "语言与外观",
+  "settings.section.editor": "编辑器",
+  "settings.section.behavior": "行为",
+  "settings.section.shortcuts": "快捷键",
+  "settings.section.fonts": "字体",
+  "settings.section.system": "系统",
+
+  "settings.language": "语言",
+  "settings.language.system": "跟随系统",
+  "settings.language.en": "English",
+  "settings.language.de": "Deutsch",
+  "settings.language.zh-CN": "简体中文",
+  "settings.direction": "书写方向",
+  "settings.direction.hint": "新文件的默认方向（每个文件会保留自己的方向）",
+  "settings.direction.ltr": "从左到右",
+  "settings.direction.rtl": "从右到左",
+  "settings.spellcheck": "在编辑器中显示拼写检查波浪线",
+  "settings.quitOnEscape": "按 Esc 退出应用",
+  "settings.alwaysShowTabbar": "始终显示标签栏（即使只有一个文件）",
+  "settings.openLastSession": "启动时恢复上一次会话的标签页",
+  "settings.showPath": "在标题栏中显示完整文件路径",
+  "settings.listMarker": "项目符号标记（保存时）",
+  "settings.editorFont": "编辑器字体",
+  "settings.editorFont.placeholder": "系统默认",
+  "settings.editorFontSize": "编辑器字号（px）",
+  "settings.sourceFont": "源码视图字体",
+  "settings.sourceFont.placeholder": "系统等宽字体",
+  "settings.sourceFontSize": "源码字号（px）",
+  "settings.accent": "强调色",
+  "settings.accent.clear": "重置",
+  "settings.openWith": "注册到系统打开方式",
+  "settings.openWith.register": "注册",
+  "settings.openWith.remove": "移除",
+  "settings.shortcut.newTab": "新建标签页",
+  "settings.shortcut.open": "打开",
+  "settings.shortcut.save": "保存",
+  "settings.shortcut.saveAs": "另存为",
+  "settings.shortcut.closeTab": "关闭标签页",
+  "settings.shortcut.export": "导出 HTML / PDF",
+  "settings.shortcut.toggleSource": "切换源码视图",
+  "settings.shortcut.find": "查找",
+  "settings.shortcut.replace": "替换",
+  "settings.shortcut.emoji": "Emoji 选择器",
+  "settings.shortcut.settings": "设置",
+  "settings.shortcut.capture": "请按下快捷键…",
+  "settings.shortcut.conflict": "该快捷键已被使用。",
+  "settings.shortcut.cancelHint": "按 Esc 取消",
+};
+
+const DICT: Record<Lang, Partial<Record<I18nKey, string>>> = {
+  en: EN,
+  de: DE,
+  "zh-CN": ZH_CN,
+};
 
 let current: Lang = "en";
 const listeners = new Set<() => void>();
 
 export function resolveLang(pref: LangPref): Lang {
   if (pref === "system") {
-    return navigator.language.toLowerCase().startsWith("de") ? "de" : "en";
+    const locale = navigator.language.toLowerCase();
+    if (locale.startsWith("zh")) return "zh-CN";
+    if (locale.startsWith("de")) return "de";
+    return "en";
   }
   return pref;
 }

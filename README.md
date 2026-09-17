@@ -1,255 +1,161 @@
 ![Mowl](docs/logo.png)
 
-**English** · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
+**English** · [简体中文](README.zh-CN.md) · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
 
 # Mowl
 
-**A minimalist, portable WYSIWYG Markdown editor.**
+A small, fast WYSIWYG Markdown editor built with Tauri and Milkdown. Mowl keeps the file on disk as ordinary Markdown while giving you a Typora-style inline editing experience.
 
-Type Markdown, see it formatted inline — Typora‑style. Powerful enough for real
-writing (tables, math, code, footnotes, RTL), yet a single \~7 MB executable that
-starts instantly and stays out of your way.
+This edition uses **Miku Cream** as the built-in rendering system: cream document surfaces, `#39C5BB` accents, a light syntax-highlighting palette, KaTeX math, compact tables, and restrained UI chrome.
 
-[Features](#features) · [Screenshots](#screenshots) · [Download](#download) · [Configuration](#configuration) · [Building](#building)
+## Highlights
 
-***
+- **Inline WYSIWYG Markdown** — headings, lists, quotes, task lists, tables, links, images, footnotes and more.
+- **Miku Cream rendering** — one consistent light rendering system for prose, code, math, tables and export.
+- **Light code blocks** — Consolas-first code typography, 18 px line rhythm, subtle alternating line surfaces, and clear teal / blue / pink / dark-red syntax colours.
+- **KaTeX math** — inline `$…$` and display `$$…$$` formulas.
+- **Source view** — raw Markdown with a separate gray line-number gutter; default shortcut `Ctrl/Cmd+/`.
+- **Markdown image compatibility** — standard `![alt](path)` images plus common raw HTML `<img ...>` blocks. Relative local paths are resolved against the Markdown file.
+- **Blog marker compatibility** — `<!--more-->` remains in Markdown but is hidden in the WYSIWYG view.
+- **Configurable shortcuts** — click a shortcut field in Settings and press the new key combination.
+- **English / Deutsch / 简体中文** — UI language can follow the OS or be selected explicitly.
+- **LTR / RTL writing** — new documents default to left-to-right; document direction can be switched from the toolbar.
+- **Tabs and session restore** — reopen the documents from your previous session.
+- **Portable settings** — `settings.toml` normally lives beside the executable and is reloaded live.
+- **HTML / PDF export** — self-contained HTML with offline KaTeX and syntax highlighting; PDF through the system print dialog.
 
-## Why Mowl
+## Markdown rendering
 
-- **Deceptively powerful.** Inline WYSIWYG editing, tabbed documents, a block
-  menu, GFM tables with drag‑to‑reorder, KaTeX math, syntax‑highlighted code,
-  find & replace, right‑to‑left support, and self‑contained HTML / PDF export.
-- **Extremely lean.** No Electron. Mowl is built on [Tauri](https://tauri.app)
-  and your operating system's own WebView, so the whole app is a **single
-  portable executable of roughly 7 MB** — no installer required, nothing to
-  unpack, no background services.
-- **Genuinely fast.** The core is Rust, the window is native, and cold start is
-  effectively instant. It feels like a text editor, not a web app.
-- **Portable by design.** One hand‑editable `settings.toml` lives next to the
-  executable. Drop `Mowl.exe` on a USB stick and your preferences travel with it.
+Mowl intentionally keeps Markdown portable. Standard Markdown is preferred, but a small compatibility layer handles common raw HTML used by note apps and blogging workflows.
 
-## Features
+```md
+![diagram](./assets/diagram.png)
 
-### ✍️ Inline WYSIWYG editing
+<img src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
 
-Powered by [Milkdown Crepe](https://milkdown.dev) (ProseMirror). Headings, bold,
-lists, quotes and the rest render as you type — but the document on disk is always
-plain, portable Markdown.
+<!--more-->
+```
 
-### 🔗 Links without the syntax dance
+Both image forms are rendered in the editor. For raw HTML images, Mowl preserves the original HTML in the Markdown document while using safe display attributes for the WYSIWYG view. `<!--more-->` is preserved but not visibly rendered.
 
-Select some text, then **paste a URL with `Ctrl/Cmd+V`** — the selection becomes
-the link text and the pasted URL becomes its target. No `[]()` typing, no dialog.
-Prefer the keyboard? Select text and press **`Ctrl/Cmd+K`** to turn it into a link
-using whatever URL is on the clipboard (or an empty link you can fill in).
+## Miku Cream code rendering
 
-### 🖼️ Images that just show up
+Code blocks use a light palette rather than a dark editor theme. The default code stack starts with `Consolas`, followed by `Courier New` / `Courier` fallbacks. The layout uses an 18 px line rhythm and slightly different solid backgrounds on adjacent lines to make long snippets easier to scan without a translucent or blurred appearance.
 
-`![alt](picture.png)` renders inline in the editor, including **relative paths**
-resolved against the document's own folder (`./assets/diagram.png`,
-`../shared/logo.svg`) and absolute local paths — not just `http(s)` URLs. Add one
-from the `⠿` block menu ("Image"), then paste a link or pick a file.
+The syntax palette centers on Miku teal (`#39C5BB`) with distinct solid colours for keywords, functions, strings, numeric literals, types, operators and comments. HTML/PDF export uses the same visual direction.
 
-### ↔️ Right‑to‑left support
+## Source view
 
-One click toggles the whole document between **LTR and RTL** for Persian, Arabic
-or Hebrew writing. The choice is remembered per install. Code blocks are always
-kept left‑to‑right — even inside an RTL document — and the direction is carried
-through to HTML export (`<html dir="rtl">`).
+Press **`Ctrl/Cmd+/`** or use the source button in the toolbar to switch between WYSIWYG and raw Markdown. Source view always remains left-to-right and now includes a gray line-number gutter outside the editable text area. `Tab` / `Shift+Tab` indent and outdent selected lines.
 
-### 🧱 Block menu
+## Images
 
-Hover any block and click the `⠿` button for a quick menu that acts on that block:
-
-- **Turn into** — Text, Heading 1–3, bullet list, numbered list, quote, code
-  block, or **table**
-- **Insert** a table, an image, a divider, or a blank line above / below
-- **Duplicate** or **delete** the block
-
-The current block's type is highlighted so you always know what you're editing.
-The turn‑into types also have keyboard shortcuts — `Ctrl/Cmd+0`–`7` (Text, H1, H2,
-H3, bullet list, numbered list, quote, code block) — applied to the selection just
-like the menu.
-
-### 😀 Emoji
-
-Press `Ctrl/Cmd+.` for a searchable emoji picker, or just type a `:shortcode:`
-(e.g. `:tada:` → 🎉, `:+1:` → 👍) and it turns into the emoji as you close the
-colon. Native Unicode — no images, nothing downloaded.
-
-### 📑 Tabs with session restore
-
-Open several documents as tabs. Close Mowl, reopen it, and your tabs — and even
-their scroll positions — come back. (Toggleable in the config.)
-
-### 👁️ Source view
-
-Toggle between the rich editor and the **raw Markdown** in a plain text area with
-`Ctrl/Cmd+Shift+C`. `Tab` / `Shift+Tab` indent and outdent selected lines, and
-native undo keeps working.
-
-### 🔍 Find & replace
-
-`Ctrl/Cmd+F` to find, `Ctrl/Cmd+H` to replace — works in both the WYSIWYG editor
-and the source view.
-
-### 📊 Tables that behave
-
-Full GitHub‑Flavored Markdown tables. **Drag rows and columns** to reorder them,
-add a table straight from the block menu, and hand‑typed tables are automatically
-**aligned and padded** in the saved `.md` file so the raw Markdown stays readable.
-
-### 🧮 Math & 💻 code
-
-- **KaTeX** math, inline (`$…$`) and display (`$$…$$`)
-- Syntax‑highlighted **code blocks** with language detection
-
-Plus the rest of GFM: task lists, footnotes, strikethrough, autolinks.
-
-### 📤 Export
-
-- **Self‑contained HTML** — a single file with KaTeX and highlighting styles
-  inlined, nothing to host
-- **PDF** via the system print dialog
-
-### 🎨 Themes & appearance
-
-Light and dark themes that follow the OS by default, with a manual toggle. Editor
-font, font size, source‑view font, and accent colour are all configurable.
-
-### 🗂️ File associations
-
-Set Mowl as the default app for `.md` / `.markdown` files (via the installer).
-Double‑click a Markdown file and it opens in a new tab of the running window.
-
-### ⚙️ Settings, GUI or file
-
-Every setting can be changed from an in‑app screen — the settings button in the
-toolbar (or `Ctrl/Cmd+,`) flips it open over the editor, with one control per
-option and changes applied and saved as you make them. Or edit the single,
-commented `settings.toml` next to the executable in any text editor — Mowl
-**picks up the change within a second, no restart**. If the program folder is
-read‑only, Mowl falls back to the OS config directory and tells you so in the
-window. Every release also ships a fully commented `settings.example.toml`.
-
-### 🌍 English and Deutsch
-
-The interface is available in **English and German**, following the OS language
-by default (`language = "system" | "en" | "de"`, switchable in the settings
-screen).
-
-## Screenshots
-
-| Light                                                 | Dark                                           |
-| ----------------------------------------------------- | ---------------------------------------------- |
-| ![Mowl editing a document](docs/screenshot-light.png) | ![Mowl in dark mode](docs/screenshot-dark.png) |
-
-| Right‑to‑left (per file)                           |                          Block menu                           |
-| -------------------------------------------------- | :-----------------------------------------------------------: |
-| ![Right‑to‑left document](docs/screenshot-rtl.png) | ![Block menu on the ⠿ button](docs/screenshot-block-menu.png) |
+Standard Markdown image paths can be remote URLs, absolute local paths, or paths relative to the current Markdown file. Raw HTML `<img>` blocks support the same path resolution and common presentation attributes such as `width`, `height`, `data-align`, and numeric `zoom` styles.
 
 ## Keyboard shortcuts
 
-| Action                       | Shortcut           |
-| ---------------------------- | ------------------ |
-| New tab                      | `Ctrl/Cmd+N`       |
-| Open                         | `Ctrl/Cmd+O`       |
-| Save                         | `Ctrl/Cmd+S`       |
-| Save As                      | `Ctrl/Cmd+Shift+S` |
-| Close tab                    | `Ctrl/Cmd+W`       |
-| Export (HTML / PDF)          | `Ctrl/Cmd+E`       |
-| Toggle source view           | `Ctrl/Cmd+Shift+C` |
-| Find                         | `Ctrl/Cmd+F`       |
-| Replace                      | `Ctrl/Cmd+H`       |
-| Link from clipboard          | `Ctrl/Cmd+K`       |
-| Paste URL onto selected text | `Ctrl/Cmd+V`       |
-| Block: Text / H1–H3 / lists / quote / code | `Ctrl/Cmd+0`–`7` |
-| Insert emoji                 | `Ctrl/Cmd+.`       |
-| Settings                     | `Ctrl/Cmd+,`       |
+Application shortcuts can be rebound in **Settings → Shortcuts**. These are the defaults:
 
-## Download
+| Action | Default |
+| --- | --- |
+| New tab | `Ctrl/Cmd+N` |
+| Open | `Ctrl/Cmd+O` |
+| Save | `Ctrl/Cmd+S` |
+| Save As | `Ctrl/Cmd+Shift+S` |
+| Close tab | `Ctrl/Cmd+W` |
+| Export HTML / PDF | `Ctrl/Cmd+E` |
+| Toggle source view | `Ctrl/Cmd+/` |
+| Find | `Ctrl/Cmd+F` |
+| Replace | `Ctrl/Cmd+H` |
+| Link from clipboard | `Ctrl/Cmd+K` |
+| Emoji picker | `Ctrl/Cmd+.` |
+| Settings | `Ctrl/Cmd+,` |
+| Block type: Text / H1–H3 / lists / quote / code | `Ctrl/Cmd+0`–`7` |
 
-Grab the latest build from the [Releases](../../releases) page.
+## Settings
 
-- **Windows (x64)** — available now: portable `Mowl.exe` (\~7 MB, no install) or
-  the NSIS installer
-- **macOS** (x64 + arm64) and **Linux** (x64 + arm64 AppImage) — *coming soon.*
-  The cross‑platform release pipeline is in place
-  ([`.github/workflows/release.yml`](.github/workflows/release.yml)); these builds
-  will land in a future tagged release. Until then, build from source on the
-  target OS (see [Building](#building)) — Mowl is a Tauri app and runs on all
-  three.
+The settings panel opens with a short fade and saves changes immediately. Settings include language, default writing direction, spell-check, list marker, session behavior, fonts, font sizes, accent colour, and application shortcuts.
 
-Builds are **not** code‑signed or notarized, so the OS may warn on first launch:
+`settings.toml` is watched for external edits, so most hand-edited preferences take effect without restarting Mowl. If the executable directory is read-only, Mowl falls back to the OS configuration directory.
 
-- **Windows** — SmartScreen: *More info → Run anyway*
-- **macOS** — right‑click the app → *Open*, or
-  `xattr -dr com.apple.quarantine /path/to/Mowl.app`
-- **Linux** — `chmod +x Mowl*.AppImage` and run
+A generated `settings.example.toml` is included with release builds.
 
-SHA‑256 checksums are published with every release.
+## Screenshots
 
-## Configuration
+| Right-to-left document | Block menu |
+| --- | --- |
+| ![Right-to-left document](docs/screenshot-rtl.png) | ![Block menu](docs/screenshot-block-menu.png) |
 
-`settings.toml` sits next to the executable (on macOS: next to the `.app`), or in
-the OS config directory as a fallback. The top section is meant for hand editing
-and is reloaded live:
+## Windows builds
 
-```toml
-language = "system"         # system (follow the OS) | en | de
-theme = "system"            # system | light | dark
-direction = "ltr"           # ltr | rtl
-spellcheck = true
-quit_on_escape = false      # press Esc to quit
-list_marker = "*"           # bullet-list marker on save: * | - | +
-show_path = false           # show the full file path in the header, not just the name
-open_last_session = true    # reopen the previous session's tabs on startup
-always_show_tabbar = false  # keep the tab bar visible even with only one file open
-editor_font = ""            # WYSIWYG font family (blank = default)
-editor_font_size = 16       # headings scale from this
-source_font = ""            # Markdown source font (monospace)
-source_font_size = 15
-accent = ""                 # accent colour, e.g. "#0969da"
+A normal Tauri release build produces:
 
-# below this line: managed by the app — window geometry, open tabs
-```
+- portable `mowl.exe`
+- NSIS setup executable
+- MSI installer
+
+The portable executable does not require a separate installation. Windows may show a SmartScreen warning because community builds are not code-signed.
 
 ## Building
 
-Prerequisites:
+### Requirements
 
-- Rust (stable; MSVC toolchain on Windows) — <https://rustup.rs>
-- Node 20+ and `pnpm`
-- Platform WebView dependencies — see <https://tauri.app/start/prerequisites/>
+- Node.js 20+
+- `pnpm`
+- Rust stable; Windows uses the `x86_64-pc-windows-msvc` toolchain
+- Tauri platform prerequisites (Visual C++ Build Tools / Windows SDK / WebView2 on Windows)
 
 ```bash
 pnpm install
-pnpm tauri dev                       # run with hot reload
-pnpm tauri build                     # release bundles for the host OS
-pnpm tauri build --bundles nsis      # Windows: installer + portable exe
-pnpm exec tsc --noEmit               # frontend typecheck
-cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
+pnpm build
+pnpm tauri dev
+pnpm tauri build
 ```
 
-**Cutting a release:** bump `version` in **both** `package.json` and
-`src-tauri/tauri.conf.json`, then push a `v*` tag —
-`.github/workflows/release.yml` builds Windows / macOS / Linux (x64 + arm64) and
-opens a draft GitHub release with checksums.
+Useful checks:
 
-Extending Mowl? Read **[ARCHITECTURE.md](ARCHITECTURE.md)** — it maps every file
-and shows how to add toolbar buttons, block‑menu items, settings and commands.
+```bash
+pnpm exec tsc --noEmit
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+## Configuration example
+
+```toml
+language = "system"         # system | en | de | zh-CN
+direction = "ltr"           # default for new documents
+spellcheck = true
+quit_on_escape = false
+list_marker = "*"
+show_path = false
+open_last_session = true
+always_show_tabbar = false
+editor_font = ""
+editor_font_size = 16
+source_font = ""
+source_font_size = 15
+accent = ""
+
+[shortcuts]
+toggle_source = "Mod+/"
+```
+
+`Mod` means Ctrl on Windows/Linux and Cmd on macOS.
 
 ## Tech stack
 
-| Layer                  | Choice                                                  |
-| ---------------------- | ------------------------------------------------------- |
-| Shell                  | [Tauri v2](https://tauri.app) (Rust, system WebView)    |
-| Editor                 | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
-| Markdown → HTML export | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
-| Math                   | [KaTeX](https://katex.org)                              |
+| Layer | Technology |
+| --- | --- |
+| Desktop shell | Tauri v2 / Rust |
+| WYSIWYG editor | Milkdown Crepe / ProseMirror |
+| Code editing | CodeMirror |
+| Math | KaTeX |
+| Markdown → HTML | comrak |
+| Syntax highlighting in export | highlight.js |
 
-## Support
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the code map and extension points.
 
-If Mowl saves you time, you can support its development on Ko‑fi. ☕
+## Credits and license
 
-<a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+Mowl was created by **Ali Naderi** and is distributed under the **MIT License**. This codebase keeps that credit while extending the editor with localization, configurable shortcuts, compatibility fixes, and the Miku Cream rendering system.
