@@ -3,15 +3,28 @@
 npm-debug.log*
 pnpm-debug.log*
 
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
 # Dependencies / build output
 node_modules
 dist
 dist-ssr
 /release/
+coverage/
 *.local
 
 # Local git backups
 *.bundle
+
+# Temporary / backup files
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
 
 # Portable runtime data (created next to the executable at runtime)
 /settings.toml
@@ -22,6 +35,9 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
