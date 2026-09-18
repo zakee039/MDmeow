@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <UIRef Id="WixUI_Common" />
+    <UI Id="MDmeowUI">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="MS Shell Dlg" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="MS Shell Dlg" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="MS Shell Dlg" Size="9" Bold="yes" />
+      <TextStyle Id="MDmeow_Font_Bigger" FaceName="MS Shell Dlg" Size="12" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="MDMEOW_LANG" Value="en" Secure="yes" />
+      <Property Id="MDMEOW_LAUNCH_EN" Value="1" />
+      <Property Id="MDMEOW_LAUNCH_DE" Value="1" />
+      <Property Id="MDMEOW_LAUNCH_JA" Value="1" />
+      <Property Id="MDMEOW_LAUNCH_ZH" Value="1" />
+      <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <Dialog Id="MDmeowLanguageEnDlg" Width="370" Height="270" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control Id="Title" Type="Text" X="24" Y="24" Width="322" Height="24" Transparent="yes" NoPrefix="yes" Text="{\MDmeow_Font_Bigger}Language" />
+        <Control Id="Description" Type="Text" X="24" Y="53" Width="322" Height="28" Transparent="yes" NoPrefix="yes" Text="Choose the installer language" />
+        <Control Id="ChoiceEn" Type="PushButton" X="30" Y="88" Width="132" Height="19" Text="●  English">
+          <Publish Property="MDMEOW_LANG" Value="en">1</Publish>
+        </Control>
+        <Control Id="ChoiceDe" Type="PushButton" X="30" Y="112" Width="132" Height="19" Text="○  Deutsch">
+          <Publish Property="MDMEOW_LANG" Value="de" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageDeDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceJa" Type="PushButton" X="30" Y="136" Width="132" Height="19" Text="○  日本語">
+          <Publish Property="MDMEOW_LANG" Value="ja" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageJaDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceZh" Type="PushButton" X="30" Y="160" Width="132" Height="19" Text="○  简体中文">
+          <Publish Property="MDMEOW_LANG" Value="zh-CN" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageZhDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Next" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Text="Next">
+          <Publish Event="NewDialog" Value="MDmeowInstallDlg" Order="1">NOT Installed</Publish>
+          <Publish Event="NewDialog" Value="MDmeowMaintenanceDlg" Order="2">Installed</Publish>
+        </Control>
+        <Control Id="HiddenCancel" Type="PushButton" X="0" Y="0" Width="1" Height="1" Hidden="yes" Cancel="yes" Text=".">
+          <Publish Event="EndDialog" Value="Exit">1</Publish>
+        </Control>
+      </Dialog>
+
+      <Dialog Id="MDmeowLanguageDeDlg" Width="370" Height="270" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control Id="Title" Type="Text" X="24" Y="24" Width="322" Height="24" Transparent="yes" NoPrefix="yes" Text="{\MDmeow_Font_Bigger}Sprache" />
+        <Control Id="Description" Type="Text" X="24" Y="53" Width="322" Height="28" Transparent="yes" NoPrefix="yes" Text="Installationssprache wählen" />
+        <Control Id="ChoiceEn" Type="PushButton" X="30" Y="88" Width="132" Height="19" Text="○  English">
+          <Publish Property="MDMEOW_LANG" Value="en" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageEnDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceDe" Type="PushButton" X="30" Y="112" Width="132" Height="19" Text="●  Deutsch">
+          <Publish Property="MDMEOW_LANG" Value="de">1</Publish>
+        </Control>
+        <Control Id="ChoiceJa" Type="PushButton" X="30" Y="136" Width="132" Height="19" Text="○  日本語">
+          <Publish Property="MDMEOW_LANG" Value="ja" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageJaDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceZh" Type="PushButton" X="30" Y="160" Width="132" Height="19" Text="○  简体中文">
+          <Publish Property="MDMEOW_LANG" Value="zh-CN" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageZhDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Next" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Text="Weiter">
+          <Publish Event="NewDialog" Value="MDmeowInstallDlg" Order="1">NOT Installed</Publish>
+          <Publish Event="NewDialog" Value="MDmeowMaintenanceDlg" Order="2">Installed</Publish>
+        </Control>
+        <Control Id="HiddenCancel" Type="PushButton" X="0" Y="0" Width="1" Height="1" Hidden="yes" Cancel="yes" Text=".">
+          <Publish Event="EndDialog" Value="Exit">1</Publish>
+        </Control>
+      </Dialog>
+
+      <Dialog Id="MDmeowLanguageJaDlg" Width="370" Height="270" Title="[ProductName] セットアップ" NoMinimize="yes">
+        <Control Id="Title" Type="Text" X="24" Y="24" Width="322" Height="24" Transparent="yes" NoPrefix="yes" Text="{\MDmeow_Font_Bigger}言語" />
+        <Control Id="Description" Type="Text" X="24" Y="53" Width="322" Height="28" Transparent="yes" NoPrefix="yes" Text="インストーラーの言語を選択してください" />
+        <Control Id="ChoiceEn" Type="PushButton" X="30" Y="88" Width="132" Height="19" Text="○  English">
+          <Publish Property="MDMEOW_LANG" Value="en" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageEnDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceDe" Type="PushButton" X="30" Y="112" Width="132" Height="19" Text="○  Deutsch">
+          <Publish Property="MDMEOW_LANG" Value="de" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageDeDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceJa" Type="PushButton" X="30" Y="136" Width="132" Height="19" Text="●  日本語">
+          <Publish Property="MDMEOW_LANG" Value="ja">1</Publish>
+        </Control>
+        <Control Id="ChoiceZh" Type="PushButton" X="30" Y="160" Width="132" Height="19" Text="○  简体中文">
+          <Publish Property="MDMEOW_LANG" Value="zh-CN" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageZhDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Next" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Text="次へ">
+          <Publish Event="NewDialog" Value="MDmeowInstallDlg" Order="1">NOT Installed</Publish>
+          <Publish Event="NewDialog" Value="MDmeowMaintenanceDlg" Order="2">Installed</Publish>
+        </Control>
+        <Control Id="HiddenCancel" Type="PushButton" X="0" Y="0" Width="1" Height="1" Hidden="yes" Cancel="yes" Text=".">
+          <Publish Event="EndDialog" Value="Exit">1</Publish>
+        </Control>
+      </Dialog>
+
+      <Dialog Id="MDmeowLanguageZhDlg" Width="370" Height="270" Title="[ProductName] 安装程序" NoMinimize="yes">
+        <Control Id="Title" Type="Text" X="24" Y="24" Width="322" Height="24" Transparent="yes" NoPrefix="yes" Text="{\MDmeow_Font_Bigger}语言" />
+        <Control Id="Description" Type="Text" X="24" Y="53" Width="322" Height="28" Transparent="yes" NoPrefix="yes" Text="选择安装语言" />
+        <Control Id="ChoiceEn" Type="PushButton" X="30" Y="88" Width="132" Height="19" Text="○  English">
+          <Publish Property="MDMEOW_LANG" Value="en" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageEnDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceDe" Type="PushButton" X="30" Y="112" Width="132" Height="19" Text="○  Deutsch">
+          <Publish Property="MDMEOW_LANG" Value="de" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageDeDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceJa" Type="PushButton" X="30" Y="136" Width="132" Height="19" Text="○  日本語">
+          <Publish Property="MDMEOW_LANG" Value="ja" Order="1">1</Publish>
+          <Publish Event="NewDialog" Value="MDmeowLanguageJaDlg" Order="2">1</Publish>
+        </Control>
+        <Control Id="ChoiceZh" Type="PushButton" X="30" Y="160" Width="132" Height="19" Text="●  简体中文">
+          <Publish Property="MDMEOW_LANG" Value="zh-CN">1</Publish>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Next" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Text="下一步">
+          <Publish Event="NewDialog" Value="MDmeowInstallDlg" Order="1">NOT Installed</Publish>
+          <Publish Event="NewDialog" Value="MDmeowMaintenanceDlg" Order="2">Installed</Publish>
+        </Control>
+        <Control Id="HiddenCancel" Type="PushButton" X="0" Y="0" Width="1" Height="1" Hidden="yes" Cancel="yes" Text=".">
+          <Publish Event="EndDialog" Value="Exit">1</Publish>
+        </Control>
+      </Dialog>
+
+
+
+
+
+      <Dialog Id="MDmeowInstallDlg" Width="370" Height="270" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control Id="TitleEn" Type="Text" X="24" Y="24" Width="322" Height="22" Hidden="yes" Text="{\MDmeow_Font_Bigger}Install MDmeow"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="TitleDe" Type="Text" X="24" Y="24" Width="322" Height="22" Hidden="yes" Text="{\MDmeow_Font_Bigger}MDmeow installieren"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="TitleJa" Type="Text" X="24" Y="24" Width="322" Height="22" Hidden="yes" Text="{\MDmeow_Font_Bigger}MDmeow をインストール"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="TitleZh" Type="Text" X="24" Y="24" Width="322" Height="22" Hidden="yes" Text="{\MDmeow_Font_Bigger}安装 MDmeow"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="DescEn" Type="Text" X="24" Y="54" Width="322" Height="25" Hidden="yes" Text="Choose the installation folder, then start installation."><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="DescDe" Type="Text" X="24" Y="54" Width="322" Height="25" Hidden="yes" Text="Installationsordner wählen und anschließend die Installation starten."><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="DescJa" Type="Text" X="24" Y="54" Width="322" Height="25" Hidden="yes" Text="インストール先を選択して、インストールを開始してください。"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="DescZh" Type="Text" X="24" Y="54" Width="322" Height="25" Hidden="yes" Text="选择安装目录，然后开始安装。"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="FolderEn" Type="Text" X="24" Y="96" Width="322" Height="16" Hidden="yes" Text="Installation folder:"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="FolderDe" Type="Text" X="24" Y="96" Width="322" Height="16" Hidden="yes" Text="Installationsordner:"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="FolderJa" Type="Text" X="24" Y="96" Width="322" Height="16" Hidden="yes" Text="インストール先:"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="FolderZh" Type="Text" X="24" Y="96" Width="322" Height="16" Hidden="yes" Text="安装目录："><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="InstallFolder" Type="PathEdit" X="24" Y="116" Width="322" Height="18" Property="WIXUI_INSTALLDIR" Indirect="yes" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="BackEn" Type="PushButton" X="180" Y="243" Width="56" Height="17" Hidden="yes" Text="Back"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Event="NewDialog" Value="MDmeowLanguageEnDlg">1</Publish></Control>
+        <Control Id="InstallEn" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="Install"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CancelEn" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="Cancel"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+        <Control Id="BackDe" Type="PushButton" X="180" Y="243" Width="56" Height="17" Hidden="yes" Text="Zurück"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Event="NewDialog" Value="MDmeowLanguageDeDlg">1</Publish></Control>
+        <Control Id="InstallDe" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="Installieren"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CancelDe" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="Abbrechen"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+        <Control Id="BackJa" Type="PushButton" X="180" Y="243" Width="56" Height="17" Hidden="yes" Text="戻る"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Event="NewDialog" Value="MDmeowLanguageJaDlg">1</Publish></Control>
+        <Control Id="InstallJa" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="インストール"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CancelJa" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="キャンセル"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+        <Control Id="BackZh" Type="PushButton" X="180" Y="243" Width="56" Height="17" Hidden="yes" Text="上一步"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Event="NewDialog" Value="MDmeowLanguageZhDlg">1</Publish></Control>
+        <Control Id="InstallZh" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="安装"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CancelZh" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="取消"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+      </Dialog>
+
+      <Dialog Id="MDmeowMaintenanceDlg" Width="370" Height="270" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control Id="TextEn" Type="Text" X="24" Y="36" Width="322" Height="75" Hidden="yes" Text="{\MDmeow_Font_Bigger}MDmeow is already installed.&#10;&#10;You can remove the installed version or close Setup."><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="TextDe" Type="Text" X="24" Y="36" Width="322" Height="75" Hidden="yes" Text="{\MDmeow_Font_Bigger}MDmeow ist bereits installiert.&#10;&#10;Sie können die installierte Version entfernen oder Setup schließen."><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="TextJa" Type="Text" X="24" Y="36" Width="322" Height="75" Hidden="yes" Text="{\MDmeow_Font_Bigger}MDmeow はすでにインストールされています。&#10;&#10;現在のバージョンを削除するか、セットアップを閉じてください。"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="TextZh" Type="Text" X="24" Y="36" Width="322" Height="75" Hidden="yes" Text="{\MDmeow_Font_Bigger}MDmeow 已安装。&#10;&#10;你可以卸载当前版本，或关闭安装程序。"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="RemoveEn" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="Remove"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Property="REMOVE" Value="ALL" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CloseEn" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="Close"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+        <Control Id="RemoveDe" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="Entfernen"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Property="REMOVE" Value="ALL" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CloseDe" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="Schließen"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+        <Control Id="RemoveJa" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="削除"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Property="REMOVE" Value="ALL" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CloseJa" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="閉じる"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+        <Control Id="RemoveZh" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="卸载"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Property="REMOVE" Value="ALL" Order="1">1</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="CloseZh" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Hidden="yes" Text="关闭"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Event="EndDialog" Value="Exit">1</Publish></Control>
+      </Dialog>
+
+      <Dialog Id="MDmeowProgressDlg" Width="370" Height="270" Title="[ProductName] Setup" Modeless="yes">
+        <Control Id="TextEn" Type="Text" X="24" Y="42" Width="322" Height="28" Hidden="yes" TabSkip="no" Text="{\MDmeow_Font_Bigger}Installing MDmeow…"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="TextDe" Type="Text" X="24" Y="42" Width="322" Height="28" Hidden="yes" TabSkip="no" Text="{\MDmeow_Font_Bigger}MDmeow wird installiert…"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="TextJa" Type="Text" X="24" Y="42" Width="322" Height="28" Hidden="yes" TabSkip="no" Text="{\MDmeow_Font_Bigger}MDmeow をインストールしています…"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="TextZh" Type="Text" X="24" Y="42" Width="322" Height="28" Hidden="yes" TabSkip="no" Text="{\MDmeow_Font_Bigger}正在安装 MDmeow…"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="ProgressBar" Type="ProgressBar" X="24" Y="112" Width="322" Height="12" ProgressBlocks="yes" Text="Progress"><Subscribe Event="SetProgress" Attribute="Progress" /></Control>
+      </Dialog>
+
+      <Dialog Id="MDmeowExitDlg" Width="370" Height="270" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control Id="TextEn" Type="Text" X="24" Y="36" Width="322" Height="70" Hidden="yes" Text="{\MDmeow_Font_Bigger}Setup completed successfully.&#10;&#10;MDmeow is ready to use."><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="TextDe" Type="Text" X="24" Y="36" Width="322" Height="70" Hidden="yes" Text="{\MDmeow_Font_Bigger}Setup wurde erfolgreich abgeschlossen.&#10;&#10;MDmeow ist einsatzbereit."><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="TextJa" Type="Text" X="24" Y="36" Width="322" Height="70" Hidden="yes" Text="{\MDmeow_Font_Bigger}インストールが完了しました。&#10;&#10;MDmeow を使用できます。"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="TextZh" Type="Text" X="24" Y="36" Width="322" Height="70" Hidden="yes" Text="{\MDmeow_Font_Bigger}安装已成功完成。&#10;&#10;MDmeow 已可以使用。"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="LaunchEn" Type="CheckBox" X="24" Y="166" Width="300" Height="18" Property="MDMEOW_LAUNCH_EN" CheckBoxValue="1" Hidden="yes" Text="Launch MDmeow"><Condition Action="show">MDMEOW_LANG = "en" AND NOT Installed</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en" OR Installed</Condition></Control>
+        <Control Id="FinishEn" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="Finish"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Event="DoAction" Value="LaunchApplication" Order="1">MDMEOW_LAUNCH_EN = 1 AND NOT Installed</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="LaunchDe" Type="CheckBox" X="24" Y="166" Width="300" Height="18" Property="MDMEOW_LAUNCH_DE" CheckBoxValue="1" Hidden="yes" Text="MDmeow starten"><Condition Action="show">MDMEOW_LANG = "de" AND NOT Installed</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de" OR Installed</Condition></Control>
+        <Control Id="FinishDe" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="Fertig"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Event="DoAction" Value="LaunchApplication" Order="1">MDMEOW_LAUNCH_DE = 1 AND NOT Installed</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="LaunchJa" Type="CheckBox" X="24" Y="166" Width="300" Height="18" Property="MDMEOW_LAUNCH_JA" CheckBoxValue="1" Hidden="yes" Text="MDmeow を起動"><Condition Action="show">MDMEOW_LANG = "ja" AND NOT Installed</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja" OR Installed</Condition></Control>
+        <Control Id="FinishJa" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="完了"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Event="DoAction" Value="LaunchApplication" Order="1">MDMEOW_LAUNCH_JA = 1 AND NOT Installed</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="LaunchZh" Type="CheckBox" X="24" Y="166" Width="300" Height="18" Property="MDMEOW_LAUNCH_ZH" CheckBoxValue="1" Hidden="yes" Text="启动 MDmeow"><Condition Action="show">MDMEOW_LANG = "zh-CN" AND NOT Installed</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN" OR Installed</Condition></Control>
+        <Control Id="FinishZh" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Hidden="yes" Text="完成"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Event="DoAction" Value="LaunchApplication" Order="1">MDMEOW_LAUNCH_ZH = 1 AND NOT Installed</Publish><Publish Event="EndDialog" Value="Return" Order="2">1</Publish></Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+      </Dialog>
+
+      <Dialog Id="MDmeowFatalError" Width="370" Height="270" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control Id="TextEn" Type="Text" X="24" Y="42" Width="322" Height="80" Hidden="yes" TabSkip="no" Text="Installation failed."><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition></Control>
+        <Control Id="TextDe" Type="Text" X="24" Y="42" Width="322" Height="80" Hidden="yes" TabSkip="no" Text="Installation fehlgeschlagen."><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition></Control>
+        <Control Id="TextJa" Type="Text" X="24" Y="42" Width="322" Height="80" Hidden="yes" TabSkip="no" Text="インストールに失敗しました。"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition></Control>
+        <Control Id="TextZh" Type="Text" X="24" Y="42" Width="322" Height="80" Hidden="yes" TabSkip="no" Text="安装失败。"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition></Control>
+        <Control Id="CloseEn" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Hidden="yes" Text="Close"><Condition Action="show">MDMEOW_LANG = "en"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "en"</Condition><Publish Event="EndDialog" Value="Return">1</Publish></Control>
+        <Control Id="CloseDe" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Hidden="yes" Text="Schließen"><Condition Action="show">MDMEOW_LANG = "de"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "de"</Condition><Publish Event="EndDialog" Value="Return">1</Publish></Control>
+        <Control Id="CloseJa" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Hidden="yes" Text="閉じる"><Condition Action="show">MDMEOW_LANG = "ja"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "ja"</Condition><Publish Event="EndDialog" Value="Return">1</Publish></Control>
+        <Control Id="CloseZh" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Hidden="yes" Text="关闭"><Condition Action="show">MDMEOW_LANG = "zh-CN"</Condition><Condition Action="hide">MDMEOW_LANG &lt;&gt; "zh-CN"</Condition><Publish Event="EndDialog" Value="Return">1</Publish></Control>
+      </Dialog>
+<InstallUISequence>
+        <Show Dialog="MDmeowLanguageEnDlg" After="CostFinalize">NOT (Installed AND REMOVE ~= "ALL")</Show>
+        <Show Dialog="MDmeowProgressDlg" Before="ExecuteAction">1</Show>
+        <Show Dialog="MDmeowFatalError" OnExit="error">1</Show>
+        <Show Dialog="ErrorDlg" OnExit="cancel">0</Show>
+        <Show Dialog="MDmeowExitDlg" OnExit="success">1</Show>
+      </InstallUISequence>
+      <AdminUISequence>
+        <Show Dialog="MDmeowFatalError" OnExit="error">1</Show>
+        <Show Dialog="ErrorDlg" OnExit="cancel">0</Show>
+        <Show Dialog="MDmeowExitDlg" OnExit="success">1</Show>
+      </AdminUISequence>
+    </UI>
+  </Fragment>
+</Wix>

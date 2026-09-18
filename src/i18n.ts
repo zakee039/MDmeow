@@ -5,8 +5,8 @@
 //
 // No app imports — this is a leaf module.
 
-export type LangPref = "system" | "en" | "de" | "zh-CN";
-export type Lang = "en" | "de" | "zh-CN";
+export type LangPref = "system" | "en" | "de" | "ja" | "zh-CN";
+export type Lang = "en" | "de" | "ja" | "zh-CN";
 
 const EN = {
   "toolbar.about.title": "About MDmeow",
@@ -14,6 +14,8 @@ const EN = {
   "toolbar.open.aria": "New or open file",
   "toolbar.save.title": "Save (Ctrl/Cmd+S)",
   "toolbar.save.aria": "Save",
+  "toolbar.saveAs.title": "Save as (Ctrl/Cmd+Shift+S)",
+  "toolbar.saveAs.aria": "Save as",
   "toolbar.export.title": "Export HTML / PDF",
   "toolbar.export.aria": "Export",
   "toolbar.source.title": "Edit Markdown source",
@@ -75,6 +77,7 @@ const EN = {
   "dialog.readonlyHint": "Program folder is read-only — settings saved to {path}",
   "dialog.openWithPrompt": "Register MDmeow in Windows ‘Open with’ for Markdown files? This will not change your default app.",
   "dialog.openWithError": "Could not update Windows Open with registration: {err}",
+  "dialog.renameError": "Could not rename file: {err}",
 
   "editor.placeholder": "Write here — “/” for blocks, the ⠿ button to change the current one",
 
@@ -92,6 +95,7 @@ const EN = {
   "settings.language.system": "System",
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
+  "settings.language.ja": "日本語",
   "settings.language.zh-CN": "简体中文",
   "settings.spellcheck": "Spell-check squiggles in the editor",
   "settings.quitOnEscape": "Press Esc to quit the app",
@@ -110,6 +114,7 @@ const EN = {
   "settings.openWith": "Register in system Open with",
   "settings.openWith.register": "Register",
   "settings.openWith.remove": "Remove",
+  "settings.openWith.installed": "Managed by installed MDmeow",
   "settings.shortcut.newTab": "New tab",
   "settings.shortcut.open": "Open",
   "settings.shortcut.save": "Save",
@@ -134,6 +139,8 @@ const DE: Partial<Record<I18nKey, string>> = {
   "toolbar.open.aria": "Neue Datei / Datei öffnen",
   "toolbar.save.title": "Speichern (Strg/Cmd+S)",
   "toolbar.save.aria": "Speichern",
+  "toolbar.saveAs.title": "Speichern unter (Strg/Cmd+Umschalt+S)",
+  "toolbar.saveAs.aria": "Speichern unter",
   "toolbar.export.title": "Als HTML / PDF exportieren",
   "toolbar.export.aria": "Exportieren",
   "toolbar.source.title": "Markdown-Quelltext bearbeiten",
@@ -193,6 +200,7 @@ const DE: Partial<Record<I18nKey, string>> = {
   "dialog.htmlExported": "HTML exportiert.",
   "dialog.startupFailed": "Start fehlgeschlagen: {err}",
   "dialog.readonlyHint": "Programmordner ist schreibgeschützt — Einstellungen gespeichert unter {path}",
+  "dialog.renameError": "Datei konnte nicht umbenannt werden: {err}",
 
   "editor.placeholder": "Hier schreiben — „/“ für Blöcke, den ⠿-Knopf für den aktuellen Block",
 
@@ -208,6 +216,8 @@ const DE: Partial<Record<I18nKey, string>> = {
   "settings.language.system": "System",
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
+  "settings.language.ja": "日本語",
+  "settings.language.zh-CN": "简体中文",
   "settings.spellcheck": "Rechtschreib-Wellenlinien im Editor",
   "settings.quitOnEscape": "Mit Esc die App beenden",
   "settings.alwaysShowTabbar": "Tab-Leiste immer zeigen (auch bei einer Datei)",
@@ -222,6 +232,10 @@ const DE: Partial<Record<I18nKey, string>> = {
   "settings.sourceFontSize": "Quelltext-Schriftgröße (px)",
   "settings.accent": "Akzentfarbe",
   "settings.accent.clear": "Zurücksetzen",
+  "settings.openWith": "In Windows „Öffnen mit“ registrieren",
+  "settings.openWith.register": "Registrieren",
+  "settings.openWith.remove": "Entfernen",
+  "settings.openWith.installed": "Von der installierten MDmeow-Version verwaltet",
 };
 
 const ZH_CN: Partial<Record<I18nKey, string>> = {
@@ -230,6 +244,8 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "toolbar.open.aria": "新建或打开文件",
   "toolbar.save.title": "保存（Ctrl/Cmd+S）",
   "toolbar.save.aria": "保存",
+  "toolbar.saveAs.title": "另存为（Ctrl/Cmd+Shift+S）",
+  "toolbar.saveAs.aria": "另存为",
   "toolbar.export.title": "导出 HTML / PDF",
   "toolbar.export.aria": "导出",
   "toolbar.source.title": "编辑 Markdown 源码",
@@ -291,6 +307,7 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "dialog.readonlyHint": "程序目录为只读，设置已保存到 {path}",
   "dialog.openWithPrompt": "是否将 MDmeow 注册到 Windows 的 Markdown 打开方式？这不会更改你的默认应用。",
   "dialog.openWithError": "更新 Windows 打开方式注册失败：{err}",
+  "dialog.renameError": "重命名文件失败：{err}",
 
   "editor.placeholder": "在此输入 — 输入“/”插入内容块，点击 ⠿ 更改当前块类型",
 
@@ -308,6 +325,7 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "settings.language.system": "跟随系统",
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
+  "settings.language.ja": "日本語",
   "settings.language.zh-CN": "简体中文",
   "settings.spellcheck": "在编辑器中显示拼写检查波浪线",
   "settings.quitOnEscape": "按 Esc 退出应用",
@@ -326,6 +344,7 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "settings.openWith": "注册到系统打开方式",
   "settings.openWith.register": "注册",
   "settings.openWith.remove": "移除",
+  "settings.openWith.installed": "由已安装的 MDmeow 管理",
   "settings.shortcut.newTab": "新建标签页",
   "settings.shortcut.open": "打开",
   "settings.shortcut.save": "保存",
@@ -342,9 +361,132 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "settings.shortcut.cancelHint": "按 Esc 取消",
 };
 
+const JA: Partial<Record<I18nKey, string>> = {
+  "toolbar.about.title": "MDmeow について",
+  "toolbar.open.title": "新規 / 開く（Ctrl/Cmd+N, Ctrl/Cmd+O）",
+  "toolbar.open.aria": "新規作成またはファイルを開く",
+  "toolbar.save.title": "保存（Ctrl/Cmd+S）",
+  "toolbar.save.aria": "保存",
+  "toolbar.saveAs.title": "名前を付けて保存（Ctrl/Cmd+Shift+S）",
+  "toolbar.saveAs.aria": "名前を付けて保存",
+  "toolbar.export.title": "HTML / PDF をエクスポート",
+  "toolbar.export.aria": "エクスポート",
+  "toolbar.source.title": "Markdown ソースを編集",
+  "toolbar.sourceBack.title": "整形表示に戻る",
+  "toolbar.source.aria": "ソース表示を切り替える",
+  "toolbar.settings.title": "設定（Ctrl/Cmd+,）",
+  "toolbar.settings.aria": "設定",
+
+  "menu.new": "新規",
+  "menu.open": "開く…",
+  "menu.exportHtml": "HTML をエクスポート",
+  "menu.exportPdf": "PDF をエクスポート",
+
+  "about.tagline": "ポータブル WYSIWYG Markdown エディター",
+  "about.credit": "zakee039 · MIT License",
+  "about.forkedFrom": "Fork 元",
+  "about.close": "閉じる",
+
+  "doc.untitled": "無題",
+  "tab.close": "タブを閉じる",
+  "tab.new": "新しいタブ",
+
+  "block.text": "本文",
+  "block.h1": "見出し 1",
+  "block.h2": "見出し 2",
+  "block.h3": "見出し 3",
+  "block.bulletList": "箇条書き",
+  "block.numberedList": "番号付きリスト",
+  "block.quote": "引用",
+  "block.codeBlock": "コードブロック",
+  "block.table": "表",
+  "block.image": "画像",
+  "block.divider": "区切り線",
+  "block.insertAbove": "上に行を挿入",
+  "block.insertBelow": "下に行を挿入",
+  "block.duplicate": "複製",
+  "block.delete": "削除",
+
+  "find.find": "検索",
+  "find.replace": "置換",
+  "find.replaceWith": "置換後の文字列",
+  "find.prev": "前の一致",
+  "find.next": "次の一致",
+  "find.prev.title": "前の一致（Shift+Enter）",
+  "find.next.title": "次の一致（Enter）",
+  "find.matchCase": "大文字と小文字を区別",
+  "find.close": "閉じる（Esc）",
+  "find.replaceBtn": "置換",
+  "find.all": "すべて",
+
+  "emoji.search": "Emoji を検索…",
+  "emoji.noMatches": "一致する項目はありません",
+
+  "dialog.discardChanges": "{name} の未保存の変更を破棄しますか？",
+  "dialog.unsavedQuit": "未保存の変更があります。保存せずに終了しますか？",
+  "dialog.htmlExported": "HTML をエクスポートしました。",
+  "dialog.startupFailed": "起動に失敗しました: {err}",
+  "dialog.readonlyHint": "プログラムフォルダーは読み取り専用です。設定は {path} に保存されます",
+  "dialog.openWithPrompt": "Markdown ファイルの Windows「プログラムから開く」に MDmeow を登録しますか？既定のアプリは変更されません。",
+  "dialog.openWithError": "Windows の「プログラムから開く」登録を更新できませんでした: {err}",
+  "dialog.renameError": "ファイル名を変更できませんでした: {err}",
+
+  "editor.placeholder": "ここに入力 — 「/」でブロックを挿入、⠿ ボタンで現在のブロック種類を変更",
+
+  "settings.title": "設定",
+  "settings.savedNote": "変更はすぐに保存されます。",
+  "settings.fileAt": "settings.toml: {path}",
+  "settings.section.appearance": "言語と外観",
+  "settings.section.editor": "エディター",
+  "settings.section.behavior": "動作",
+  "settings.section.shortcuts": "ショートカット",
+  "settings.section.fonts": "フォント",
+  "settings.section.system": "システム",
+
+  "settings.language": "言語",
+  "settings.language.system": "システムに従う",
+  "settings.language.en": "English",
+  "settings.language.de": "Deutsch",
+  "settings.language.ja": "日本語",
+  "settings.language.zh-CN": "简体中文",
+  "settings.spellcheck": "エディターでスペルチェックの波線を表示",
+  "settings.quitOnEscape": "Esc キーでアプリを終了",
+  "settings.alwaysShowTabbar": "タブが 1 つでも常にタブバーを表示",
+  "settings.openLastSession": "起動時に前回のタブを復元",
+  "settings.showPath": "ヘッダーにファイルのフルパスを表示",
+  "settings.listMarker": "箇条書き記号（保存時）",
+  "settings.editorFont": "エディターフォント",
+  "settings.editorFont.placeholder": "システム既定",
+  "settings.editorFontSize": "エディター文字サイズ（px）",
+  "settings.sourceFont": "ソース表示フォント",
+  "settings.sourceFont.placeholder": "システム等幅フォント",
+  "settings.sourceFontSize": "ソース表示文字サイズ（px）",
+  "settings.accent": "アクセントカラー",
+  "settings.accent.clear": "リセット",
+  "settings.openWith": "システムの「プログラムから開く」に登録",
+  "settings.openWith.register": "登録",
+  "settings.openWith.remove": "削除",
+  "settings.openWith.installed": "インストール版 MDmeow が管理中",
+  "settings.shortcut.newTab": "新しいタブ",
+  "settings.shortcut.open": "開く",
+  "settings.shortcut.save": "保存",
+  "settings.shortcut.saveAs": "名前を付けて保存",
+  "settings.shortcut.closeTab": "タブを閉じる",
+  "settings.shortcut.export": "HTML / PDF をエクスポート",
+  "settings.shortcut.toggleSource": "ソース表示を切り替え",
+  "settings.shortcut.find": "検索",
+  "settings.shortcut.replace": "置換",
+  "settings.shortcut.emoji": "Emoji ピッカー",
+  "settings.shortcut.settings": "設定",
+  "settings.shortcut.capture": "ショートカットを入力…",
+  "settings.shortcut.conflict": "このショートカットはすでに使用されています。",
+  "settings.shortcut.cancelHint": "Esc でキャンセル",
+};
+
 const DICT: Record<Lang, Partial<Record<I18nKey, string>>> = {
   en: EN,
   de: DE,
+  ja: JA,
   "zh-CN": ZH_CN,
 };
 
@@ -355,10 +497,15 @@ export function resolveLang(pref: LangPref): Lang {
   if (pref === "system") {
     const locale = navigator.language.toLowerCase();
     if (locale.startsWith("zh")) return "zh-CN";
+    if (locale.startsWith("ja")) return "ja";
     if (locale.startsWith("de")) return "de";
     return "en";
   }
-  return pref;
+  if (pref === "en" || pref === "de" || pref === "ja" || pref === "zh-CN") {
+    return pref;
+  }
+  // Runtime guard for legacy/hand-edited settings values (e.g. removed locales).
+  return "en";
 }
 
 export function getLang(): Lang {

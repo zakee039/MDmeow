@@ -1,7 +1,8 @@
-//! `settings.toml` — the single settings file, next to the executable (or in the
-//! OS config dir when the program folder is read-only). Holds both app-managed
-//! state (window, open tabs) and hand-editable preferences (language, fonts,
-//! accent). External edits are picked up live by `watch()`.
+//! `settings.toml` — the single settings file.
+//!
+//! Portable mode stores it next to the versioned EXE. MSI mode stores it under
+//! the OS roaming config directory. External edits are picked up live by
+//! `watch()`.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -78,7 +79,7 @@ impl Default for ShortcutSettings {
 #[serde(default)]
 pub struct Settings {
     // --- hand-editable preferences ---
-    /// UI language: "system" (OS locale) | "en" | "de" | "zh-CN"
+    /// UI language: "system" (OS locale) | "en" | "de" | "ja" | "zh-CN"
     pub language: String,
     pub spellcheck: bool,
     /// When true, pressing Esc quits the app.
@@ -145,15 +146,15 @@ pub struct Store {
 }
 
 impl Store {
-    /// Decide the settings location once at startup.
+    /// Decide the settings location once at startup from the explicit runtime mode.
     pub fn locate() -> Self {
-        if let Some(dir) = portable::portable_dir() {
-            if portable::is_writable(&dir) {
-                return Self {
-                    path: dir.join("settings.toml"),
-                    portable: true,
-                };
-            }
+        if portable::current_mode() == portable::InstallMode::Portable {
+            let dir = portable::portable_dir().unwrap_or_else(std::env::temp_dir);
+            let _ = std::fs::create_dir_all(dir.join("data"));
+            return Self {
+                path: dir.join("settings.toml"),
+                portable: true,
+            };
         }
 
         let base = portable::config_base().unwrap_or_else(std::env::temp_dir);

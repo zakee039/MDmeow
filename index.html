@@ -10,13 +10,17 @@
   <body>
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
-        <span id="doc-title" data-tauri-drag-region>Untitled</span>
+        <span id="doc-title">Untitled</span>
+        <input id="doc-title-input" type="text" hidden autocomplete="off" spellcheck="false" />
         <div id="actions">
           <button id="btn-open" data-i18n-title="toolbar.open.title" data-i18n-aria="toolbar.open.aria" title="New / Open (Ctrl/Cmd+N, Ctrl/Cmd+O)" aria-label="New or open file" aria-haspopup="menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </button>
           <button id="btn-save" data-i18n-title="toolbar.save.title" data-i18n-aria="toolbar.save.aria" title="Save (Ctrl/Cmd+S)" aria-label="Save">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+          </button>
+          <button id="btn-save-as" data-i18n-title="toolbar.saveAs.title" data-i18n-aria="toolbar.saveAs.aria" title="Save as (Ctrl/Cmd+Shift+S)" aria-label="Save as">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5.5"/><path d="M7 3v5h8"/><path d="M7 21v-8h8v2"/><path d="m15.5 20.5 4.75-4.75 1.5 1.5L17 22h-1.5z"/></svg>
           </button>
           <button id="btn-export" data-i18n-title="toolbar.export.title" data-i18n-aria="toolbar.export.aria" title="Export HTML / PDF" aria-label="Export" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="M13 12h8"/><path d="m18 7 5 5-5 5"/></svg>

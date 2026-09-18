@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WixLocalization Culture="en-us"
+                 Codepage="65001"
+                 xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <!--
+    The MSI UI itself selects English / Deutsch / 日本語 / 简体中文 at runtime.
+    This locale file exists only for the remaining Tauri template strings and,
+    critically, keeps the MSI database in UTF-8 so all four languages coexist
+    inside one package.
+  -->
+  <String Id="TauriLanguage">1033</String>
+  <String Id="TauriCodepage">65001</String>
+  <String Id="LaunchApp">Launch MDmeow</String>
+  <String Id="DowngradeErrorMessage">A newer version of MDmeow is already installed.</String>
+  <String Id="PathEnvVarFeature">Add the MDmeow install location to the PATH system environment variable.</String>
+  <String Id="InstallAppFeature">Installs MDmeow.</String>
+</WixLocalization>

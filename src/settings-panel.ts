@@ -63,6 +63,7 @@ const SECTIONS: Section[] = [
           { value: "system", label: "settings.language.system" },
           { value: "en", label: "settings.language.en" },
           { value: "de", label: "settings.language.de" },
+          { value: "ja", label: "settings.language.ja" },
           { value: "zh-CN", label: "settings.language.zh-CN" },
         ],
       },
@@ -169,6 +170,8 @@ export class SettingsPanel {
   #capturingShortcut: ShortcutAction | null = null;
   #openWithAvailable = false;
   #openWithRegistered = false;
+  #openWithManagedByMsi = false;
+  #openWithCanModify = false;
   #openWithBusy = false;
 
   /** Reports every user change. main.ts applies + persists. */
@@ -207,9 +210,16 @@ export class SettingsPanel {
     return this.#capturingShortcut !== null;
   }
 
-  setOpenWithStatus(available: boolean, registered: boolean): void {
+  setOpenWithStatus(
+    available: boolean,
+    registered: boolean,
+    managedByMsi: boolean,
+    canModify: boolean,
+  ): void {
     this.#openWithAvailable = available;
     this.#openWithRegistered = registered;
+    this.#openWithManagedByMsi = managedByMsi;
+    this.#openWithCanModify = canModify;
     this.#refreshOpenWithControl();
   }
 
@@ -223,10 +233,14 @@ export class SettingsPanel {
     const btn = row?.querySelector<HTMLButtonElement>(".settings-action");
     if (!row || !btn) return;
     row.hidden = !this.#openWithAvailable;
-    btn.disabled = this.#openWithBusy;
-    btn.textContent = t(
-      this.#openWithRegistered ? "settings.openWith.remove" : "settings.openWith.register",
-    );
+    btn.disabled = this.#openWithBusy || !this.#openWithCanModify;
+    if (this.#openWithManagedByMsi && !this.#openWithCanModify) {
+      btn.textContent = t("settings.openWith.installed");
+    } else {
+      btn.textContent = t(
+        this.#openWithRegistered ? "settings.openWith.remove" : "settings.openWith.register",
+      );
+    }
   }
 
   open(): void {

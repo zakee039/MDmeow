@@ -40,16 +40,34 @@ fn is_markdown_file(arg: &str) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "windows")]
+    if let Some(result) = windows_integration::installer_cli_action() {
+        if let Err(err) = result {
+            eprintln!("MDmeow installer integration failed: {err:#}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Err(err) = windows_integration::maintain_portable_registration() {
+        eprintln!("MDmeow portable registration maintenance failed: {err:#}");
+    }
+
     let store = Store::locate();
 
-    // Portable install on Windows: keep the WebView2 cache inside the program
-    // folder instead of %LOCALAPPDATA%. Must be set before the webview starts.
+    // Keep WebView2 data in the mode-specific MDmeow data directory. Must be
+    // set before the webview starts.
     #[cfg(target_os = "windows")]
-    if store.portable {
-        if let Some(dir) = portable::portable_dir() {
-            let data = dir.join("data").join("webview2");
+    {
+        let data = if store.portable {
+            portable::portable_dir().map(|dir| dir.join("data").join("webview2"))
+        } else {
+            portable::local_data_base().map(|dir| dir.join("MDmeow").join("webview2"))
+        };
+        if let Some(data) = data {
             if std::fs::create_dir_all(&data).is_ok() {
-                std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data);
+                std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", data);
             }
         }
     }
@@ -90,6 +108,7 @@ pub fn run() {
             commands::unregister_open_with,
             commands::read_document,
             commands::write_document,
+            commands::rename_document,
             commands::render_html,
             commands::read_image_data_url,
         ])

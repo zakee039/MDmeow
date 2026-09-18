@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="MDmeowInstallMarker" Guid="*" Win64="yes">
+        <RegistryKey Root="HKLM"
+                     Key="Software\MDmeow"
+                     ForceCreateOnInstall="yes"
+                     ForceDeleteOnUninstall="yes">
+          <RegistryValue Name="InstallLocation" Type="string" Value="[INSTALLDIR]" />
+          <RegistryValue Name="ExecutablePath" Type="string" Value="[INSTALLDIR]MDmeow.exe" />
+          <RegistryValue Name="Version" Type="string" Value="[ProductVersion]" />
+          <RegistryValue Name="InstallType" Type="string" Value="MSI" KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="MDmeowFileAssociations" Guid="*" Win64="yes">
+        <RemoveRegistryKey Id="RemoveLegacyMowlProgId"
+                           Root="HKCU"
+                           Key="Software\Classes\Mowl.Markdown"
+                           Action="removeOnInstall" />
+        <RemoveRegistryKey Id="RemoveLegacyMdProgId"
+                           Root="HKCU"
+                           Key="Software\Classes\MDmeow.md"
+                           Action="removeOnInstall" />
+        <RemoveRegistryKey Id="RemoveLegacyMarkdownProgId"
+                           Root="HKCU"
+                           Key="Software\Classes\MDmeow.markdown"
+                           Action="removeOnInstall" />
+        <RemoveRegistryKey Id="RemoveLegacyMowlApplication"
+                           Root="HKCU"
+                           Key="Software\Classes\Applications\mowl.exe"
+                           Action="removeOnInstall" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\MDmeow.Markdown"
+                       Type="string"
+                       Value="MDmeow Markdown Document"
+                       KeyPath="yes" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\MDmeow.Markdown\DefaultIcon"
+                       Type="string"
+                       Value="&quot;[INSTALLDIR]MDmeow.exe&quot;,0" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\MDmeow.Markdown\shell\open\command"
+                       Type="string"
+                       Value="&quot;[INSTALLDIR]MDmeow.exe&quot; &quot;%1&quot;" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\Applications\MDmeow.exe"
+                       Name="FriendlyAppName"
+                       Type="string"
+                       Value="MDmeow" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\Applications\MDmeow.exe\shell\open\command"
+                       Type="string"
+                       Value="&quot;[INSTALLDIR]MDmeow.exe&quot; &quot;%1&quot;" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\Applications\MDmeow.exe\SupportedTypes"
+                       Name=".md"
+                       Type="string"
+                       Value="" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\Applications\MDmeow.exe\SupportedTypes"
+                       Name=".markdown"
+                       Type="string"
+                       Value="" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\Applications\MDmeow.exe\SupportedTypes"
+                       Name=".mdx"
+                       Type="string"
+                       Value="" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\.md\OpenWithProgids"
+                       Name="MDmeow.Markdown"
+                       Type="string"
+                       Value="" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\.markdown\OpenWithProgids"
+                       Name="MDmeow.Markdown"
+                       Type="string"
+                       Value="" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\.mdx\OpenWithProgids"
+                       Name="MDmeow.Markdown"
+                       Type="string"
+                       Value="" />
+
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\.md\OpenWithList"
+                       Name="MDmeow.exe"
+                       Type="string"
+                       Value="" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\.markdown\OpenWithList"
+                       Name="MDmeow.exe"
+                       Type="string"
+                       Value="" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Classes\.mdx\OpenWithList"
+                       Name="MDmeow.exe"
+                       Type="string"
+                       Value="" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+
+  <Fragment>
+    <CustomAction Id="MDmeowRegisterAssociationsAction"
+                  FileKey="Path"
+                  ExeCommand="--mdmeow-msi-register"
+                  Execute="immediate"
+                  Impersonate="yes"
+                  Return="check" />
+    <CustomAction Id="MDmeowUnregisterAssociationsAction"
+                  FileKey="Path"
+                  ExeCommand="--mdmeow-msi-unregister"
+                  Execute="immediate"
+                  Impersonate="yes"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="MDmeowRegisterAssociationsAction"
+              After="InstallFiles">NOT REMOVE~="ALL"</Custom>
+      <Custom Action="MDmeowUnregisterAssociationsAction"
+              Before="RemoveFiles">REMOVE~="ALL"</Custom>
+    </InstallExecuteSequence>
+  </Fragment>
+</Wix>

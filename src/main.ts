@@ -35,7 +35,7 @@ interface WindowState {
 }
 
 interface Settings {
-  /** UI language: "system" (OS locale) | "en" | "de" | "zh-CN". */
+  /** UI language: "system" (OS locale) | "en" | "de" | "ja" | "zh-CN". */
   language: LangPref;
   spellcheck: boolean;
   quit_on_escape: boolean;
@@ -70,6 +70,8 @@ interface SettingsPayload {
 interface OpenWithStatus {
   available: boolean;
   registered: boolean;
+  managed_by_msi: boolean;
+  can_modify: boolean;
 }
 
 const win = getCurrentWindow();
@@ -78,6 +80,7 @@ const sourceShell = document.getElementById("source-shell") as HTMLElement;
 const sourceEl = document.getElementById("source") as HTMLTextAreaElement;
 const sourceGutter = document.getElementById("source-gutter") as HTMLElement;
 const titleEl = document.getElementById("doc-title") as HTMLElement;
+const titleInput = document.getElementById("doc-title-input") as HTMLInputElement;
 const editor = new Editor(editorHost);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
@@ -85,7 +88,12 @@ const emojiPicker = new EmojiPicker();
 const settingsPanel = new SettingsPanel(() => settings);
 
 let settings: Settings;
-let openWithStatus: OpenWithStatus = { available: false, registered: false };
+let openWithStatus: OpenWithStatus = {
+  available: false,
+  registered: false,
+  managed_by_msi: false,
+  can_modify: false,
+};
 let switching = false;
 let sourceMode = false;
 let persistTimer: number | undefined;
@@ -195,6 +203,59 @@ function updateTitle(): void {
   void win.setTitle(`${mark}${name} — MDmeow`);
 }
 
+function cancelTitleRename(): void {
+  titleInput.hidden = true;
+  titleEl.hidden = false;
+  updateTitle();
+}
+
+async function commitTitleRename(): Promise<void> {
+  const tab = tabBar.active;
+  if (!tab?.path) {
+    cancelTitleRename();
+    return;
+  }
+  const currentName = baseName(tab.path);
+  const newName = titleInput.value.trim();
+  if (!newName || newName === currentName) {
+    cancelTitleRename();
+    return;
+  }
+  try {
+    const nextPath = await invoke<string>("rename_document", {
+      path: tab.path,
+      newName,
+    });
+    tab.path = nextPath;
+    editor.setDocPath(nextPath);
+    tabBar.render();
+    persistSoon();
+  } catch (err) {
+    await message(t("dialog.renameError", { err: String(err) }), {
+      title: "MDmeow",
+      kind: "error",
+    });
+  } finally {
+    cancelTitleRename();
+  }
+}
+
+function beginTitleRename(): void {
+  const tab = tabBar.active;
+  if (!tab) return;
+  if (!tab.path) {
+    void saveAs();
+    return;
+  }
+  const name = baseName(tab.path);
+  titleInput.value = name;
+  titleEl.hidden = true;
+  titleInput.hidden = false;
+  titleInput.focus();
+  const dot = name.lastIndexOf(".");
+  titleInput.setSelectionRange(0, dot > 0 ? dot : name.length);
+}
+
 function persistSoon(): void {
   const withPath = tabBar.tabs.filter((t) => t.path);
   settings.open_files = withPath.map((t) => t.path as string);
@@ -210,7 +271,12 @@ function persistSoon(): void {
 
 async function refreshOpenWithStatus(): Promise<OpenWithStatus> {
   openWithStatus = await invoke<OpenWithStatus>("get_open_with_status");
-  settingsPanel.setOpenWithStatus(openWithStatus.available, openWithStatus.registered);
+  settingsPanel.setOpenWithStatus(
+    openWithStatus.available,
+    openWithStatus.registered,
+    openWithStatus.managed_by_msi,
+    openWithStatus.can_modify,
+  );
   return openWithStatus;
 }
 
@@ -219,7 +285,12 @@ async function setOpenWithRegistration(register: boolean): Promise<void> {
     openWithStatus = await invoke<OpenWithStatus>(
       register ? "register_open_with" : "unregister_open_with",
     );
-    settingsPanel.setOpenWithStatus(openWithStatus.available, openWithStatus.registered);
+    settingsPanel.setOpenWithStatus(
+      openWithStatus.available,
+      openWithStatus.registered,
+      openWithStatus.managed_by_msi,
+      openWithStatus.can_modify,
+    );
     settings.open_with_prompt_dismissed = register ? false : true;
     persistSoon();
   } catch (err) {
@@ -232,7 +303,14 @@ async function setOpenWithRegistration(register: boolean): Promise<void> {
 
 async function initializeOpenWithIntegration(): Promise<void> {
   const status = await refreshOpenWithStatus();
-  if (!status.available || status.registered || settings.open_with_prompt_dismissed) return;
+  if (
+    !status.available ||
+    status.registered ||
+    !status.can_modify ||
+    settings.open_with_prompt_dismissed
+  ) {
+    return;
+  }
 
   const register = await ask(t("dialog.openWithPrompt"), {
     title: "MDmeow",
@@ -366,6 +444,7 @@ settingsPanel.onShortcutChange = (action, value) => {
   persistSoon();
 };
 settingsPanel.onOpenWithToggle = async () => {
+  if (!openWithStatus.can_modify) return;
   await setOpenWithRegistration(!openWithStatus.registered);
 };
 settingsPanel.onClose = () => (sourceMode ? sourceEl : editor).focus();
@@ -592,6 +671,10 @@ function updateShortcutTitles(): void {
   const saveBtn = document.getElementById("btn-save");
   if (saveBtn) {
     saveBtn.title = `${t("toolbar.save.aria")} (${formatShortcut(settings.shortcuts.save)})`;
+  }
+  const saveAsBtn = document.getElementById("btn-save-as");
+  if (saveAsBtn) {
+    saveAsBtn.title = `${t("toolbar.saveAs.aria")} (${formatShortcut(settings.shortcuts.save_as)})`;
   }
   const exportBtn = document.getElementById("btn-export");
   if (exportBtn) {
@@ -962,6 +1045,23 @@ function wireShortcuts(): void {
 function wireButtons(): void {
   // #btn-open opens a small New / Open menu — see wireOpenMenu().
   document.getElementById("btn-save")?.addEventListener("click", () => void saveDoc());
+  document.getElementById("btn-save-as")?.addEventListener("click", () => void saveAs());
+  titleEl.addEventListener("pointerdown", (e) => e.stopPropagation());
+  titleEl.addEventListener("click", beginTitleRename);
+  titleInput.addEventListener("pointerdown", (e) => e.stopPropagation());
+  titleInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void commitTitleRename();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelTitleRename();
+      (sourceMode ? sourceEl : editor).focus();
+    }
+  });
+  titleInput.addEventListener("blur", () => {
+    if (!titleInput.hidden) void commitTitleRename();
+  });
   document.getElementById("btn-source")?.addEventListener("click", () => toggleSource());
   document.getElementById("btn-settings")?.addEventListener("click", () => {
     if (settingsPanel.isOpen) settingsPanel.close();

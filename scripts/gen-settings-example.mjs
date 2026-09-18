@@ -20,7 +20,7 @@ const CONTENT = `# MDmeow — example configuration
 # All of these can also be changed from the in-app settings screen (the settings
 # button in the toolbar, or Ctrl/Cmd+,).
 
-language = "system"         # "system" (follow the OS) | "en" | "de" | "zh-CN"
+language = "system"         # "system" (follow the OS) | "en" | "de" | "ja" | "zh-CN"
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor
 quit_on_escape = false      # when true, pressing Esc quits the app
 list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+"

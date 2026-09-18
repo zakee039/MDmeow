@@ -1,81 +1,52 @@
 name: release
 
-# Manual trigger only (Actions tab / `gh workflow run`). Auto-on-tag is
-# intentionally disabled — releases are cut by hand.
-#
-# Run it on a tag ref (`--ref v1.5.0`) to build that tag, or on any branch with
-# `-f tag=v1.5.0` to build the branch head into the v1.5.0 release (useful when a
-# workflow fix landed after the tag). The `tag` input wins when both are given.
+# Manual release only. The local and CI release paths deliberately share the
+# same scripts/build-release.ps1 entrypoint so the published artifact contract
+# cannot drift.
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish into (default: the ref this runs on, if it is a tag)"
-        required: false
-        default: ""
+        description: "Release tag to publish into (for example v1.7.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            rust-target: x86_64-pc-windows-msvc
-            args: "--target x86_64-pc-windows-msvc"
-          - os: windows-latest
-            rust-target: aarch64-pc-windows-msvc
-            args: "--target aarch64-pc-windows-msvc"
-          - os: macos-14
-            rust-target: aarch64-apple-darwin,x86_64-apple-darwin
-            args: "--target universal-apple-darwin"
-          - os: ubuntu-22.04
-            rust-target: x86_64-unknown-linux-gnu
-            args: ""
-          - os: ubuntu-24.04-arm
-            rust-target: aarch64-unknown-linux-gnu
-            args: ""
-
-    runs-on: ${{ matrix.os }}
-    # macOS bundling still needs work — let it fail without blocking the release
-    # or the checksums job.
-    continue-on-error: ${{ startsWith(matrix.os, 'macos') }}
+  build-windows-release:
+    runs-on: windows-latest
     env:
-      RELEASE_TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag }}
+
     steps:
-      - name: Guard — need a tag target
-        run: |
-          if [ -z "${RELEASE_TAG}" ] || { [ "${{ github.ref_type }}" != "tag" ] && [ -z "${{ inputs.tag }}" ]; }; then
-            echo "::error::Run this on a tag ref, or pass -f tag=vX.Y.Z"; exit 1
-          fi
-          echo "Building into release: ${RELEASE_TAG}"
-        shell: bash
-
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
 
-      - name: Linux dependencies
-        if: startsWith(matrix.os, 'ubuntu')
+      - name: Guard release version
+        shell: pwsh
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf \
-            libayatana-appindicator3-dev build-essential file xdg-utils
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tag must look like vX.Y.Z."
+          }
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $expected = "v$($package.version)"
+          if ($env:RELEASE_TAG -ne $expected) {
+            throw "Tag/version mismatch: tag=$env:RELEASE_TAG package=$expected"
+          }
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 12
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust-target }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -83,37 +54,30 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build & release
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ env.RELEASE_TAG }}
-          releaseName: "MDmeow ${{ env.RELEASE_TAG }}"
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+      - name: Build final Windows release
+        run: pnpm release:windows
 
-  checksums:
-    needs: build
-    runs-on: ubuntu-latest
-    # Run as long as the build job didn't hard-fail (macOS is continue-on-error).
-    if: ${{ always() && needs.build.result != 'failure' && (github.ref_type == 'tag' || inputs.tag != '') }}
-    env:
-      RELEASE_TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-    steps:
-      # `gh release download` works on draft releases (robinraju's tag API does
-      # not). Re-hash from scratch so a re-run stays clean.
-      - name: Download release assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify exact artifact set
+        shell: pwsh
         run: |
-          mkdir -p dist && cd dist
-          gh release download "${RELEASE_TAG}" --repo "${{ github.repository }}" --pattern '*' --clobber
-          rm -f SHA256SUMS.txt
-          sha256sum * | tee SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $version = $package.version
+          $expected = @(
+            "MDmeow-$version.exe",
+            "MDmeow_$($version)_x64.msi"
+          )
+          $actual = @(Get-ChildItem release -File | Sort-Object Name | Select-Object -ExpandProperty Name)
+          if ($actual.Count -ne 2 -or (Compare-Object $expected $actual)) {
+            throw "release/ must contain exactly: $($expected -join ', ')"
+          }
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
+          name: "MDmeow ${{ env.RELEASE_TAG }}"
           draft: true
-          files: dist/SHA256SUMS.txt
+          prerelease: false
+          files: |
+            release/MDmeow-*.exe
+            release/MDmeow_*_x64.msi

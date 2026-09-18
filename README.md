@@ -1,31 +1,74 @@
 ![MDmeow](docs/logo.png)
 
-**English** · [简体中文](README.zh-CN.md) · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
+**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 # MDmeow
 
-A small, fast WYSIWYG Markdown editor built with Tauri and Milkdown. MDmeow keeps the file on disk as ordinary Markdown while giving you a Typora-style inline editing experience.
+MDmeow 是一款轻量、快速的 WYSIWYG Markdown 编辑器，基于 **Tauri + Milkdown/Crepe** 构建。它尽量保持 Markdown 文件本身的纯净与可迁移性，同时提供接近 Typora 的即时排版体验。
 
-This edition uses **Miku Cream** as the built-in rendering system: cream document surfaces, `#39C5BB` accents, a light syntax-highlighting palette, KaTeX math, compact tables, and restrained UI chrome.
+当前版本采用 **Miku Cream** 渲染体系：亮色文档背景、`#39C5BB` 初音青强调色、浅色代码高亮、KaTeX 数学公式、紧凑表格与克制的桌面端界面。
 
-## Highlights
+## 主要特性
 
-- **Inline WYSIWYG Markdown** — headings, lists, quotes, task lists, tables, links, images, footnotes and more.
-- **Miku Cream rendering** — one consistent light rendering system for prose, code, math, tables and export.
-- **Light code blocks** — Consolas-first code typography, 18 px line rhythm, subtle alternating line surfaces, and clear teal / blue / pink / dark-red syntax colours.
-- **KaTeX math** — inline `$…$` and display `$$…$$` formulas.
-- **Source view** — raw Markdown with a separate gray line-number gutter; default shortcut `Ctrl/Cmd+/`.
-- **Markdown image compatibility** — standard `![alt](path)` images plus common raw HTML `<img ...>` blocks. Relative local paths are resolved against the Markdown file.
-- **Blog marker compatibility** — `<!--more-->` remains in Markdown but is hidden in the WYSIWYG view.
-- **Configurable shortcuts** — click a shortcut field in Settings and press the new key combination.
-- **English / Deutsch / 简体中文** — UI language can follow the OS or be selected explicitly.
-- **Tabs and session restore** — reopen the documents from your previous session.
-- **Portable settings** — `settings.toml` normally lives beside the executable and is reloaded live.
-- **HTML / PDF export** — self-contained HTML with offline KaTeX and syntax highlighting; PDF through the system print dialog.
+- **所见即所得 Markdown**：标题、列表、引用、任务列表、表格、链接、图片、脚注等常见语法可直接编辑。
+- **源码视图**：一键切换原始 Markdown，带独立行号栏；默认快捷键 `Ctrl/Cmd+/`。
+- **多标签页与会话恢复**：自动恢复上次打开的文档。
+- **保存 / 另存为**：工具栏分别提供保存与另存为；另存为默认快捷键 `Ctrl/Cmd+Shift+S`。
+- **标题栏直接重命名**：点击当前文件名即可原地修改文件名。
+- **HTML / PDF 导出**：HTML 为自包含页面；PDF 通过系统打印流程输出。
+- **图片兼容**：支持标准 Markdown 图片和常见原始 HTML `<img>` 写法，局部相对路径以当前 Markdown 文件为基准解析。
+- **KaTeX 数学公式**：支持行内 `$…$` 与块级 `$$…$$`。
+- **可配置快捷键**：设置页中可直接录入新的组合键。
+- **Windows“打开方式”集成**：统一使用 `MDmeow.Markdown`，安装版优先，便携版在没有有效安装版时兜底注册。
+- **四种界面语言**：简体中文、English、日本語、Deutsch；可跟随系统语言。
 
-## Markdown rendering
+## 下载与运行
 
-MDmeow intentionally keeps Markdown portable. Standard Markdown is preferred, but a small compatibility layer handles common raw HTML used by note apps and blogging workflows.
+Windows 发布版只保留两个产物：
+
+```text
+MDmeow-<版本>.exe
+MDmeow_<版本>_x64.msi
+```
+
+### 便携版
+
+`MDmeow-<版本>.exe` 是单文件便携版，直接运行即可。便携模式的配置与数据放在程序所在目录：
+
+```text
+MDmeow-<版本>.exe
+settings.toml
+data/
+```
+
+### 安装版
+
+`MDmeow_<版本>_x64.msi` 是标准 Windows MSI 安装包。安装器内置简体中文、English、日本語、Deutsch 四种语言，安装后主程序固定为 `MDmeow.exe`。
+
+安装版使用：
+
+- `%APPDATA%\MDmeow` 保存配置；
+- `%LOCALAPPDATA%\MDmeow` 保存本地运行数据；
+- `HKLM\Software\MDmeow` 记录安装状态；
+- `MDmeow.Markdown` 作为统一 Markdown ProgID。
+
+> Windows 可能对未签名的社区构建显示 SmartScreen 提示。
+
+## 语言
+
+应用内支持：
+
+- 简体中文（`zh-CN`）
+- English（`en`）
+- 日本語（`ja`）
+- Deutsch（`de`）
+- 跟随系统（`system`）
+
+`system` 只会映射到上述四种语言；其它系统语言回退到 English。
+
+## Markdown 与图片
+
+MDmeow 优先保持标准 Markdown：
 
 ```md
 ![diagram](./assets/diagram.png)
@@ -35,92 +78,33 @@ MDmeow intentionally keeps Markdown portable. Standard Markdown is preferred, bu
 <!--more-->
 ```
 
-Both image forms are rendered in the editor. For raw HTML images, MDmeow preserves the original HTML in the Markdown document while using safe display attributes for the WYSIWYG view. `<!--more-->` is preserved but not visibly rendered.
+两种图片写法都会在编辑器中渲染；`<!--more-->` 会保留在 Markdown 文件中，但不会在 WYSIWYG 视图里显示。
 
-## Miku Cream code rendering
+## 常用快捷键
 
-Code blocks use a light palette rather than a dark editor theme. The default code stack starts with `Consolas`, followed by `Courier New` / `Courier` fallbacks. The layout uses an 18 px line rhythm and slightly different solid backgrounds on adjacent lines to make long snippets easier to scan without a translucent or blurred appearance.
-
-The syntax palette centers on Miku teal (`#39C5BB`) with distinct solid colours for keywords, functions, strings, numeric literals, types, operators and comments. HTML/PDF export uses the same visual direction.
-
-## Source view
-
-Press **`Ctrl/Cmd+/`** or use the source button in the toolbar to switch between WYSIWYG and raw Markdown. Source view includes a gray line-number gutter outside the editable text area. `Tab` / `Shift+Tab` indent and outdent selected lines.
-
-## Images
-
-Standard Markdown image paths can be remote URLs, absolute local paths, or paths relative to the current Markdown file. Raw HTML `<img>` blocks support the same path resolution and common presentation attributes such as `width`, `height`, `data-align`, and numeric `zoom` styles.
-
-## Keyboard shortcuts
-
-Application shortcuts can be rebound in **Settings → Shortcuts**. These are the defaults:
-
-| Action | Default |
+| 操作 | 默认快捷键 |
 | --- | --- |
-| New tab | `Ctrl/Cmd+N` |
-| Open | `Ctrl/Cmd+O` |
-| Save | `Ctrl/Cmd+S` |
-| Save As | `Ctrl/Cmd+Shift+S` |
-| Close tab | `Ctrl/Cmd+W` |
-| Export HTML / PDF | `Ctrl/Cmd+E` |
-| Toggle source view | `Ctrl/Cmd+/` |
-| Find | `Ctrl/Cmd+F` |
-| Replace | `Ctrl/Cmd+H` |
-| Link from clipboard | `Ctrl/Cmd+K` |
-| Emoji picker | `Ctrl/Cmd+.` |
-| Settings | `Ctrl/Cmd+,` |
-| Block type: Text / H1–H3 / lists / quote / code | `Ctrl/Cmd+0`–`7` |
+| 新建标签页 | `Ctrl/Cmd+N` |
+| 打开 | `Ctrl/Cmd+O` |
+| 保存 | `Ctrl/Cmd+S` |
+| 另存为 | `Ctrl/Cmd+Shift+S` |
+| 关闭标签页 | `Ctrl/Cmd+W` |
+| 导出 HTML / PDF | `Ctrl/Cmd+E` |
+| 切换源码视图 | `Ctrl/Cmd+/` |
+| 查找 | `Ctrl/Cmd+F` |
+| 替换 | `Ctrl/Cmd+H` |
+| Emoji | `Ctrl/Cmd+.` |
+| 设置 | `Ctrl/Cmd+,` |
+| 切换块类型 | `Ctrl/Cmd+0` – `7` |
 
-## Settings
+所有应用级快捷键都可以在 **设置 → 快捷键** 中重新绑定。
 
-The settings panel opens with a short fade and saves changes immediately. Settings include language, spell-check, list marker, session behavior, fonts, font sizes, accent colour, and application shortcuts.
+## 配置
 
-`settings.toml` is watched for external edits, so most hand-edited preferences take effect without restarting MDmeow. If the executable directory is read-only, MDmeow falls back to the OS configuration directory.
-
-A generated `settings.example.toml` is included with release builds.
-
-## Screenshot
-
-![Block menu](docs/screenshot-block-menu.png)
-
-## Windows builds
-
-A normal Tauri release build produces:
-
-- portable `mdmeow.exe`
-- NSIS setup executable
-- MSI installer
-
-The portable executable does not require a separate installation. Windows may show a SmartScreen warning because community builds are not code-signed.
-
-## Building
-
-### Requirements
-
-- Node.js 20+
-- `pnpm`
-- Rust stable; Windows uses the `x86_64-pc-windows-msvc` toolchain
-- Tauri platform prerequisites (Visual C++ Build Tools / Windows SDK / WebView2 on Windows)
-
-```bash
-pnpm install
-pnpm build
-pnpm tauri dev
-pnpm tauri build
-```
-
-Useful checks:
-
-```bash
-pnpm exec tsc --noEmit
-cargo check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-```
-
-## Configuration example
+`settings.toml` 支持热加载。常见配置：
 
 ```toml
-language = "system"         # system | en | de | zh-CN
+language = "system"         # system | zh-CN | en | ja | de
 spellcheck = true
 quit_on_escape = false
 list_marker = "*"
@@ -132,26 +116,57 @@ editor_font_size = 16
 source_font = ""
 source_font_size = 15
 accent = "#39C5BB"
-
-[shortcuts]
-toggle_source = "Mod+/"
 ```
 
-`Mod` means Ctrl on Windows/Linux and Cmd on macOS.
+`Mod` 在 Windows/Linux 上表示 Ctrl，在 macOS 上表示 Cmd。
 
-## Tech stack
+## 构建
 
-| Layer | Technology |
+### 环境要求
+
+- Node.js 20+
+- `pnpm`
+- Rust stable
+- Windows：Visual C++ Build Tools、Windows SDK、WebView2
+
+开发：
+
+```bash
+pnpm install
+pnpm build
+pnpm tauri dev
+```
+
+Windows 最终发布构建：
+
+```powershell
+pnpm release:windows
+```
+
+该命令会清理旧发布 staging，构建 MSI 与便携 EXE，并最终只在项目根目录的 `release/` 中留下两个正式产物。
+
+常用检查：
+
+```bash
+pnpm exec tsc --noEmit
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+## 技术栈
+
+| 层 | 技术 |
 | --- | --- |
-| Desktop shell | Tauri v2 / Rust |
-| WYSIWYG editor | Milkdown Crepe / ProseMirror |
-| Code editing | CodeMirror |
-| Math | KaTeX |
+| 桌面壳 | Tauri v2 / Rust |
+| WYSIWYG 编辑器 | Milkdown Crepe / ProseMirror |
+| 源码编辑 | CodeMirror |
+| 数学公式 | KaTeX |
 | Markdown → HTML | comrak |
-| Syntax highlighting in export | highlight.js |
+| 导出语法高亮 | highlight.js |
+| Windows 安装器 | WiX / MSI |
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the code map and extension points.
+## 致谢与许可
 
-## Credits and license
+MDmeow 基于 **Ali Naderi / Mowl** 二次开发，继续以 **MIT License** 发布。
 
-MDmeow is a fork of **Mowl**, created by **Ali Naderi**, and remains distributed under the **MIT License**. This fork is maintained by **zakee039** and extends the original editor with localization, configurable shortcuts, compatibility fixes, Windows integration, and the Miku Cream rendering system.
+本分支由 **zakee039** 维护，主要扩展了多语言、可配置快捷键、Windows 文件关联、便携/安装版区分、发布体系、Markdown 兼容修复与 Miku Cream 渲染。

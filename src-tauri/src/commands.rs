@@ -83,6 +83,43 @@ pub fn write_document(path: String, contents: String) -> Result<String, String> 
     Ok(formatted)
 }
 
+/// Rename an existing document within its current directory.
+///
+/// The frontend exposes this as inline filename editing in the title bar, so
+/// this command deliberately accepts a file name only (not a destination path)
+/// and cannot be used to move a document to another directory.
+#[tauri::command]
+pub fn rename_document(path: String, new_name: String) -> Result<String, String> {
+    let source = std::path::PathBuf::from(&path);
+    if !source.is_file() {
+        return Err(format!("File does not exist: {path}"));
+    }
+
+    let name = new_name.trim();
+    if name.is_empty() || name == "." || name == ".." {
+        return Err("File name cannot be empty.".to_string());
+    }
+    let candidate = std::path::Path::new(name);
+    if candidate.components().count() != 1 || candidate.file_name().and_then(|v| v.to_str()) != Some(name) {
+        return Err("Enter a file name only, without folders.".to_string());
+    }
+
+    let parent = source
+        .parent()
+        .ok_or_else(|| "The current file has no parent directory.".to_string())?;
+    let destination = parent.join(name);
+    if destination == source {
+        return Ok(source.display().to_string());
+    }
+    if destination.exists() {
+        return Err(format!("A file named '{name}' already exists."));
+    }
+
+    std::fs::rename(&source, &destination)
+        .map_err(|e| format!("Cannot rename {} to {}: {e}", source.display(), destination.display()))?;
+    Ok(destination.display().to_string())
+}
+
 /// Render Markdown to a complete, self-contained HTML document. `doc_path` (the
 /// file being exported) is the base for resolving relative image paths, which
 /// are inlined as `data:` URLs so the HTML / print output is self-contained.
