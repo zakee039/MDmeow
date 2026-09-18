@@ -22,20 +22,34 @@ MDmeow は、**Tauri + Milkdown/Crepe** で構築された軽量で高速な WYS
 - `MDmeow.Markdown` を使った Windows「プログラムから開く」統合。
 - 简体中文 / English / 日本語 / Deutsch の 4 言語 UI。
 
-## Windows 配布物
+## 配布物
 
-公開するファイルは 2 つだけです。
+正式リリースは Windows / Linux / macOS を提供します。
 
 ```text
+Windows
 MDmeow-<version>.exe
 MDmeow_<version>_x64.msi
+
+Linux x64
+MDmeow-<version>-linux-x86_64.AppImage
+MDmeow-<version>-linux-x86_64.deb
+MDmeow-<version>-linux-x86_64.rpm
+
+Linux ARM64
+MDmeow-<version>-linux-aarch64.AppImage
+MDmeow-<version>-linux-aarch64.deb
+MDmeow-<version>-linux-aarch64.rpm
+
+macOS
+MDmeow-<version>-macOS-universal.dmg
 ```
 
-EXE は単一ファイルのポータブル版、MSI はインストール版です。MSI には中国語・英語・日本語・ドイツ語の言語選択画面が含まれます。
+Windows の EXE は単一ファイルのポータブル版、MSI はインストール版です。MSI には中国語・英語・日本語・ドイツ語の言語選択があります。
 
-ポータブル版は EXE と同じ場所に `settings.toml` と `data/` を保存します。インストール版は `%APPDATA%\MDmeow` と `%LOCALAPPDATA%\MDmeow` を使用します。
+Linux は AppImage / deb / rpm を x64 と ARM64 の両方で提供します。設定は `~/.config/MDmeow`、ローカルデータは `~/.local/share/MDmeow` に保存されます。
 
-有効な MSI インストールが存在する場合、ポータブル版は Windows の Markdown 関連付けを奪いません。MSI が存在しない場合のみ、ポータブル版がフォールバックとして登録できます。
+macOS は Intel + Apple Silicon 対応の universal DMG です。設定は `~/Library/Application Support/MDmeow` に保存されます。現在のコミュニティビルドは未署名・未公証のため、初回起動時に Finder で右クリック →「開く」が必要な場合があります。
 
 ## 言語
 
@@ -86,13 +100,22 @@ pnpm build
 pnpm tauri dev
 ```
 
-Windows の最終配布ビルド:
+各プラットフォームの最終配布ビルド:
 
 ```powershell
+# Windows
 pnpm release:windows
 ```
 
-正式な 2 ファイルはリポジトリ直下の `release/` に出力されます。
+```bash
+# Linux
+pnpm release:linux
+
+# macOS universal
+pnpm release:macos
+```
+
+各コマンドは対象プラットフォームの正式な配布物だけをリポジトリ直下の `release/` に出力します。バージョン tag を push すると、GitHub Actions が Linux x64/ARM64 と macOS universal を自動ビルドし、`SHA256SUMS.txt` も生成します。Windows の EXE/MSI はメンテナーがローカルでビルドして手動アップロードします。
 
 ## 技術スタック
 

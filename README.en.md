@@ -22,20 +22,34 @@ The current edition uses the **Miku Cream** rendering system: light document sur
 - Windows “Open with” integration using the unified `MDmeow.Markdown` ProgID.
 - Four UI languages: 简体中文, English, 日本語, and Deutsch.
 
-## Windows releases
+## Releases
 
-Only two public artifacts are produced:
+Official releases cover Windows, Linux, and macOS:
 
 ```text
+Windows
 MDmeow-<version>.exe
 MDmeow_<version>_x64.msi
+
+Linux x64
+MDmeow-<version>-linux-x86_64.AppImage
+MDmeow-<version>-linux-x86_64.deb
+MDmeow-<version>-linux-x86_64.rpm
+
+Linux ARM64
+MDmeow-<version>-linux-aarch64.AppImage
+MDmeow-<version>-linux-aarch64.deb
+MDmeow-<version>-linux-aarch64.rpm
+
+macOS
+MDmeow-<version>-macOS-universal.dmg
 ```
 
-The versioned EXE is the single-file portable build. The MSI is the installed build and contains an installer-language selector for Chinese, English, Japanese, and German.
+On Windows, the versioned EXE is the single-file portable build and the MSI is the installed build with a Chinese / English / Japanese / German installer. A valid MSI installation owns the Markdown registration; the portable build only acts as a fallback.
 
-Portable mode stores `settings.toml` and `data/` beside the EXE. Installed mode stores roaming settings under `%APPDATA%\MDmeow`, local runtime data under `%LOCALAPPDATA%\MDmeow`, and installation ownership under `HKLM\Software\MDmeow`.
+On Linux, AppImage is the easiest portable-style package, while `.deb` and `.rpm` integrate with the package manager. Settings use `~/.config/MDmeow` and local data uses `~/.local/share/MDmeow`.
 
-If a valid MSI installation exists, the portable build does not take over the Windows Markdown registration. Otherwise the portable build may register itself as the fallback handler.
+On macOS, the universal DMG supports both Intel and Apple Silicon. Settings live under `~/Library/Application Support/MDmeow`. Community builds are currently unsigned/not notarized, so Gatekeeper may require right-click → Open on first launch.
 
 ## Languages
 
@@ -94,13 +108,22 @@ pnpm build
 pnpm tauri dev
 ```
 
-Final Windows release build:
+Final platform release builds:
 
 ```powershell
+# Windows
 pnpm release:windows
 ```
 
-The finished public files are written to the repository-root `release/` directory.
+```bash
+# Linux
+pnpm release:linux
+
+# macOS universal
+pnpm release:macos
+```
+
+Each command writes only that platform's public artifacts into the repository-root `release/` directory. Pushing a version tag automatically builds Linux x64/ARM64 and macOS universal in GitHub Actions, verifies those artifacts, and publishes `SHA256SUMS.txt`. Windows EXE/MSI are built locally and uploaded manually by the maintainer.
 
 Useful checks:
 

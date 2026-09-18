@@ -1,0 +1,13 @@
+{
+  "bundle": {
+    "targets": ["appimage", "deb", "rpm"],
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown", "mdx"],
+        "name": "Markdown Document",
+        "description": "Markdown document",
+        "role": "Editor"
+      }
+    ]
+  }
+}

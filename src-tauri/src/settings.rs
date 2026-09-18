@@ -1,8 +1,8 @@
 //! `settings.toml` — the single settings file.
 //!
-//! Portable mode stores it next to the versioned EXE. MSI mode stores it under
-//! the OS roaming config directory. External edits are picked up live by
-//! `watch()`.
+//! Windows portable mode stores it next to the versioned EXE. Installed bundles
+//! (Windows MSI, Linux packages/AppImage, macOS app bundles) store it under the
+//! platform user config directory. External edits are picked up live by `watch()`.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};

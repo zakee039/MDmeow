@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InstallMode {
     Portable,
-    Msi,
+    Installed,
 }
 
 #[cfg(target_os = "windows")]
@@ -64,11 +64,20 @@ pub fn current_mode() -> InstallMode {
         };
         if let Some(msi) = msi_install_info() {
             if same_path(&current, &msi.executable_path) {
-                return InstallMode::Msi;
+                return InstallMode::Installed;
             }
         }
     }
 
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Linux/macOS are distributed as system bundles (AppImage/deb/rpm and
+        // .app/.dmg).  Keep settings in the platform user directories instead
+        // of trying to write beside a mounted AppImage or inside an app bundle.
+        return InstallMode::Installed;
+    }
+
+    #[cfg(target_os = "windows")]
     InstallMode::Portable
 }
 

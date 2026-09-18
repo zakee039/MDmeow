@@ -22,20 +22,34 @@ Die aktuelle Ausgabe verwendet das **Miku-Cream**-Rendering: helle Dokumentfläc
 - Windows-„Öffnen mit“-Integration über `MDmeow.Markdown`.
 - Benutzeroberfläche in 简体中文, English, 日本語 und Deutsch.
 
-## Windows-Veröffentlichung
+## Veröffentlichungen
 
-Es werden genau zwei öffentliche Artefakte erzeugt:
+Offizielle Releases werden für Windows, Linux und macOS erzeugt:
 
 ```text
+Windows
 MDmeow-<version>.exe
 MDmeow_<version>_x64.msi
+
+Linux x64
+MDmeow-<version>-linux-x86_64.AppImage
+MDmeow-<version>-linux-x86_64.deb
+MDmeow-<version>-linux-x86_64.rpm
+
+Linux ARM64
+MDmeow-<version>-linux-aarch64.AppImage
+MDmeow-<version>-linux-aarch64.deb
+MDmeow-<version>-linux-aarch64.rpm
+
+macOS
+MDmeow-<version>-macOS-universal.dmg
 ```
 
-Die EXE ist die portable Einzeldatei. Die MSI ist die installierte Variante und enthält eine Sprachauswahl für Chinesisch, Englisch, Japanisch und Deutsch.
+Unter Windows ist die EXE die portable Einzeldatei; die MSI ist die installierte Variante mit chinesischer, englischer, japanischer und deutscher Installationssprache.
 
-Die portable Variante speichert `settings.toml` und `data/` neben der EXE. Die MSI-Variante verwendet `%APPDATA%\MDmeow` und `%LOCALAPPDATA%\MDmeow`.
+Linux wird als AppImage, deb und rpm für x64 sowie ARM64 bereitgestellt. Einstellungen liegen unter `~/.config/MDmeow`, lokale Daten unter `~/.local/share/MDmeow`.
 
-Eine gültige MSI-Installation hat bei der Windows-Dateizuordnung Vorrang. Nur wenn keine gültige Installation vorhanden ist, darf die portable Ausgabe sich als Fallback registrieren.
+Für macOS gibt es ein universelles DMG für Intel und Apple Silicon. Einstellungen liegen unter `~/Library/Application Support/MDmeow`. Die Community-Builds sind derzeit nicht signiert/notarisiert, daher kann beim ersten Start Rechtsklick → „Öffnen“ nötig sein.
 
 ## Sprachen
 
@@ -86,13 +100,22 @@ pnpm build
 pnpm tauri dev
 ```
 
-Finaler Windows-Release:
+Finale Release-Builds pro Plattform:
 
 ```powershell
+# Windows
 pnpm release:windows
 ```
 
-Die beiden öffentlichen Dateien werden in `release/` im Repository-Stamm abgelegt.
+```bash
+# Linux
+pnpm release:linux
+
+# macOS universal
+pnpm release:macos
+```
+
+Jeder Befehl schreibt nur die öffentlichen Artefakte der jeweiligen Plattform in `release/`. Beim Push eines Versions-Tags baut GitHub Actions Linux x64/ARM64 und macOS universal automatisch und erzeugt zusätzlich `SHA256SUMS.txt`. Die Windows-EXE/MSI werden lokal gebaut und vom Maintainer manuell hochgeladen.
 
 ## Technik
 

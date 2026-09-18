@@ -24,26 +24,30 @@ MDmeow 是一款轻量、快速的 WYSIWYG Markdown 编辑器，基于 **Tauri +
 
 ## 下载与运行
 
-Windows 发布版只保留两个产物：
+正式 Release 覆盖 Windows、Linux 和 macOS：
 
 ```text
+Windows
 MDmeow-<版本>.exe
 MDmeow_<版本>_x64.msi
+
+Linux x64
+MDmeow-<版本>-linux-x86_64.AppImage
+MDmeow-<版本>-linux-x86_64.deb
+MDmeow-<版本>-linux-x86_64.rpm
+
+Linux ARM64
+MDmeow-<版本>-linux-aarch64.AppImage
+MDmeow-<版本>-linux-aarch64.deb
+MDmeow-<版本>-linux-aarch64.rpm
+
+macOS
+MDmeow-<版本>-macOS-universal.dmg
 ```
 
-### 便携版
+### Windows
 
-`MDmeow-<版本>.exe` 是单文件便携版，直接运行即可。便携模式的配置与数据放在程序所在目录：
-
-```text
-MDmeow-<版本>.exe
-settings.toml
-data/
-```
-
-### 安装版
-
-`MDmeow_<版本>_x64.msi` 是标准 Windows MSI 安装包。安装器内置简体中文、English、日本語、Deutsch 四种语言，安装后主程序固定为 `MDmeow.exe`。
+`MDmeow-<版本>.exe` 是单文件便携版，配置和数据保存在程序所在目录；`MDmeow_<版本>_x64.msi` 是标准 MSI 安装版，内置简体中文、English、日本語、Deutsch 四种安装语言。
 
 安装版使用：
 
@@ -52,7 +56,21 @@ data/
 - `HKLM\Software\MDmeow` 记录安装状态；
 - `MDmeow.Markdown` 作为统一 Markdown ProgID。
 
-> Windows 可能对未签名的社区构建显示 SmartScreen 提示。
+### Linux
+
+推荐优先使用 AppImage；Debian/Ubuntu 可使用 `.deb`，Fedora/RHEL 系可使用 `.rpm`。Linux 正式包会把设置保存在 `~/.config/MDmeow`，运行数据保存在 `~/.local/share/MDmeow`，并由桌面包注册 `.md/.markdown/.mdx` 文件关联。
+
+AppImage 首次运行前可能需要：
+
+```bash
+chmod +x MDmeow-*.AppImage
+```
+
+### macOS
+
+提供 Intel + Apple Silicon 通用 `.dmg`。设置与本地数据存放在 `~/Library/Application Support/MDmeow`。当前社区构建未做 Apple Developer ID 签名/公证，如 Gatekeeper 阻止首次启动，可在 Finder 中右键应用并选择“打开”。
+
+> Windows 可能对未签名的社区构建显示 SmartScreen 提示；macOS 未签名构建也可能触发 Gatekeeper。
 
 ## 语言
 
@@ -137,13 +155,22 @@ pnpm build
 pnpm tauri dev
 ```
 
-Windows 最终发布构建：
+各平台最终发布构建：
 
 ```powershell
+# Windows
 pnpm release:windows
 ```
 
-该命令会清理旧发布 staging，构建 MSI 与便携 EXE，并最终只在项目根目录的 `release/` 中留下两个正式产物。
+```bash
+# Linux
+pnpm release:linux
+
+# macOS（universal）
+pnpm release:macos
+```
+
+每个命令都会把当前平台的正式产物收敛到项目根目录的 `release/`。推送版本 tag 后，GitHub Actions 会自动构建 Linux x64/ARM64 和 macOS universal，汇总产物并生成 `SHA256SUMS.txt`；Windows EXE/MSI 由维护者本地构建后手动上传。
 
 常用检查：
 
