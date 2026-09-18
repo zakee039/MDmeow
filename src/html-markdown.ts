@@ -8,10 +8,72 @@
 
 import { schemaCtx } from "@milkdown/kit/core";
 import type { Crepe } from "@milkdown/crepe";
+import { $prose } from "@milkdown/kit/utils";
+import { Plugin } from "@milkdown/kit/prose/state";
+import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
+import type { Node as ProseNode } from "@milkdown/kit/prose/model";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const MORE_COMMENT = /^<!--\s*more\s*-->$/i;
+const DETAILS_OPEN = /^<details\s*>$/i;
+const DETAILS_CLOSE = /^<\/details\s*>$/i;
+const DIV_CLOSE = /^<\/div\s*>$/i;
+const KBD_OPEN = /^<kbd\s*>$/i;
+const KBD_CLOSE = /^<\/kbd\s*>$/i;
+
+type SafeHtmlKind =
+  | "details-open"
+  | "details-close"
+  | "summary"
+  | "div-open"
+  | "div-close"
+  | "kbd-open"
+  | "kbd-close";
+
+function kbdDecorations(doc: ProseNode): DecorationSet {
+  const ranges: Array<{ from: number; to: number }> = [];
+  const openByParent = new Map<ProseNode, number[]>();
+
+  doc.descendants((node, pos, parent) => {
+    if (node.type.name !== "html" || !parent) return;
+    const value = String(node.attrs?.value ?? "").trim();
+    if (KBD_OPEN.test(value)) {
+      const stack = openByParent.get(parent) ?? [];
+      stack.push(pos + node.nodeSize);
+      openByParent.set(parent, stack);
+      return;
+    }
+    if (!KBD_CLOSE.test(value)) return;
+    const stack = openByParent.get(parent);
+    const from = stack?.pop();
+    if (from !== undefined && from < pos) ranges.push({ from, to: pos });
+  });
+
+  return DecorationSet.create(
+    doc,
+    ranges.map(({ from, to }) =>
+      Decoration.inline(from, to, { class: "mdmeow-kbd" }),
+    ),
+  );
+}
+
+export const safeHtmlPresentationPlugin = $prose(
+  () =>
+    new Plugin({
+      state: {
+        init: (_, state) => kbdDecorations(state.doc),
+        apply(tr, previous) {
+          return tr.docChanged ? kbdDecorations(tr.doc) : previous;
+        },
+      },
+      props: {
+        decorations(state) {
+          return this.getState(state) ?? DecorationSet.empty;
+        },
+      },
+    }),
+);
 
 interface RawImageAttrs {
   src: string;
@@ -83,6 +145,230 @@ function rawImageDom(value: string, image: RawImageAttrs): [string, Record<strin
   return ["img", attrs];
 }
 
+function safeMarkerDom(
+  value: string,
+  kind: SafeHtmlKind,
+  extra: Record<string, string> = {},
+): [string, Record<string, string>, string] {
+  return [
+    "span",
+    {
+      "data-type": "html",
+      "data-value": value,
+      "data-mdmeow-safe-html": kind,
+      ...extra,
+    },
+    "",
+  ];
+}
+
+function parseDivAlign(value: string): "left" | "center" | "right" | null {
+  const trimmed = value.trim();
+  if (!/^<div\b[^>]*>$/i.test(trimmed)) return null;
+  const template = document.createElement("template");
+  template.innerHTML = trimmed;
+  const div = template.content.firstElementChild;
+  if (!(div instanceof HTMLDivElement)) return null;
+  const align = (div.getAttribute("align") ?? "").trim().toLowerCase();
+  return align === "left" || align === "center" || align === "right"
+    ? align
+    : null;
+}
+
+function parseSummary(value: string): string | null {
+  const trimmed = value.trim();
+  if (!/^<summary\b[^>]*>[\s\S]*<\/summary\s*>$/i.test(trimmed)) return null;
+  const template = document.createElement("template");
+  template.innerHTML = trimmed;
+  const meaningful = [...template.content.childNodes].filter(
+    (node) => node.nodeType !== Node.TEXT_NODE || Boolean(node.textContent?.trim()),
+  );
+  if (meaningful.length !== 1) return null;
+  const summary = meaningful[0];
+  if (!(summary instanceof HTMLElement) || summary.tagName !== "SUMMARY") return null;
+  return summary.textContent ?? "";
+}
+
+function safeHtmlDom(value: string): [string, Record<string, string>, string] | null {
+  const trimmed = value.trim();
+  if (DETAILS_OPEN.test(trimmed)) return safeMarkerDom(value, "details-open");
+  if (DETAILS_CLOSE.test(trimmed)) return safeMarkerDom(value, "details-close");
+  if (DIV_CLOSE.test(trimmed)) return safeMarkerDom(value, "div-close");
+  if (KBD_OPEN.test(trimmed)) return safeMarkerDom(value, "kbd-open");
+  if (KBD_CLOSE.test(trimmed)) return safeMarkerDom(value, "kbd-close");
+
+  const align = parseDivAlign(trimmed);
+  if (align) return safeMarkerDom(value, "div-open", { "data-mdmeow-align": align });
+
+  const summary = parseSummary(trimmed);
+  if (summary !== null) {
+    return [
+      "span",
+      {
+        "data-type": "html",
+        "data-value": value,
+        "data-mdmeow-safe-html": "summary",
+        role: "button",
+        tabindex: "0",
+        contenteditable: "false",
+        "aria-expanded": "false",
+      },
+      summary,
+    ];
+  }
+
+  return null;
+}
+
+function markerIn(
+  block: HTMLElement,
+  kind: SafeHtmlKind,
+): HTMLElement | null {
+  if (block.dataset.mdmeowSafeHtml === kind) return block;
+  return block.querySelector<HTMLElement>(`[data-mdmeow-safe-html="${kind}"]`);
+}
+
+function hideMarkerOnlyBlock(block: HTMLElement, marker: HTMLElement): void {
+  if (block === marker || block.textContent?.trim() === "") {
+    block.classList.add("mdmeow-html-marker-block");
+  }
+}
+
+function applyDivRanges(root: HTMLElement): void {
+  const blocks = [...root.children].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+  const stack: Array<{ index: number; align: string; marker: HTMLElement }> = [];
+
+  blocks.forEach((block, index) => {
+    const open = markerIn(block, "div-open");
+    if (open) {
+      hideMarkerOnlyBlock(block, open);
+      stack.push({
+        index,
+        align: open.dataset.mdmeowAlign ?? "left",
+        marker: open,
+      });
+    }
+
+    const close = markerIn(block, "div-close");
+    if (!close || !stack.length) return;
+    hideMarkerOnlyBlock(block, close);
+    const range = stack.pop();
+    if (!range) return;
+    for (let i = range.index + 1; i < index; i += 1) {
+      blocks[i].classList.add(`mdmeow-html-align-${range.align}`);
+    }
+  });
+}
+
+function setDetailsExpanded(
+  blocks: HTMLElement[],
+  summaryIndex: number,
+  closeIndex: number,
+  summary: HTMLElement,
+  expanded: boolean,
+): void {
+  summary.setAttribute("aria-expanded", String(expanded));
+  summary.classList.toggle("mdmeow-details-expanded", expanded);
+  for (let i = summaryIndex + 1; i < closeIndex; i += 1) {
+    blocks[i].classList.toggle("mdmeow-details-collapsed", !expanded);
+  }
+}
+
+function applyDetailsRanges(root: HTMLElement): void {
+  const blocks = [...root.children].filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+  let openIndex = -1;
+  let summaryIndex = -1;
+  let summary: HTMLElement | null = null;
+
+  blocks.forEach((block, index) => {
+    const open = markerIn(block, "details-open");
+    if (open) {
+      hideMarkerOnlyBlock(block, open);
+      openIndex = index;
+      summaryIndex = -1;
+      summary = null;
+      return;
+    }
+
+    if (openIndex >= 0 && !summary) {
+      const candidate = markerIn(block, "summary");
+      if (candidate) {
+        summary = candidate;
+        summaryIndex = index;
+        candidate.classList.add("mdmeow-details-summary");
+      }
+    }
+
+    const close = markerIn(block, "details-close");
+    if (!close || openIndex < 0) return;
+    hideMarkerOnlyBlock(block, close);
+
+    if (summary && summaryIndex >= 0) {
+      const currentSummary = summary;
+      const currentSummaryIndex = summaryIndex;
+      const closeIndex = index;
+      const expanded = currentSummary.getAttribute("aria-expanded") === "true";
+      setDetailsExpanded(
+        blocks,
+        currentSummaryIndex,
+        closeIndex,
+        currentSummary,
+        expanded,
+      );
+
+      currentSummary.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = currentSummary.getAttribute("aria-expanded") !== "true";
+        setDetailsExpanded(
+          blocks,
+          currentSummaryIndex,
+          closeIndex,
+          currentSummary,
+          next,
+        );
+      };
+      currentSummary.onkeydown = (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        currentSummary.click();
+      };
+    }
+
+    openIndex = -1;
+    summaryIndex = -1;
+    summary = null;
+  });
+}
+
+/** Apply the visual semantics for the safe structural HTML subset without
+ * changing the ProseMirror document. This keeps Markdown round-tripping exact. */
+export function refreshSafeRawHtml(host: HTMLElement): void {
+  requestAnimationFrame(() => {
+    const root = host.querySelector<HTMLElement>(".ProseMirror");
+    if (!root) return;
+
+    for (const block of root.querySelectorAll<HTMLElement>(
+      ".mdmeow-html-marker-block, .mdmeow-html-align-left, .mdmeow-html-align-center, .mdmeow-html-align-right, .mdmeow-details-collapsed",
+    )) {
+      block.classList.remove(
+        "mdmeow-html-marker-block",
+        "mdmeow-html-align-left",
+        "mdmeow-html-align-center",
+        "mdmeow-html-align-right",
+        "mdmeow-details-collapsed",
+      );
+    }
+
+    applyDivRanges(root);
+    applyDetailsRanges(root);
+  });
+}
+
 /** Patch Milkdown's existing `html` schema after Crepe has created it. */
 export function patchHtmlMarkdown(crepe: Crepe): void {
   crepe.editor.action((ctx) => {
@@ -106,6 +392,8 @@ export function patchHtmlMarkdown(crepe: Crepe): void {
 
       const image = parseRawImage(value);
       if (image) return rawImageDom(value, image);
+      const safeHtml = safeHtmlDom(value);
+      if (safeHtml) return safeHtml;
       return fallbackToDom(node);
     };
 

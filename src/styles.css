@@ -192,6 +192,7 @@ body {
 #editor .milkdown .ProseMirror {
   color: #141413;
   line-height: 1.72;
+  padding: 48px clamp(36px, 5vw, 72px);
 }
 #editor .milkdown .ProseMirror h1,
 #editor .milkdown .ProseMirror h2,
@@ -317,6 +318,25 @@ body {
 /* Images receive the same soft-card treatment as the reference theme. */
 #editor .milkdown .milkdown-image-block {
   margin: 14px 0;
+}
+#editor .milkdown .milkdown-image-block > .image-wrapper .operation,
+#editor .milkdown .milkdown-image-block > .image-wrapper > .image-resize-handle {
+  display: none !important;
+}
+#editor .milkdown .milkdown-image-block.selected > .image-wrapper::before {
+  display: none !important;
+}
+#editor .milkdown .milkdown-image-block[data-mdmeow-image-align="left"] > .image-wrapper {
+  margin-left: 0;
+  margin-right: auto;
+}
+#editor .milkdown .milkdown-image-block[data-mdmeow-image-align="center"] > .image-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+}
+#editor .milkdown .milkdown-image-block[data-mdmeow-image-align="right"] > .image-wrapper {
+  margin-left: auto;
+  margin-right: 0;
 }
 #editor .milkdown .milkdown-image-block > .image-wrapper img,
 #editor .milkdown .ProseMirror > img,
@@ -479,13 +499,82 @@ body {
 /* Syntax colours are installed through CodeMirror's HighlightStyle in
    miku-cream.ts so they follow semantic tokens across all supported languages. */
 
-/* Inline code gets a subtle cream chip with the theme accent. */
+/* Inline code: darker purple improves legibility while keeping clear
+   weight contrast between ordinary and bold code. */
 #editor .milkdown .ProseMirror code:not(.cm-content code) {
-  color: #176f68;
-  background: #e2f4f1;
-  border: 1px solid #c6e9e5;
+  color: #5c2e91;
+  background: #f3eef9;
+  border: 1px solid #ded0ee;
   border-radius: 5px;
   padding: 0.12em 0.34em;
+  font-weight: 500;
+}
+#editor .milkdown .ProseMirror strong code:not(.cm-content code),
+#editor .milkdown .ProseMirror b code:not(.cm-content code) {
+  color: #4b2478;
+  font-weight: 700;
+}
+
+/* Safe raw-HTML rendering. Unsupported HTML remains literal text. */
+#editor .milkdown [data-mdmeow-safe-html="details-open"],
+#editor .milkdown [data-mdmeow-safe-html="details-close"],
+#editor .milkdown [data-mdmeow-safe-html="div-open"],
+#editor .milkdown [data-mdmeow-safe-html="div-close"],
+#editor .milkdown [data-mdmeow-safe-html="kbd-open"],
+#editor .milkdown [data-mdmeow-safe-html="kbd-close"],
+#editor .milkdown .mdmeow-html-marker-block {
+  display: none !important;
+}
+
+#editor .milkdown .mdmeow-html-align-left { text-align: left; }
+#editor .milkdown .mdmeow-html-align-center { text-align: center; }
+#editor .milkdown .mdmeow-html-align-right { text-align: right; }
+
+#editor .milkdown .mdmeow-kbd {
+  display: inline-block;
+  min-width: 1.35em;
+  margin: 0 0.08em;
+  padding: 0.08em 0.42em;
+  color: #353330;
+  background: linear-gradient(#fcfbfa, #f3f0ee);
+  border: 1px solid #cfc9c2;
+  border-bottom-color: #b7b0a8;
+  border-radius: 5px;
+  box-shadow: 0 1px 0 rgba(20, 20, 19, 0.08);
+  font-family: var(--crepe-font-default);
+  font-size: 0.86em;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+
+#editor .milkdown .mdmeow-details-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #176f68;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+#editor .milkdown .mdmeow-details-summary:hover {
+  background: #e2f4f1;
+}
+#editor .milkdown .mdmeow-details-summary::before {
+  content: "›";
+  display: inline-block;
+  font-size: 1.15em;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 0.16s ease;
+}
+#editor .milkdown .mdmeow-details-summary.mdmeow-details-expanded::before {
+  transform: rotate(90deg);
+}
+#editor .milkdown .mdmeow-details-collapsed {
+  display: none !important;
 }
 
 /* KaTeX / LaTeX rendering: calm formula cards with a Miku accent rail. */
@@ -508,12 +597,112 @@ body {
 #editor .milkdown .katex-display {
   color: #141413;
 }
+#editor .milkdown .milkdown-code-block:has(.preview-panel .katex-display) > .tools {
+  display: none;
+}
+#editor .milkdown .milkdown-code-block:has(.preview-panel .katex-display):has(.codemirror-host.hidden) {
+  margin: 10px 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: text;
+}
+#editor .milkdown .milkdown-code-block:has(.preview-panel .katex-display):has(.codemirror-host.hidden) .preview-panel {
+  margin: 0;
+}
+#editor .milkdown .milkdown-code-block:has(.preview-panel .katex-display):has(.codemirror-host.hidden) .katex-display {
+  margin: 0.65em 0;
+}
 #editor .milkdown .milkdown-latex-inline-edit {
   background: #fcfbfa;
   color: #141413;
   border: 1px solid #d1cdc7;
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(20, 20, 19, 0.10);
+}
+
+/* Image selection toolbar: alignment, percentage scale, delete. */
+.mdmeow-image-toolbar {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(252, 251, 250, 0.97);
+  color: #353330;
+  border: 1px solid #d8d3cd;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(20, 20, 19, 0.14);
+  backdrop-filter: blur(12px);
+}
+.mdmeow-image-toolbar[hidden],
+.mdmeow-image-scale-menu[hidden] {
+  display: none !important;
+}
+.mdmeow-image-toolbar-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #4c4945;
+  cursor: pointer;
+}
+.mdmeow-image-toolbar-button:hover,
+.mdmeow-image-toolbar-button.active {
+  background: #e2f4f1;
+  color: #126a64;
+}
+.mdmeow-image-toolbar-button svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.mdmeow-image-delete-button:hover {
+  background: #f8e8e6;
+  color: #b43b32;
+}
+.mdmeow-image-toolbar-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 2px;
+  background: #ded9d3;
+}
+.mdmeow-image-scale-menu {
+  position: absolute;
+  right: 44px;
+  bottom: calc(100% + 8px);
+  min-width: 104px;
+  padding: 5px;
+  background: rgba(252, 251, 250, 0.98);
+  border: 1px solid #d8d3cd;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(20, 20, 19, 0.14);
+  overflow: hidden;
+}
+.mdmeow-image-scale-item {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #353330;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.mdmeow-image-scale-item:hover,
+.mdmeow-image-scale-item.active {
+  background: #e2f4f1;
+  color: #126a64;
 }
 
 #source-shell {
@@ -1010,4 +1199,31 @@ body {
   color: var(--bar-fg);
   font-family: var(--source-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   word-break: break-all;
+}
+
+/* Hidden five-click About-logo easter egg. */
+#miku-easter {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(5px);
+}
+#miku-easter[hidden] {
+  display: none !important;
+}
+#miku-easter-image {
+  display: block;
+  max-width: min(780px, 86vw);
+  max-height: 82vh;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.48);
+  cursor: pointer;
+  user-select: none;
 }

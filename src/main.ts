@@ -828,6 +828,12 @@ function openFind(withReplace: boolean): void {
 // --- about panel --------------------------------------------------------
 
 const aboutEl = document.getElementById("about") as HTMLElement;
+const mikuEasterEl = document.getElementById("miku-easter") as HTMLElement;
+const mikuEasterImage = document.getElementById(
+  "miku-easter-image",
+) as HTMLImageElement;
+let aboutLogoClickCount = 0;
+let aboutLogoClickTimer: number | null = null;
 
 function openAbout(): void {
   findBar.close();
@@ -836,6 +842,14 @@ function openAbout(): void {
 
 function closeAbout(): void {
   aboutEl.hidden = true;
+}
+
+function openMikuEaster(): void {
+  mikuEasterEl.hidden = false;
+}
+
+function closeMikuEaster(): void {
+  mikuEasterEl.hidden = true;
 }
 
 function wireAbout(): void {
@@ -852,6 +866,25 @@ function wireAbout(): void {
     e.preventDefault();
     void openUrl("https://github.com/naderi/mowl");
   });
+
+  aboutEl.querySelector(".about-logo")?.addEventListener("click", () => {
+    aboutLogoClickCount += 1;
+    if (aboutLogoClickTimer !== null) window.clearTimeout(aboutLogoClickTimer);
+
+    if (aboutLogoClickCount >= 5) {
+      aboutLogoClickCount = 0;
+      aboutLogoClickTimer = null;
+      openMikuEaster();
+      return;
+    }
+
+    aboutLogoClickTimer = window.setTimeout(() => {
+      aboutLogoClickCount = 0;
+      aboutLogoClickTimer = null;
+    }, 1400);
+  });
+
+  mikuEasterImage.addEventListener("click", closeMikuEaster);
 }
 
 // --- open menu (New / Open) -------------------------------------------
@@ -972,6 +1005,11 @@ function wireShortcuts(): void {
         if (!openMenuEl.hidden) {
           e.preventDefault();
           closeOpenMenu();
+          return;
+        }
+        if (!mikuEasterEl.hidden) {
+          e.preventDefault();
+          closeMikuEaster();
           return;
         }
         if (!aboutEl.hidden) {

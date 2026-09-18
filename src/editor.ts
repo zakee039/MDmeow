@@ -21,7 +21,13 @@ import {
   type ListMarker,
 } from "./markdown-serializer";
 import { patchImageBlockMarkdown } from "./image-block-markdown";
-import { patchHtmlMarkdown, resolveRawHtmlImages } from "./html-markdown";
+import { imageToolbarPlugin } from "./image-toolbar";
+import {
+  patchHtmlMarkdown,
+  refreshSafeRawHtml,
+  resolveRawHtmlImages,
+  safeHtmlPresentationPlugin,
+} from "./html-markdown";
 import { mikuCreamCodeMirrorTheme } from "./miku-cream";
 import {
   findKey,
@@ -54,6 +60,7 @@ export class Editor {
   constructor(host: HTMLElement) {
     this.host = host;
     this.host.addEventListener("click", this.handleCodeToolClick);
+    this.host.addEventListener("click", this.handleLatexPreviewClick);
     this.codeLineObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         const target =
@@ -99,6 +106,14 @@ export class Editor {
     for (const block of this.host.querySelectorAll<HTMLElement>(
       ".milkdown-code-block",
     )) {
+      const previewOnlyLatex =
+        block.querySelector(".preview-panel .katex-display") &&
+        block.querySelector(".codemirror-host.hidden");
+      if (previewOnlyLatex) {
+        block.querySelector(":scope > .mdmeow-code-line-numbers")?.remove();
+        continue;
+      }
+
       const content = block.querySelector<HTMLElement>(".cm-content");
       const lines = content?.querySelectorAll<HTMLElement>(".cm-line");
       if (!content || !lines?.length) {
@@ -140,7 +155,7 @@ export class Editor {
     if (!(target instanceof Element)) return;
 
     const button = target.closest<HTMLButtonElement>(
-      ".milkdown-code-block .tools-button-group button",
+      ".milkdown-code-block .tools-button-group .copy-button",
     );
     if (!button) return;
 
@@ -162,6 +177,48 @@ export class Editor {
     }, 900);
 
     this.copyFeedbackTimers.set(button, [returnTimer, resetTimer]);
+  };
+
+  private handleLatexPreviewClick = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const clickedBlock = target.closest<HTMLElement>(".milkdown-code-block");
+
+    // A block LaTeX preview behaves like a rendered formula by default.
+    // Clicking the formula opens the source editor; clicking elsewhere folds
+    // any open formula back to preview-only mode.
+    for (const block of this.host.querySelectorAll<HTMLElement>(
+      ".milkdown-code-block:has(.preview-panel .katex-display)",
+    )) {
+      const codeHost = block.querySelector<HTMLElement>(".codemirror-host");
+      const toggle = block.querySelector<HTMLButtonElement>(
+        ".preview-toggle-button",
+      );
+      if (!codeHost || !toggle) continue;
+
+      const editing = !codeHost.classList.contains("hidden");
+      if (editing && block !== clickedBlock) toggle.click();
+    }
+
+    if (!clickedBlock) return;
+    const preview = target.closest<HTMLElement>(
+      ".preview-panel .katex-display, .preview-panel .katex",
+    );
+    if (!preview) return;
+
+    const codeHost = clickedBlock.querySelector<HTMLElement>(".codemirror-host");
+    const toggle = clickedBlock.querySelector<HTMLButtonElement>(
+      ".preview-toggle-button",
+    );
+    if (!codeHost?.classList.contains("hidden") || !toggle) return;
+
+    event.preventDefault();
+    toggle.click();
+    requestAnimationFrame(() => {
+      clickedBlock.querySelector<HTMLElement>(".cm-content")?.focus();
+      this.scheduleExternalCodeLineNumbers();
+    });
   };
 
   /** Bullet-list marker written on save. Applied on the next `init()`. */
@@ -210,7 +267,12 @@ export class Editor {
       // lossy image handling (see image-block-markdown.ts).
       defaultValue: "",
       featureConfigs: {
-        [Crepe.Feature.CodeMirror]: { theme: mikuCreamCodeMirrorTheme },
+        [Crepe.Feature.CodeMirror]: {
+          theme: mikuCreamCodeMirrorTheme,
+          // Preview-capable blocks (currently LaTeX) render as their result by
+          // default. Ordinary code blocks have no preview and stay editable.
+          previewOnlyByDefault: true,
+        },
         [Crepe.Feature.ImageBlock]: { proxyDomURL: this.resolveImageSrc },
         [Crepe.Feature.Placeholder]: { text: t("editor.placeholder") },
       },
@@ -220,11 +282,14 @@ export class Editor {
       .config((ctx) => configureMarkdownSerializer(ctx, marker))
       .use(linkFromClipboard)
       .use(findPlugin)
+      .use(imageToolbarPlugin)
+      .use(safeHtmlPresentationPlugin)
       .use(emojiInputRule);
     crepe.on((listener) => {
       listener.markdownUpdated(() => {
         this.onChange();
         this.scheduleExternalCodeLineNumbers();
+        refreshSafeRawHtml(this.host);
       });
     });
     await crepe.create();
@@ -246,6 +311,7 @@ export class Editor {
   setContent(markdown: string): void {
     this.crepe?.editor.action(replaceAll(markdown, true));
     resolveRawHtmlImages(this.host, this.resolveImageSrc);
+    refreshSafeRawHtml(this.host);
     this.scheduleExternalCodeLineNumbers();
   }
 
