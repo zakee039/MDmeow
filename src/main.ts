@@ -62,6 +62,7 @@ interface Settings {
 interface SettingsPayload {
   settings: Settings;
   portable: boolean;
+  fallback: boolean;
   location: string;
   open_with: string | null;
   version: string;
@@ -1255,7 +1256,7 @@ async function bootstrap(): Promise<void> {
   const aboutPath = document.getElementById("about-settings-path");
   if (aboutPath) aboutPath.textContent = payload.location;
 
-  if (!payload.portable) {
+  if (payload.fallback) {
     const hint = document.getElementById("settings-hint") as HTMLElement;
     hint.textContent = t("dialog.readonlyHint", { path: payload.location });
     hint.hidden = false;

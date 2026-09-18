@@ -143,6 +143,10 @@ impl Default for Settings {
 pub struct Store {
     pub path: PathBuf,
     pub portable: bool,
+    /// True only when a Windows portable build wanted to keep settings beside
+    /// the executable but that directory was not writable, so settings were
+    /// moved to the normal per-user config directory.
+    pub fallback: bool,
 }
 
 impl Store {
@@ -150,28 +154,22 @@ impl Store {
     pub fn locate() -> Self {
         if portable::current_mode() == portable::InstallMode::Portable {
             let dir = portable::portable_dir().unwrap_or_else(std::env::temp_dir);
-            let _ = std::fs::create_dir_all(dir.join("data"));
-            return Self {
-                path: dir.join("settings.toml"),
-                portable: true,
-            };
+            if directory_is_writable(&dir) {
+                let _ = std::fs::create_dir_all(dir.join("data"));
+                return Self {
+                    path: dir.join("settings.toml"),
+                    portable: true,
+                    fallback: false,
+                };
+            }
+
+            // A portable executable can still be launched from a protected
+            // directory. Preserve settings by falling back to the normal user
+            // config directory, and expose that exceptional case to the UI.
+            return installed_store(true);
         }
 
-        let base = portable::config_base().unwrap_or_else(std::env::temp_dir);
-        let dir = base.join("MDmeow");
-        let path = dir.join("settings.toml");
-        if !path.exists() {
-            let legacy = base.join("Mowl").join("settings.toml");
-            if legacy.is_file() {
-                let _ = std::fs::create_dir_all(&dir);
-                let _ = std::fs::copy(&legacy, &path);
-            }
-        }
-        let _ = std::fs::create_dir_all(&dir);
-        Self {
-            path,
-            portable: false,
-        }
+        installed_store(false)
     }
 
     pub fn load(&self) -> Settings {
@@ -192,6 +190,39 @@ impl Store {
     }
 }
 
+fn installed_store(fallback: bool) -> Store {
+    let base = portable::config_base().unwrap_or_else(std::env::temp_dir);
+    let dir = base.join("MDmeow");
+    let path = dir.join("settings.toml");
+    if !path.exists() {
+        let legacy = base.join("Mowl").join("settings.toml");
+        if legacy.is_file() {
+            let _ = std::fs::create_dir_all(&dir);
+            let _ = std::fs::copy(&legacy, &path);
+        }
+    }
+    let _ = std::fs::create_dir_all(&dir);
+    Store {
+        path,
+        portable: false,
+        fallback,
+    }
+}
+
+fn directory_is_writable(dir: &Path) -> bool {
+    if std::fs::create_dir_all(dir).is_err() {
+        return false;
+    }
+
+    let probe = dir.join(format!(".mdmeow-write-probe-{}", std::process::id()));
+    match std::fs::write(&probe, b"") {
+        Ok(()) => {
+            let _ = std::fs::remove_file(probe);
+            true
+        }
+        Err(_) => false,
+    }
+}
 fn signature(path: &Path) -> Option<Signature> {
     let meta = std::fs::metadata(path).ok()?;
     let mtime = meta

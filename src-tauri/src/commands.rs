@@ -12,6 +12,9 @@ pub struct SettingsPayload {
     pub settings: Settings,
     /// `true` when settings live next to the executable (portable install).
     pub portable: bool,
+    /// `true` only when a portable build had to fall back to user config
+    /// because its executable directory was not writable.
+    pub fallback: bool,
     /// Absolute path of the settings file, shown in the UI hint / About panel.
     pub location: String,
     /// A file passed on the command line ("Open with" / double-click), if any.
@@ -26,6 +29,7 @@ pub fn get_settings(state: State<AppState>) -> SettingsPayload {
     SettingsPayload {
         settings: store.load(),
         portable: store.portable,
+        fallback: store.fallback,
         location: store.path.display().to_string(),
         open_with: file_arg(&std::env::args().collect::<Vec<_>>()),
         version: env!("CARGO_PKG_VERSION").to_string(),
