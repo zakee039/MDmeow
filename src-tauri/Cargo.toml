@@ -1,13 +1,13 @@
 [package]
-name = "mowl"
-version = "1.6.0"
-description = "Mowl - a minimalist WYSIWYG Markdown editor"
-authors = ["naderi"]
+name = "mdmeow"
+version = "1.7.0"
+description = "MDmeow - a minimalist WYSIWYG Markdown editor"
+authors = ["zakee039", "Ali Naderi"]
 edition = "2021"
 rust-version = "1.77"
 
 [lib]
-name = "mowl_lib"
+name = "mdmeow_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

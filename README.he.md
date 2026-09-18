@@ -1,10 +1,10 @@
-![Mowl](docs/logo.png)
+![MDmeow](docs/logo.png)
 
 [English](README.md) · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · **עברית**
 
 > ℹ️ תרגום זה נוצר אוטומטית. הגרסה הקובעת היא ה־[README באנגלית](README.md).
 
-# Mowl
+# MDmeow
 
 **עורך Markdown מינימליסטי, נייד ו־WYSIWYG.**
 
@@ -14,18 +14,18 @@
 
 ***
 
-## למה Mowl
+## למה MDmeow
 
 - **חזק יותר משנדמה.** עריכה חיה (WYSIWYG), מסמכים בלשוניות, תפריט בלוק, טבלאות
   GFM עם גרירה לסידור מחדש, נוסחאות KaTeX, קוד עם צביעת תחביר, חיפוש והחלפה,
   תמיכה בכתיבה מימין לשמאל, וייצוא HTML/PDF עצמאי.
-- **רזה במיוחד.** בלי Electron. Mowl בנוי על [Tauri](https://tauri.app) ועל
+- **רזה במיוחד.** בלי Electron. MDmeow בנוי על [Tauri](https://tauri.app) ועל
   ה־WebView של מערכת ההפעלה שלך, כך שכל היישום הוא **קובץ הרצה נייד יחיד של כ־7
   מ״ב** — בלי מתקין, בלי מה לחלץ, בלי שירותי רקע.
 - **מהיר באמת.** הליבה היא Rust, החלון מקורי, והפעלה קרה מיידית למעשה. זה מרגיש
   כמו עורך טקסט, לא כמו יישום ווב.
 - **נייד מיסודו.** קובץ `settings.toml` יחיד הניתן לעריכה ידנית יושב ליד קובץ
-  ההרצה. העבר את `Mowl.exe` לזיכרון נייד וההעדפות שלך נוסעות איתו.
+  ההרצה. העבר את `mdmeow.exe` לזיכרון נייד וההעדפות שלך נוסעות איתו.
 
 ## תכונות
 
@@ -48,13 +48,6 @@
 מקומיים מוחלטים — לא רק כתובות `http(s)`. הוסף אחת מתפריט הבלוק `⠿` («Image»), ואז
 הדבק קישור או בחר קובץ.
 
-### ↔️ תמיכה בכתיבה מימין לשמאל
-
-כיוון הכתיבה הוא **לכל קובץ בנפרד**: לחיצה אחת מחליפה את המסמך הפעיל בין
-**משמאל‑לימין ומימין‑לשמאל** — לכתיבה בפרסית, ערבית או עברית. בעת הפתיחה הכיוון
-מזוהה מהתוכן (התו הכיווני הראשון). בלוקי קוד תמיד נשארים משמאל לימין — גם בתוך
-מסמך מימין לשמאל — והכיוון עובר גם לייצוא ה־HTML (`<html dir="rtl">`).
-
 ### 🧱 תפריט בלוק
 
 רחף מעל בלוק כלשהו ולחץ על הכפתור `⠿` לתפריט מהיר שפועל על אותו בלוק:
@@ -76,7 +69,7 @@
 
 ### 📑 לשוניות עם שחזור הפעלה
 
-פתח כמה מסמכים בלשוניות. סגור את Mowl, פתח שוב, והלשוניות שלך — ואפילו מיקומי
+פתח כמה מסמכים בלשוניות. סגור את MDmeow, פתח שוב, והלשוניות שלך — ואפילו מיקומי
 הגלילה שלהן — חוזרות. (ניתן לכיבוי בהגדרות.)
 
 ### 👁️ תצוגת מקור
@@ -115,7 +108,7 @@
 
 ### 🗂️ שיוך קבצים
 
-הגדר את Mowl כיישום ברירת המחדל לקבצי `.md` / `.markdown` (דרך המתקין). לחיצה
+הגדר את MDmeow כיישום ברירת המחדל לקבצי `.md` / `.markdown` (דרך המתקין). לחיצה
 כפולה על קובץ Markdown פותחת אותו בלשונית חדשה בחלון הפעיל.
 
 ### ⚙️ הגדרות: ממשק או קובץ
@@ -123,8 +116,8 @@
 אפשר לשנות כל הגדרה מתוך האפליקציה — כפתור ההגדרות בסרגל הכלים (או `Ctrl/Cmd+,`)
 מקפל פנימה את מסך ההגדרות מעל העורך, עם פקד לכל אפשרות, והשינויים מוחלים ונשמרים
 תוך כדי. או ערוך את קובץ `settings.toml` היחיד והמתועד ליד קובץ ההרצה בכל עורך
-טקסט — Mowl **קולט את השינוי תוך שנייה, בלי הפעלה מחדש**. אם תיקיית התוכנית
-לקריאה בלבד, Mowl נסוג לתיקיית ההגדרות של מערכת ההפעלה ומודיע לך על כך בחלון.
+טקסט — MDmeow **קולט את השינוי תוך שנייה, בלי הפעלה מחדש**. אם תיקיית התוכנית
+לקריאה בלבד, MDmeow נסוג לתיקיית ההגדרות של מערכת ההפעלה ומודיע לך על כך בחלון.
 כל גרסה מגיעה גם עם `settings.example.toml` מתועד במלואו.
 
 ### 🌍 אנגלית וגרמנית
@@ -136,11 +129,9 @@
 
 | בהיר                                           | כהה                                        |
 | ---------------------------------------------- | ------------------------------------------ |
-| ![Mowl בעריכת מסמך](docs/screenshot-light.png) | ![Mowl במצב כהה](docs/screenshot-dark.png) |
+| ![MDmeow בעריכת מסמך](docs/screenshot-light.png) | ![MDmeow במצב כהה](docs/screenshot-dark.png) |
 
-| מימין לשמאל (לכל קובץ)                       |                        תפריט הבלוק                        |
-| -------------------------------------------- | :-------------------------------------------------------: |
-| ![מסמך מימין לשמאל](docs/screenshot-rtl.png) | ![תפריט הבלוק על הכפתור ⠿](docs/screenshot-block-menu.png) |
+![תפריט הבלוק על הכפתור ⠿](docs/screenshot-block-menu.png)
 
 ## קיצורי מקלדת
 
@@ -165,20 +156,20 @@
 
 הורד את הגרסה האחרונה מדף ה־[Releases](../../releases).
 
-- **Windows (x64)** — זמין עכשיו: `Mowl.exe` נייד (\~7 מ״ב, בלי התקנה) או מתקין
+- **Windows (x64)** — זמין עכשיו: `mdmeow.exe` נייד (\~7 מ״ב, בלי התקנה) או מתקין
   NSIS
 - **macOS** (x64 + arm64) ו־**Linux** (x64 + arm64 בפורמט AppImage) — *בקרוב.*
   צינור הגרסאות הרב־פלטפורמי כבר קיים
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)); הבנייות
   האלה יגיעו עם גרסה מתויגת עתידית. עד אז, בנה מהמקור על פלטפורמת היעד
-  (חלק [Building](README.md#building)) — Mowl הוא יישום Tauri ורץ על שלושתן.
+  (חלק [Building](README.md#building)) — MDmeow הוא יישום Tauri ורץ על שלושתן.
 
 הבנייות **אינן חתומות** או מאושרות, כך שמערכת ההפעלה עשויה להזהיר בהפעלה הראשונה:
 
 - **Windows** — SmartScreen: *More info → Run anyway*
 - **macOS** — לחיצה ימנית על היישום → *Open*, או
-  `xattr -dr com.apple.quarantine /path/to/Mowl.app`
-- **Linux** — `chmod +x Mowl*.AppImage` והרצה
+  `xattr -dr com.apple.quarantine /path/to/MDmeow.app`
+- **Linux** — `chmod +x MDmeow*.AppImage` והרצה
 
 עם כל גרסה מתפרסמים סכומי ביקורת SHA‑256.
 
@@ -190,7 +181,6 @@
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
@@ -201,9 +191,9 @@ editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)
 source_font_size = 15
-accent = ""                 # accent colour, e.g. "#0969da"
+accent = "#39C5BB"         # accent colour; reset/default is Miku teal
 
-# below this line: managed by the app — window geometry, open tabs, per-file direction
+# below this line: managed by the app — window geometry, open tabs
 ```
 
 ## בנייה מהמקור
@@ -228,7 +218,7 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 בונה את Windows / macOS / Linux (x64 + arm64) ופותח טיוטת גרסה ב־GitHub עם סכומי
 ביקורת.
 
-מרחיב את Mowl? קרא את **[ARCHITECTURE.md](ARCHITECTURE.md)** — הוא ממפה כל קובץ
+מרחיב את MDmeow? קרא את **[ARCHITECTURE.md](ARCHITECTURE.md)** — הוא ממפה כל קובץ
 ומראה איך להוסיף כפתורי סרגל כלים, פריטי תפריט בלוק, הגדרות ופקודות.
 
 ## מחסנית טכנולוגית
@@ -239,9 +229,3 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 | עורך                  | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
 | ייצוא Markdown ← HTML | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
 | נוסחאות               | [KaTeX](https://katex.org)                              |
-
-## תמיכה
-
-אם Mowl חוסך לך זמן, אפשר לתמוך בפיתוח שלו ב־Ko‑fi. ☕
-
-<a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

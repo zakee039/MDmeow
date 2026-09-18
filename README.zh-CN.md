@@ -1,8 +1,8 @@
-![Mowl](docs/logo.png)
+![MDmeow](docs/logo.png)
 
 [English](README.md) · **简体中文** · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
 
-# Mowl
+# MDmeow
 
 一个小巧、快速的所见即所得 Markdown 编辑器，基于 Tauri 与 Milkdown。磁盘上始终保存普通 Markdown，同时提供接近 Typora 的行内编辑体验。
 
@@ -19,14 +19,13 @@
 - **博客分隔标记**：`<!--more-->` 会保留在 Markdown 中，但不会显示在所见即所得视图里。
 - **快捷键自定义**：设置页点击快捷键框后直接按下新的组合键即可绑定。
 - **简体中文 / English / Deutsch**：可跟随系统或手动选择语言。
-- **LTR / RTL**：新文档默认从左到右，可通过顶部按钮切换当前文档方向。
 - **多标签与会话恢复**：可恢复上一次打开的文档。
 - **便携设置**：`settings.toml` 默认位于程序旁边，并支持外部修改后自动重载。
 - **HTML / PDF 导出**：HTML 自包含 KaTeX 和代码高亮，PDF 使用系统打印对话框。
 
 ## Markdown 兼容
 
-Mowl 优先保持 Markdown 的可移植性，同时对笔记软件和博客中常见的少量原生 HTML 做兼容处理。
+MDmeow 优先保持 Markdown 的可移植性，同时对笔记软件和博客中常见的少量原生 HTML 做兼容处理。
 
 ```md
 ![diagram](./assets/diagram.png)
@@ -46,7 +45,7 @@ Mowl 优先保持 Markdown 的可移植性，同时对笔记软件和博客中�
 
 ## 源码视图
 
-按 **`Ctrl/Cmd+/`** 或顶部源码按钮，可以在所见即所得与原始 Markdown 之间切换。源码视图始终从左到右，左侧有独立的灰色行号 gutter，不占用正文内容。`Tab` / `Shift+Tab` 可以缩进或反缩进选中的行。
+按 **`Ctrl/Cmd+/`** 或顶部源码按钮，可以在所见即所得与原始 Markdown 之间切换。源码视图左侧有独立的灰色行号 gutter，不占用正文内容。`Tab` / `Shift+Tab` 可以缩进或反缩进选中的行。
 
 ## 图片
 
@@ -74,15 +73,15 @@ Mowl 优先保持 Markdown 的可移植性，同时对笔记软件和博客中�
 
 ## 设置
 
-设置页面使用快速淡入动画，修改后即时保存。可配置语言、默认书写方向、拼写检查、列表符号、会话行为、编辑器/源码字体与字号、强调色和应用快捷键。
+设置页面使用快速淡入动画，修改后即时保存。可配置语言、拼写检查、列表符号、会话行为、编辑器/源码字体与字号、强调色和应用快捷键。
 
-`settings.toml` 支持外部编辑后自动重载。如果程序所在目录不可写，Mowl 会回退到系统配置目录。Release 构建同时生成带注释的 `settings.example.toml`。
+`settings.toml` 支持外部编辑后自动重载。如果程序所在目录不可写，MDmeow 会回退到系统配置目录。Release 构建同时生成带注释的 `settings.example.toml`。
 
 ## Windows 构建
 
 标准 Tauri Release 构建会生成：
 
-- 便携 `mowl.exe`
+- 便携 `mdmeow.exe`
 - NSIS 安装程序
 - MSI 安装包
 
@@ -122,4 +121,4 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ## 致谢与许可
 
-Mowl 原作者为 **Ali Naderi**，项目采用 **MIT License**。当前代码在保留原作者信息的基础上增加了本地化、快捷键自定义、Markdown 兼容修复和 Miku Cream 渲染体系。
+MDmeow 基于 **Ali Naderi** 创建的 **Mowl** 分支开发，继续采用 **MIT License**。当前 fork 由 **zakee039** 维护，在保留原作者版权与许可声明的基础上增加了本地化、快捷键自定义、Markdown 兼容修复、Windows 集成和 Miku Cream 渲染体系。

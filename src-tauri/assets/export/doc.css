@@ -136,13 +136,6 @@ html, body { margin: 0; background: var(--bg); }
   overflow-x: auto;
 }
 
-/* Code keeps its left-to-right layout in RTL documents. */
-[dir="rtl"] .markdown-body pre,
-[dir="rtl"] .markdown-body pre code {
-  direction: ltr;
-  text-align: left;
-}
-
 @media print {
   @page { margin: 18mm; }
   html, body { background: #fff; }

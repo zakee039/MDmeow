@@ -7,9 +7,13 @@ pub struct OpenWithStatus {
 }
 
 #[cfg(target_os = "windows")]
-const PROG_ID: &str = "Mowl.Markdown";
+const PROG_ID: &str = "MDmeow.Markdown";
 #[cfg(target_os = "windows")]
-const APP_EXE: &str = "mowl.exe";
+const APP_EXE: &str = "mdmeow.exe";
+#[cfg(target_os = "windows")]
+const LEGACY_PROG_ID: &str = "Mowl.Markdown";
+#[cfg(target_os = "windows")]
+const LEGACY_APP_EXE: &str = "mowl.exe";
 #[cfg(target_os = "windows")]
 const EXTENSIONS: [&str; 3] = [".md", ".markdown", ".mdx"];
 
@@ -22,6 +26,39 @@ fn expected_command() -> anyhow::Result<String> {
 #[cfg(target_os = "windows")]
 fn read_string(key: &winreg::RegKey, path: &str, name: &str) -> Option<String> {
     key.open_subkey(path).ok()?.get_value(name).ok()
+}
+
+#[cfg(target_os = "windows")]
+fn remove_registration(hkcu: &winreg::RegKey, prog_id: &str, app_exe: &str) -> anyhow::Result<()> {
+    use std::io::ErrorKind;
+    use winreg::enums::KEY_WRITE;
+
+    for ext in EXTENSIONS {
+        if let Ok(key) = hkcu.open_subkey_with_flags(
+            format!(r"Software\Classes\{ext}\OpenWithProgids"),
+            KEY_WRITE,
+        ) {
+            let _ = key.delete_value(prog_id);
+        }
+        if let Ok(key) =
+            hkcu.open_subkey_with_flags(format!(r"Software\Classes\{ext}\OpenWithList"), KEY_WRITE)
+        {
+            let _ = key.delete_value(app_exe);
+        }
+    }
+
+    for path in [
+        format!(r"Software\Classes\{prog_id}"),
+        format!(r"Software\Classes\Applications\{app_exe}"),
+    ] {
+        if let Err(err) = hkcu.delete_subkey_all(path) {
+            if err.kind() != ErrorKind::NotFound {
+                return Err(err.into());
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(target_os = "windows")]
@@ -40,16 +77,10 @@ pub fn open_with_status() -> OpenWithStatus {
         }
     };
 
-    let prog_command = read_string(
-        &hkcu,
-        r"Software\Classes\Mowl.Markdown\shell\open\command",
-        "",
-    );
-    let app_command = read_string(
-        &hkcu,
-        r"Software\Classes\Applications\mowl.exe\shell\open\command",
-        "",
-    );
+    let prog_command_path = format!(r"Software\Classes\{PROG_ID}\shell\open\command");
+    let app_command_path = format!(r"Software\Classes\Applications\{APP_EXE}\shell\open\command");
+    let prog_command = read_string(&hkcu, &prog_command_path, "");
+    let app_command = read_string(&hkcu, &app_command_path, "");
     if prog_command.as_deref() != Some(expected.as_str())
         || app_command.as_deref() != Some(expected.as_str())
     {
@@ -62,10 +93,10 @@ pub fn open_with_status() -> OpenWithStatus {
     for ext in EXTENSIONS {
         let progids = format!(r"Software\Classes\{ext}\OpenWithProgids");
         let open_with = format!(r"Software\Classes\{ext}\OpenWithList");
-        let supported = r"Software\Classes\Applications\mowl.exe\SupportedTypes";
+        let supported = format!(r"Software\Classes\Applications\{APP_EXE}\SupportedTypes");
         if read_string(&hkcu, &progids, PROG_ID).is_none()
             || read_string(&hkcu, &open_with, APP_EXE).is_none()
-            || read_string(&hkcu, supported, ext).is_none()
+            || read_string(&hkcu, &supported, ext).is_none()
         {
             return OpenWithStatus {
                 available: true,
@@ -98,15 +129,19 @@ pub fn register_open_with() -> anyhow::Result<OpenWithStatus> {
     let exe = std::env::current_exe()?;
     let icon = format!("\"{}\",0", exe.display());
 
-    let (prog, _) = hkcu.create_subkey(r"Software\Classes\Mowl.Markdown")?;
-    prog.set_value("", &"Mowl Markdown Document")?;
+    // Clean up registrations created by pre-MDmeow versions before writing the
+    // new application identity. This never touches Windows UserChoice/defaults.
+    remove_registration(&hkcu, LEGACY_PROG_ID, LEGACY_APP_EXE)?;
+
+    let (prog, _) = hkcu.create_subkey(format!(r"Software\Classes\{PROG_ID}"))?;
+    prog.set_value("", &"MDmeow Markdown Document")?;
     let (default_icon, _) = prog.create_subkey("DefaultIcon")?;
     default_icon.set_value("", &icon)?;
     let (prog_command, _) = prog.create_subkey(r"shell\open\command")?;
     prog_command.set_value("", &command)?;
 
-    let (app, _) = hkcu.create_subkey(r"Software\Classes\Applications\mowl.exe")?;
-    app.set_value("FriendlyAppName", &"Mowl")?;
+    let (app, _) = hkcu.create_subkey(format!(r"Software\Classes\Applications\{APP_EXE}"))?;
+    app.set_value("FriendlyAppName", &"MDmeow")?;
     let (app_command, _) = app.create_subkey(r"shell\open\command")?;
     app_command.set_value("", &command)?;
     let (supported, _) = app.create_subkey("SupportedTypes")?;
@@ -116,8 +151,7 @@ pub fn register_open_with() -> anyhow::Result<OpenWithStatus> {
         let (progids, _) =
             hkcu.create_subkey(format!(r"Software\Classes\{ext}\OpenWithProgids"))?;
         progids.set_value(PROG_ID, &"")?;
-        let (open_with, _) =
-            hkcu.create_subkey(format!(r"Software\Classes\{ext}\OpenWithList"))?;
+        let (open_with, _) = hkcu.create_subkey(format!(r"Software\Classes\{ext}\OpenWithList"))?;
         open_with.set_value(APP_EXE, &"")?;
     }
 
@@ -131,37 +165,12 @@ pub fn register_open_with() -> anyhow::Result<OpenWithStatus> {
 
 #[cfg(target_os = "windows")]
 pub fn unregister_open_with() -> anyhow::Result<OpenWithStatus> {
-    use std::io::ErrorKind;
-    use winreg::enums::{HKEY_CURRENT_USER, KEY_WRITE};
+    use winreg::enums::HKEY_CURRENT_USER;
     use winreg::RegKey;
 
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-
-    for ext in EXTENSIONS {
-        if let Ok(key) = hkcu.open_subkey_with_flags(
-            format!(r"Software\Classes\{ext}\OpenWithProgids"),
-            KEY_WRITE,
-        ) {
-            let _ = key.delete_value(PROG_ID);
-        }
-        if let Ok(key) = hkcu.open_subkey_with_flags(
-            format!(r"Software\Classes\{ext}\OpenWithList"),
-            KEY_WRITE,
-        ) {
-            let _ = key.delete_value(APP_EXE);
-        }
-    }
-
-    for path in [
-        r"Software\Classes\Mowl.Markdown",
-        r"Software\Classes\Applications\mowl.exe",
-    ] {
-        if let Err(err) = hkcu.delete_subkey_all(path) {
-            if err.kind() != ErrorKind::NotFound {
-                return Err(err.into());
-            }
-        }
-    }
+    remove_registration(&hkcu, PROG_ID, APP_EXE)?;
+    remove_registration(&hkcu, LEGACY_PROG_ID, LEGACY_APP_EXE)?;
 
     Ok(open_with_status())
 }

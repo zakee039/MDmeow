@@ -14,7 +14,7 @@ pub fn portable_dir() -> Option<PathBuf> {
 
     #[cfg(target_os = "macos")]
     {
-        // .../Mowl.app/Contents/MacOS/Mowl  ->  .../
+        // .../MDmeow.app/Contents/MacOS/mdmeow  ->  .../
         let comps: Vec<_> = exe.components().collect();
         if let Some(idx) = comps
             .iter()
@@ -36,7 +36,7 @@ pub fn is_writable(dir: &Path) -> bool {
     if !dir.is_dir() {
         return false;
     }
-    let probe = dir.join(".mowl-write-test");
+    let probe = dir.join(".mdmeow-write-test");
     match fs::File::create(&probe) {
         Ok(_) => {
             let _ = fs::remove_file(&probe);

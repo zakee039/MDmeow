@@ -1,10 +1,10 @@
-![Mowl](docs/logo.png)
+![MDmeow](docs/logo.png)
 
 [English](README.md) · [Deutsch](README.de.md) · **فارسی** · [العربية](README.ar.md) · [עברית](README.he.md)
 
 > ℹ️ این ترجمه به‌صورت ماشینی انجام شده است. نسخهٔ معتبر، [README انگلیسی](README.md) است.
 
-# Mowl
+# MDmeow
 
 **یک ویرایشگر Markdown مینیمال، قابل‌حمل و WYSIWYG.**
 
@@ -15,18 +15,18 @@ Markdown را تایپ کنید و همان لحظه قالب‌بندی‌شد�
 
 ***
 
-## چرا Mowl
+## چرا MDmeow
 
 - **به‌طرز فریبنده‌ای توانمند.** ویرایش درجا (WYSIWYG)، سندها به‌صورت زبانه،
   منوی بلوک، جدول‌های GFM با کشیدن برای مرتب‌سازی، فرمول‌های KaTeX، کدِ رنگ‌آمیزی‌شده،
   جست‌وجو و جایگزینی، پشتیبانی از راست‌به‌چپ، و خروجی HTML/PDF مستقل.
-- **بسیار سبک.** بدون Electron. Mowl روی [Tauri](https://tauri.app) و WebView خودِ
+- **بسیار سبک.** بدون Electron. MDmeow روی [Tauri](https://tauri.app) و WebView خودِ
   سیستم‌عامل ساخته شده است، بنابراین کل برنامه **یک فایل اجراییِ قابل‌حمل در حدود
   ۷ مگابایت** است — بدون نیاز به نصب، بدون چیزی برای استخراج، بدون سرویس پس‌زمینه.
 - **واقعاً سریع.** هستهٔ آن Rust است، پنجره بومی است و راه‌اندازی سرد عملاً آنی
   است. مثل یک ویرایشگر متن حس می‌شود، نه یک برنامهٔ وب.
 - **قابل‌حمل از پایه.** یک `settings.toml` قابل‌ویرایش با دست کنار فایل اجرایی قرار
-  دارد. `Mowl.exe` را روی یک حافظهٔ USB بگذارید و تنظیمات‌تان همراه‌تان می‌آیند.
+  دارد. `mdmeow.exe` را روی یک حافظهٔ USB بگذارید و تنظیمات‌تان همراه‌تان می‌آیند.
 
 ## ویژگی‌ها
 
@@ -52,14 +52,6 @@ Markdownِ ساده و قابل‌حمل است.
 نشانی‌های `http(s)`. از منوی بلوکِ `⠿` یکی اضافه کنید («Image»)، سپس یک پیوند
 بچسبانید یا یک فایل انتخاب کنید.
 
-### ↔️ پشتیبانی از راست‌به‌چپ
-
-جهتِ نوشتار **برای هر فایل جداگانه** است: یک کلیک، سندِ فعال را بین **چپ‌به‌راست و
-راست‌به‌چپ** جابه‌جا می‌کند — برای نوشتنِ فارسی، عربی یا عبری. هنگام باز کردن، جهت
-از روی محتوا تشخیص داده می‌شود (نخستین نویسهٔ جهت‌دار). بلوک‌های کد همیشه
-چپ‌به‌راست می‌مانند — حتی داخل یک سندِ راست‌به‌چپ — و این جهت به خروجی HTML هم
-منتقل می‌شود (`<html dir="rtl">`).
-
 ### 🧱 منوی بلوک
 
 روی هر بلوک بروید و روی دکمهٔ `⠿` کلیک کنید تا منویی سریع باز شود که روی همان
@@ -83,7 +75,7 @@ Markdownِ ساده و قابل‌حمل است.
 
 ### 📑 زبانه‌ها با بازیابی نشست
 
-چند سند را به‌صورت زبانه باز کنید. Mowl را ببندید، دوباره باز کنید، و زبانه‌های
+چند سند را به‌صورت زبانه باز کنید. MDmeow را ببندید، دوباره باز کنید، و زبانه‌های
 شما — حتی موقعیتِ اسکرول‌شان — برمی‌گردند. (در پیکربندی قابل خاموش کردن است.)
 
 ### 👁️ نمای منبع
@@ -124,7 +116,7 @@ Markdownِ ساده و قابل‌حمل است.
 
 ### 🗂️ پیوند فایل‌ها
 
-Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown` قرار دهید (از طریق نصب‌کننده).
+MDmeow را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown` قرار دهید (از طریق نصب‌کننده).
 با دوبار کلیک روی یک فایلِ Markdown، آن فایل در زبانه‌ای تازه از پنجرهٔ در حالِ
 اجرا باز می‌شود.
 
@@ -133,9 +125,9 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 هر تنظیمی را می‌توان از داخل برنامه تغییر داد — دکمهٔ تنظیمات در نوار ابزار (یا
 `Ctrl/Cmd+,`) صفحهٔ تنظیمات را با یک چرخش روی ویرایشگر باز می‌کند، با یک کنترل
 برای هر گزینه؛ تغییرها بی‌درنگ اعمال و ذخیره می‌شوند. یا همان `settings.toml`ِ
-واحد و دارای توضیح کنار فایل اجرایی را در هر ویرایشگرِ متنی ویرایش کنید — Mowl
+واحد و دارای توضیح کنار فایل اجرایی را در هر ویرایشگرِ متنی ویرایش کنید — MDmeow
 **تغییر را ظرف یک ثانیه می‌گیرد، بدون راه‌اندازیِ دوباره**. اگر پوشهٔ برنامه
-فقط‌خواندنی باشد، Mowl به پوشهٔ پیکربندیِ سیستم‌عامل برمی‌گردد و در پنجره به شما
+فقط‌خواندنی باشد، MDmeow به پوشهٔ پیکربندیِ سیستم‌عامل برمی‌گردد و در پنجره به شما
 اطلاع می‌دهد. هر انتشار یک `settings.example.toml`ِ کاملاً توضیح‌دار هم همراه دارد.
 
 ### 🌍 انگلیسی و آلمانی
@@ -147,11 +139,9 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 
 | روشن                                                   | تیره                                           |
 | ------------------------------------------------------ | ---------------------------------------------- |
-| ![Mowl هنگام ویرایش یک سند](docs/screenshot-light.png) | ![Mowl در حالت تیره](docs/screenshot-dark.png) |
+| ![MDmeow هنگام ویرایش یک سند](docs/screenshot-light.png) | ![MDmeow در حالت تیره](docs/screenshot-dark.png) |
 
-| راست‌به‌چپ (برای هر فایل)                  |                          منوی بلوک                          |
-| ------------------------------------------ | :---------------------------------------------------------: |
-| ![سند راست‌به‌چپ](docs/screenshot-rtl.png) | ![منوی بلوک روی دکمهٔ ⠿](docs/screenshot-block-menu.png) |
+![منوی بلوک روی دکمهٔ ⠿](docs/screenshot-block-menu.png)
 
 ## میان‌برهای صفحه‌کلید
 
@@ -176,13 +166,13 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 
 آخرین ساخت را از صفحهٔ [Releases](../../releases) بگیرید.
 
-- **ویندوز (x64)** — هم‌اکنون در دسترس: `Mowl.exe`ِ قابل‌حمل (\~۷ مگابایت، بدون
+- **ویندوز (x64)** — هم‌اکنون در دسترس: `mdmeow.exe`ِ قابل‌حمل (\~۷ مگابایت، بدون
   نصب) یا نصب‌کنندهٔ NSIS
 - **macOS** (x64 + arm64) و **لینوکس** (x64 + arm64 با AppImage) — *به‌زودی.*
   خط لولهٔ انتشارِ چندسکویی آماده است
   ([`.github/workflows/release.yml`](.github/workflows/release.yml))؛ این ساخت‌ها
   با یک انتشارِ برچسب‌دارِ آینده می‌آیند. تا آن زمان روی سیستمِ مقصد از روی منبع
-  بسازید (بخش [Building](README.md#building)) — Mowl یک برنامهٔ Tauri است و روی هر
+  بسازید (بخش [Building](README.md#building)) — MDmeow یک برنامهٔ Tauri است و روی هر
   سه اجرا می‌شود.
 
 ساخت‌ها **امضا یا notarize نشده‌اند**، پس ممکن است سیستم‌عامل هنگام نخستین اجرا
@@ -190,8 +180,8 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 
 - **ویندوز** — SmartScreen: *More info → Run anyway*
 - **macOS** — کلیک راست روی برنامه → *Open*، یا
-  `xattr -dr com.apple.quarantine /path/to/Mowl.app`
-- **لینوکس** — `chmod +x Mowl*.AppImage` و اجرا
+  `xattr -dr com.apple.quarantine /path/to/MDmeow.app`
+- **لینوکس** — `chmod +x MDmeow*.AppImage` و اجرا
 
 با هر انتشار، جمع‌های کنترلیِ SHA‑256 منتشر می‌شوند.
 
@@ -204,7 +194,6 @@ Mowl را برنامهٔ پیش‌فرضِ فایل‌های `.md` / `.markdown`
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
@@ -215,9 +204,9 @@ editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)
 source_font_size = 15
-accent = ""                 # accent colour, e.g. "#0969da"
+accent = "#39C5BB"         # accent colour; reset/default is Miku teal
 
-# below this line: managed by the app — window geometry, open tabs, per-file direction
+# below this line: managed by the app — window geometry, open tabs
 ```
 
 ## ساخت از منبع
@@ -242,7 +231,7 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 `.github/workflows/release.yml` نسخه‌های ویندوز / macOS / لینوکس (x64 + arm64) را
 می‌سازد و یک پیش‌نویسِ انتشارِ GitHub با جمع‌های کنترلی باز می‌کند.
 
-Mowl را گسترش می‌دهید؟ **[ARCHITECTURE.md](ARCHITECTURE.md)** را بخوانید — همهٔ
+MDmeow را گسترش می‌دهید؟ **[ARCHITECTURE.md](ARCHITECTURE.md)** را بخوانید — همهٔ
 فایل‌ها را نقشه‌برداری می‌کند و نشان می‌دهد چگونه دکمه‌های نوار ابزار، مواردِ منوی
 بلوک، تنظیمات و فرمان‌ها را اضافه کنید.
 
@@ -254,9 +243,3 @@ Mowl را گسترش می‌دهید؟ **[ARCHITECTURE.md](ARCHITECTURE.md)** ر
 | ویرایشگر               | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
 | خروجیِ Markdown ← HTML | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
 | فرمول                  | [KaTeX](https://katex.org)                              |
-
-## حمایت
-
-اگر Mowl در وقت شما صرفه‌جویی می‌کند، می‌توانید از توسعهٔ آن در Ko‑fi حمایت کنید. ☕
-
-<a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

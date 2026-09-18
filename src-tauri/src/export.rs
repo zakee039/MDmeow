@@ -36,16 +36,14 @@ fn escape_html(input: &str) -> String {
 }
 
 /// Render `markdown` to a complete HTML document titled `title`.
-/// `dir` is the base writing direction ("ltr" or "rtl"). `doc_path`, when given,
-/// is the base for resolving relative image paths — they are read and inlined as
-/// `data:` URLs so the output stands alone (needed for HTML export and printing).
-pub fn render_html(markdown: &str, title: &str, dir: &str, doc_path: Option<&str>) -> String {
+/// `doc_path`, when given, is the base for resolving relative image paths —
+/// they are read and inlined as `data:` URLs so the output stands alone
+/// (needed for HTML export and printing).
+pub fn render_html(markdown: &str, title: &str, doc_path: Option<&str>) -> String {
     let body = inline_images(&markdown_to_html(markdown, &markdown_options()), doc_path);
-    let dir = if dir == "rtl" { "rtl" } else { "ltr" };
 
     TEMPLATE
         .replace("{{TITLE}}", &escape_html(title))
-        .replace("{{DIR}}", dir)
         .replace("{{DOC_CSS}}", DOC_CSS)
         .replace("{{KATEX_CSS}}", KATEX_CSS)
         .replace("{{HLJS_CSS}}", HLJS_CSS)
@@ -97,7 +95,7 @@ mod tests {
 
     #[test]
     fn renders_basic_markdown() {
-        let out = render_html("# Hello\n\n- a\n- b\n", "Doc", "ltr", None);
+        let out = render_html("# Hello\n\n- a\n- b\n", "Doc", None);
         assert!(out.contains("<h1>Hello</h1>"));
         assert!(out.contains("<title>Doc</title>"));
         assert!(out.contains("data:font/woff2;base64"));
@@ -105,26 +103,26 @@ mod tests {
 
     #[test]
     fn keeps_math_delimiters_for_katex() {
-        let out = render_html("Euler: $e^{i\\pi}+1=0$\n", "Doc", "ltr", None);
+        let out = render_html("Euler: $e^{i\\pi}+1=0$\n", "Doc", None);
         assert!(out.contains("renderMathInElement"));
     }
 
     #[test]
     fn table_extension_active() {
         let md = "| a | b |\n|---|---|\n| 1 | 2 |\n";
-        assert!(render_html(md, "t", "rtl", None).contains("<table>"));
+        assert!(render_html(md, "t", None).contains("<table>"));
     }
 
     #[test]
     fn inlines_a_local_image_and_leaves_remote_ones() {
-        let dir = std::env::temp_dir().join("mowl-export-test");
+        let dir = std::env::temp_dir().join("mdmeow-export-test");
         std::fs::create_dir_all(&dir).unwrap();
         let img = dir.join("pic.png");
         std::fs::write(&img, [1u8, 2, 3, 4]).unwrap();
         let doc = dir.join("doc.md");
 
         let md = "![local](pic.png)\n\n![remote](https://example.com/x.png)\n";
-        let out = render_html(md, "t", "ltr", doc.to_str());
+        let out = render_html(md, "t", doc.to_str());
 
         assert!(out.contains("src=\"data:image/png;base64,"));
         assert!(out.contains("src=\"https://example.com/x.png\""));

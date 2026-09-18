@@ -9,9 +9,9 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const CONTENT = `# Mowl — example configuration
+const CONTENT = `# MDmeow — example configuration
 #
-# Copy this file to "settings.toml" in the same folder and edit it. Mowl also
+# Copy this file to "settings.toml" in the same folder and edit it. MDmeow also
 # creates and maintains settings.toml on its own; hand edits are picked up within
 # about a second, no restart needed. Every key is optional and falls back to the
 # default shown here.
@@ -21,7 +21,6 @@ const CONTENT = `# Mowl — example configuration
 # button in the toolbar, or Ctrl/Cmd+,).
 
 language = "system"         # "system" (follow the OS) | "en" | "de" | "zh-CN"
-direction = "ltr"           # "ltr" | "rtl" — default for new tabs (each file keeps its own direction)
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor
 quit_on_escape = false      # when true, pressing Esc quits the app
 list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+"
@@ -33,7 +32,7 @@ editor_font = ""            # WYSIWYG font family ("" = built-in default)
 editor_font_size = 16       # base editor size in px (headings scale from this)
 source_font = ""            # Markdown source-view font ("" = built-in monospace)
 source_font_size = 15       # source-view size in px
-accent = ""                 # accent colour, e.g. "#0969da" ("" = default)
+accent = "#39C5BB"         # accent colour; reset/default is Miku teal
 
 # App shortcuts. "Mod" means Ctrl on Windows/Linux and Cmd on macOS.
 [shortcuts]
@@ -49,10 +48,9 @@ replace = "Mod+H"
 emoji = "Mod+."
 settings = "Mod+,"
 
-# --- written and managed by Mowl — no need to touch these ---
+# --- written and managed by MDmeow — no need to touch these ---
 # open_with_prompt_dismissed = false  # do not ask again after declining Open with registration
 # open_files = []            # files to reopen on next launch (session restore)
-# open_dirs = []             # "ltr"/"rtl" per open_files entry (per-file direction)
 # active_tab = 0             # index into open_files of the active tab
 # [window]                   # width / height / x / y / maximized
 `;

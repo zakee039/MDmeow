@@ -37,8 +37,6 @@ interface WindowState {
 interface Settings {
   /** UI language: "system" (OS locale) | "en" | "de" | "zh-CN". */
   language: LangPref;
-  /** Default writing direction for new tabs; per-file direction lives on each tab. */
-  direction: "ltr" | "rtl";
   spellcheck: boolean;
   quit_on_escape: boolean;
   /** Bullet-list marker written on save: "*", "-" or "+". */
@@ -57,8 +55,6 @@ interface Settings {
   shortcuts: ShortcutSettings;
   open_with_prompt_dismissed: boolean;
   open_files: string[];
-  /** "ltr"/"rtl" per open_files entry — restores per-file direction. */
-  open_dirs: ("ltr" | "rtl")[];
   active_tab: number;
   window: WindowState;
 }
@@ -167,14 +163,6 @@ function applyAppearance(): void {
   setOrClear("--accent", settings.accent);
 }
 
-function applyDirection(dir: "ltr" | "rtl"): void {
-  editor.setDirection(dir);
-  editorHost.dir = dir;
-  sourceEl.dir = "ltr"; // source is always left-to-right
-  document.getElementById("btn-ltr")?.classList.toggle("active", dir === "ltr");
-  document.getElementById("btn-rtl")?.classList.toggle("active", dir === "rtl");
-}
-
 /** Switch the UI language and refresh every visible string. */
 function applyLanguage(pref: LangPref): void {
   setLang(pref); // fires the onLangChange handler below (no-op if unchanged)
@@ -190,41 +178,8 @@ onLangChange(() => {
   tabBar.render();
   updateSourceButton();
   updateShortcutTitles();
-  updateDirButtons();
   updateTitle();
 });
-
-/** RTL/LTR make no sense for raw Markdown — disable them in source view. */
-function updateDirButtons(): void {
-  for (const id of ["btn-ltr", "btn-rtl"]) {
-    const b = document.getElementById(id) as HTMLButtonElement | null;
-    if (b) b.disabled = sourceMode;
-  }
-}
-
-function setDirection(dir: "ltr" | "rtl"): void {
-  const tab = tabBar.active;
-  if (sourceMode || !tab || tab.direction === dir) return;
-  tab.direction = dir;
-  applyDirection(dir);
-  persistSoon();
-}
-
-/** Guess a document's writing direction from its first strong-directional
- *  character (the Unicode bidi "first strong" heuristic). Cheap: stops at the
- *  first letter and only scans the head of the document. */
-// Hebrew + Arabic (base, supplement, extended-A, presentation forms A/B).
-const RTL_CHAR =
-  /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFF]/;
-// Latin + Latin-1/Extended + Greek + Cyrillic.
-const LTR_CHAR = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/;
-function detectDirection(text: string): "ltr" | "rtl" {
-  for (const ch of text.slice(0, 4000)) {
-    if (RTL_CHAR.test(ch)) return "rtl";
-    if (LTR_CHAR.test(ch)) return "ltr";
-  }
-  return settings?.direction === "rtl" ? "rtl" : "ltr";
-}
 
 function stem(path: string | null): string {
   return baseName(path).replace(/\.[^.]+$/, "") || "document";
@@ -237,13 +192,12 @@ function updateTitle(): void {
   const shown = settings?.show_path && tab?.path ? tab.path : name;
   titleEl.textContent = mark + shown;
   titleEl.title = tab?.path ?? "";
-  void win.setTitle(`${mark}${name} — Mowl`);
+  void win.setTitle(`${mark}${name} — MDmeow`);
 }
 
 function persistSoon(): void {
   const withPath = tabBar.tabs.filter((t) => t.path);
   settings.open_files = withPath.map((t) => t.path as string);
-  settings.open_dirs = withPath.map((t) => t.direction);
   const activePath = tabBar.active?.path ?? null;
   const idx = activePath ? settings.open_files.indexOf(activePath) : -1;
   settings.active_tab = idx < 0 ? 0 : idx;
@@ -270,7 +224,7 @@ async function setOpenWithRegistration(register: boolean): Promise<void> {
     persistSoon();
   } catch (err) {
     await message(t("dialog.openWithError", { err: String(err) }), {
-      title: "Mowl",
+      title: "MDmeow",
       kind: "error",
     });
   }
@@ -281,7 +235,7 @@ async function initializeOpenWithIntegration(): Promise<void> {
   if (!status.available || status.registered || settings.open_with_prompt_dismissed) return;
 
   const register = await ask(t("dialog.openWithPrompt"), {
-    title: "Mowl",
+    title: "MDmeow",
     kind: "info",
   });
   if (register) {
@@ -333,7 +287,6 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
   writeView(next.content, next.scrollTop);
   adoptNormalized(next);
   editor.setSpellcheck(settings.spellcheck);
-  applyDirection(next.direction);
   updateTitle();
   (sourceMode ? sourceEl : editor).focus();
   persistSoon();
@@ -343,7 +296,7 @@ tabBar.onCloseRequest = async (tab: Tab) => {
   if (tab.dirty) {
     const discard = await ask(
       t("dialog.discardChanges", { name: baseName(tab.path) }),
-      { title: "Mowl", kind: "warning" },
+      { title: "MDmeow", kind: "warning" },
     );
     if (!discard) return;
   }
@@ -388,7 +341,6 @@ settingsPanel.onChange = (key: SettingKey, value) => {
         if (!sourceMode) {
           switching = true;
           void editor.reload().then(() => {
-            applyDirection(tabBar.active?.direction ?? "ltr");
             editor.setSpellcheck(settings.spellcheck);
             switching = false;
             markDirtyFromView();
@@ -403,7 +355,7 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "accent":
       applyAppearance();
       break;
-    // direction / quit_on_escape / open_last_session: no immediate effect
+    // quit_on_escape / open_last_session: no immediate effect
   }
   persistSoon();
 };
@@ -458,7 +410,7 @@ sourceEl.addEventListener("keydown", (e) => {
 // --- file operations -------------------------------------------------------
 
 function newTab(): void {
-  tabBar.add(null, "", true, settings.direction === "rtl" ? "rtl" : "ltr");
+  tabBar.add(null, "");
 }
 
 async function openPath(path: string): Promise<void> {
@@ -472,28 +424,25 @@ async function openPath(path: string): Promise<void> {
   try {
     text = await invoke<string>("read_document", { path });
   } catch (e) {
-    await message(String(e), { title: "Mowl", kind: "error" });
+    await message(String(e), { title: "MDmeow", kind: "error" });
     return;
   }
 
-  const dir = detectDirection(text);
   const cur = tabBar.active;
   if (cur && !cur.path && !cur.dirty && cur.content === "") {
     cur.path = path;
     cur.saved = text;
     cur.content = text;
     cur.dirty = false;
-    cur.direction = dir;
     editor.setDocPath(path);
     writeView(text);
     adoptNormalized(cur);
     tabBar.render();
     editor.setSpellcheck(settings.spellcheck);
-    applyDirection(dir);
     (sourceMode ? sourceEl : editor).focus();
     updateTitle();
   } else {
-    tabBar.add(path, text, true, dir); // triggers onActivate -> editor.setContent
+    tabBar.add(path, text); // triggers onActivate -> editor.setContent
   }
 
   persistSoon();
@@ -522,7 +471,7 @@ async function saveDoc(): Promise<boolean> {
       contents: md,
     });
   } catch (e) {
-    await message(String(e), { title: "Mowl", kind: "error" });
+    await message(String(e), { title: "MDmeow", kind: "error" });
     return false;
   }
   if (sourceMode) {
@@ -585,13 +534,12 @@ async function exportHtml(): Promise<void> {
     const html = await invoke<string>("render_html", {
       markdown: readView(),
       title: stem(tab?.path ?? null),
-      dir: tab?.direction ?? "ltr",
       docPath: tab?.path ?? null,
     });
     await invoke("write_document", { path: dest, contents: html });
-    await message(t("dialog.htmlExported"), { title: "Mowl" });
+    await message(t("dialog.htmlExported"), { title: "MDmeow" });
   } catch (e) {
-    await message(String(e), { title: "Mowl", kind: "error" });
+    await message(String(e), { title: "MDmeow", kind: "error" });
   }
 }
 
@@ -600,7 +548,6 @@ async function exportPdf(): Promise<void> {
   const html = await invoke<string>("render_html", {
     markdown: readView(),
     title: stem(tab?.path ?? null),
-    dir: tab?.direction ?? "ltr",
     docPath: tab?.path ?? null,
   });
   const frame = document.createElement("iframe");
@@ -616,14 +563,6 @@ async function exportPdf(): Promise<void> {
     }, 350);
   };
   document.body.appendChild(frame);
-}
-
-async function chooseExport(): Promise<void> {
-  const asHtml = await ask(t("dialog.chooseExport"), {
-    title: t("dialog.exportTitle"),
-  });
-  if (asHtml) await exportHtml();
-  else await exportPdf();
 }
 
 // --- source view --------------------------------------------------------
@@ -685,7 +624,6 @@ function toggleSource(): void {
   tab.dirty = tab.content !== tab.saved;
   tabBar.refreshDirty();
   updateSourceButton();
-  updateDirButtons();
   updateTitle();
   (sourceMode ? sourceEl : editor).focus();
   // Last: focusing the textarea scrolls its caret (end of the freshly set
@@ -824,16 +762,41 @@ function wireAbout(): void {
   });
   document.getElementById("about-link")?.addEventListener("click", (e) => {
     e.preventDefault();
-    void openUrl("https://github.com/naderi");
+    void openUrl("https://github.com/zakee039/mowl");
+  });
+  document.getElementById("about-upstream-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    void openUrl("https://github.com/naderi/mowl");
   });
 }
 
 // --- open menu (New / Open) -------------------------------------------
 
 const openMenuEl = document.getElementById("open-menu") as HTMLElement;
+const exportMenuEl = document.getElementById("export-menu") as HTMLElement;
 
 function closeOpenMenu(): void {
   openMenuEl.hidden = true;
+}
+
+function closeExportMenu(): void {
+  exportMenuEl.hidden = true;
+  document.getElementById("btn-export")?.setAttribute("aria-expanded", "false");
+}
+
+function toggleExportMenu(): void {
+  const btn = document.getElementById("btn-export");
+  if (!btn) return;
+  if (!exportMenuEl.hidden) {
+    closeExportMenu();
+    return;
+  }
+  closeOpenMenu();
+  const r = btn.getBoundingClientRect();
+  exportMenuEl.style.left = `${Math.round(r.left)}px`;
+  exportMenuEl.style.top = `${Math.round(r.bottom + 4)}px`;
+  exportMenuEl.hidden = false;
+  btn.setAttribute("aria-expanded", "true");
 }
 
 function wireOpenMenu(): void {
@@ -841,6 +804,7 @@ function wireOpenMenu(): void {
   if (!btn) return;
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
+    closeExportMenu();
     if (!openMenuEl.hidden) {
       closeOpenMenu();
       return;
@@ -865,6 +829,28 @@ function wireOpenMenu(): void {
   window.addEventListener("resize", closeOpenMenu);
 }
 
+function wireExportMenu(): void {
+  const btn = document.getElementById("btn-export");
+  if (!btn) return;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleExportMenu();
+  });
+  exportMenuEl.addEventListener("click", (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>("button[data-act]")
+      ?.dataset.act;
+    closeExportMenu();
+    if (act === "html") void exportHtml();
+    else if (act === "pdf") void exportPdf();
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (exportMenuEl.hidden) return;
+    const t = e.target as HTMLElement;
+    if (!exportMenuEl.contains(t) && !t.closest("#btn-export")) closeExportMenu();
+  });
+  window.addEventListener("resize", closeExportMenu);
+}
+
 // --- wiring --------------------------------------------------------------
 
 function wireShortcuts(): void {
@@ -874,6 +860,14 @@ function wireShortcuts(): void {
       // Let the focused shortcut control capture the key before app shortcuts
       // (this listener runs in capture phase on window).
       if (settingsPanel.isCapturingShortcut) return;
+
+      if (e.key === "Escape" && (!openMenuEl.hidden || !exportMenuEl.hidden)) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeOpenMenu();
+        closeExportMenu();
+        return;
+      }
 
       // Esc-to-quit (opt-in). Runs after the block menu's own Esc handler,
       // which stops propagation while it is open.
@@ -930,7 +924,7 @@ function wireShortcuts(): void {
         void closeActiveTab();
       } else if (matchesShortcut(e, settings.shortcuts.export)) {
         e.preventDefault();
-        void chooseExport();
+        toggleExportMenu();
       } else if (matchesShortcut(e, settings.shortcuts.toggle_source)) {
         e.preventDefault();
         toggleSource();
@@ -968,10 +962,7 @@ function wireShortcuts(): void {
 function wireButtons(): void {
   // #btn-open opens a small New / Open menu — see wireOpenMenu().
   document.getElementById("btn-save")?.addEventListener("click", () => void saveDoc());
-  document.getElementById("btn-export")?.addEventListener("click", () => void chooseExport());
   document.getElementById("btn-source")?.addEventListener("click", () => toggleSource());
-  document.getElementById("btn-ltr")?.addEventListener("click", () => setDirection("ltr"));
-  document.getElementById("btn-rtl")?.addEventListener("click", () => setDirection("rtl"));
   document.getElementById("btn-settings")?.addEventListener("click", () => {
     if (settingsPanel.isOpen) settingsPanel.close();
     else settingsPanel.open();
@@ -1025,7 +1016,7 @@ async function quitApp(): Promise<void> {
   closing = true;
   if (tabBar.tabs.some((tab) => tab.dirty)) {
     const quit = await ask(t("dialog.unsavedQuit"), {
-      title: "Mowl",
+      title: "MDmeow",
       kind: "warning",
     });
     if (!quit) {
@@ -1086,12 +1077,10 @@ async function restoreTabs(): Promise<void> {
   }
 
   const files = settings.open_files ?? [];
-  const dirs = settings.open_dirs ?? [];
-  const readable: { path: string; dir: "ltr" | "rtl" | null }[] = [];
-  for (let i = 0; i < files.length; i++) {
-    if (files[i] && (await fileReadable(files[i]))) {
-      const d = dirs[i];
-      readable.push({ path: files[i], dir: d === "ltr" || d === "rtl" ? d : null });
+  const readable: string[] = [];
+  for (const path of files) {
+    if (path && (await fileReadable(path))) {
+      readable.push(path);
     }
   }
 
@@ -1100,9 +1089,9 @@ async function restoreTabs(): Promise<void> {
     return;
   }
 
-  for (const { path, dir } of readable) {
+  for (const path of readable) {
     const text = await invoke<string>("read_document", { path });
-    tabBar.add(path, text, false, dir ?? detectDirection(text));
+    tabBar.add(path, text, false);
   }
   const idx = Math.min(Math.max(settings.active_tab ?? 0, 0), readable.length - 1);
   tabBar.activate(tabBar.tabs[idx].id);
@@ -1127,7 +1116,6 @@ async function bootstrap(): Promise<void> {
   void listen<Settings>("settings-changed", (e) => {
     const ext = e.payload;
     settings.language = ext.language ?? "system";
-    settings.direction = ext.direction;
     settings.spellcheck = ext.spellcheck;
     settings.quit_on_escape = ext.quit_on_escape;
     settings.show_path = ext.show_path;
@@ -1144,9 +1132,6 @@ async function bootstrap(): Promise<void> {
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
     updateShortcutTitles();
-    // `direction` in settings.toml is only the default for new tabs now; the
-    // active document keeps its own direction. Just refresh the buttons.
-    if (!sourceMode) applyDirection(tabBar.active?.direction ?? "ltr");
     editor.setSpellcheck(settings.spellcheck);
     updateTitle();
     settingsPanel.refresh();
@@ -1157,7 +1142,6 @@ async function bootstrap(): Promise<void> {
       if (!sourceMode) {
         switching = true;
         void editor.reload().then(() => {
-          applyDirection(tabBar.active?.direction ?? "ltr");
           editor.setSpellcheck(settings.spellcheck);
           switching = false;
           markDirtyFromView();
@@ -1178,7 +1162,6 @@ async function bootstrap(): Promise<void> {
   }
 
   await editor.init("");
-  applyDirection(settings.direction === "rtl" ? "rtl" : "ltr");
 
   // Show the window early so a slow or failing later step can never leave it
   // stuck hidden in the taskbar.
@@ -1203,9 +1186,9 @@ async function bootstrap(): Promise<void> {
   wireButtons();
   wireAbout();
   wireOpenMenu();
+  wireExportMenu();
   updateSourceButton();
   updateShortcutTitles();
-  updateDirButtons();
   wireShortcuts();
   await wireWindowState();
 
@@ -1222,7 +1205,7 @@ bootstrap().catch(async (e) => {
     /* ignore */
   }
   await message(t("dialog.startupFailed", { err: String(e) }), {
-    title: "Mowl",
+    title: "MDmeow",
     kind: "error",
   });
 });

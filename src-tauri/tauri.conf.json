@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Mowl",
-  "version": "1.6.0",
-  "identifier": "com.alinaderi.mowl",
+  "productName": "MDmeow",
+  "version": "1.7.0",
+  "identifier": "com.zakee039.mdmeow",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Mowl",
+        "title": "MDmeow",
         "width": 900,
         "height": 680,
         "minWidth": 480,
@@ -34,7 +34,7 @@
     "targets": "all",
     "category": "Productivity",
     "shortDescription": "A minimalist WYSIWYG Markdown editor",
-    "longDescription": "Mowl is a minimalist, portable WYSIWYG Markdown editor with light and dark themes.",
+    "longDescription": "MDmeow is a minimalist, portable WYSIWYG Markdown editor with the Miku Cream rendering system.",
     "fileAssociations": [
       {
         "ext": ["md", "markdown"],

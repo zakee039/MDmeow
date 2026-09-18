@@ -39,7 +39,7 @@ export const linkFromClipboard = $prose((ctx) => {
   const type = linkSchema.type(ctx);
 
   return new Plugin({
-    key: new PluginKey("mowl-link-from-clipboard"),
+    key: new PluginKey("mdmeow-link-from-clipboard"),
 
     // A capture-phase paste listener wins over Milkdown's own clipboard plugin,
     // which would otherwise consume the pasted URL as plain text.

@@ -1,4 +1,4 @@
-// Tiny in-app i18n. Covers Mowl's own chrome (toolbar, settings panel, About,
+// Tiny in-app i18n. Covers MDmeow's own chrome (toolbar, settings panel, About,
 // dialogs, tab bar, find/replace, the block menu, the emoji picker) plus the
 // editor placeholder. Milkdown/Crepe's own micro-UI (slash menu, link/table
 // tooltips, image upload, LaTeX, code language picker) stays English.
@@ -9,7 +9,7 @@ export type LangPref = "system" | "en" | "de" | "zh-CN";
 export type Lang = "en" | "de" | "zh-CN";
 
 const EN = {
-  "toolbar.about.title": "About Mowl",
+  "toolbar.about.title": "About MDmeow",
   "toolbar.open.title": "New / Open (Ctrl/Cmd+N, Ctrl/Cmd+O)",
   "toolbar.open.aria": "New or open file",
   "toolbar.save.title": "Save (Ctrl/Cmd+S)",
@@ -19,18 +19,17 @@ const EN = {
   "toolbar.source.title": "Edit Markdown source",
   "toolbar.sourceBack.title": "Back to formatted view",
   "toolbar.source.aria": "Toggle source view",
-  "toolbar.ltr.title": "Left-to-right",
-  "toolbar.ltr.aria": "Left-to-right text",
-  "toolbar.rtl.title": "Right-to-left",
-  "toolbar.rtl.aria": "Right-to-left text",
   "toolbar.settings.title": "Settings (Ctrl/Cmd+,)",
   "toolbar.settings.aria": "Settings",
 
   "menu.new": "New",
   "menu.open": "Open…",
+  "menu.exportHtml": "Export HTML",
+  "menu.exportPdf": "Export PDF",
 
   "about.tagline": "Portable WYSIWYG Markdown editor",
-  "about.credit": "by Ali Naderi · MIT License",
+  "about.credit": "zakee039 · MIT License",
+  "about.forkedFrom": "Forked from",
   "about.close": "Close",
 
   "doc.untitled": "Untitled",
@@ -72,11 +71,9 @@ const EN = {
   "dialog.discardChanges": "Discard unsaved changes to {name}?",
   "dialog.unsavedQuit": "You have unsaved changes. Quit without saving?",
   "dialog.htmlExported": "HTML exported.",
-  "dialog.chooseExport": "Export as HTML file?  (No = print / save as PDF)",
-  "dialog.exportTitle": "Export",
   "dialog.startupFailed": "Startup failed: {err}",
   "dialog.readonlyHint": "Program folder is read-only — settings saved to {path}",
-  "dialog.openWithPrompt": "Register Mowl in Windows ‘Open with’ for Markdown files? This will not change your default app.",
+  "dialog.openWithPrompt": "Register MDmeow in Windows ‘Open with’ for Markdown files? This will not change your default app.",
   "dialog.openWithError": "Could not update Windows Open with registration: {err}",
 
   "editor.placeholder": "Write here — “/” for blocks, the ⠿ button to change the current one",
@@ -96,10 +93,6 @@ const EN = {
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
   "settings.language.zh-CN": "简体中文",
-  "settings.direction": "Writing direction",
-  "settings.direction.hint": "default for new files (each file keeps its own)",
-  "settings.direction.ltr": "Left-to-right",
-  "settings.direction.rtl": "Right-to-left",
   "settings.spellcheck": "Spell-check squiggles in the editor",
   "settings.quitOnEscape": "Press Esc to quit the app",
   "settings.alwaysShowTabbar": "Always show the tab bar (even with one file)",
@@ -136,7 +129,7 @@ const EN = {
 export type I18nKey = keyof typeof EN;
 
 const DE: Partial<Record<I18nKey, string>> = {
-  "toolbar.about.title": "Über Mowl",
+  "toolbar.about.title": "Über MDmeow",
   "toolbar.open.title": "Neu / Öffnen (Strg/Cmd+N, Strg/Cmd+O)",
   "toolbar.open.aria": "Neue Datei / Datei öffnen",
   "toolbar.save.title": "Speichern (Strg/Cmd+S)",
@@ -146,18 +139,17 @@ const DE: Partial<Record<I18nKey, string>> = {
   "toolbar.source.title": "Markdown-Quelltext bearbeiten",
   "toolbar.sourceBack.title": "Zurück zur formatierten Ansicht",
   "toolbar.source.aria": "Quelltextansicht umschalten",
-  "toolbar.ltr.title": "Links nach rechts",
-  "toolbar.ltr.aria": "Text links nach rechts",
-  "toolbar.rtl.title": "Rechts nach links",
-  "toolbar.rtl.aria": "Text rechts nach links",
   "toolbar.settings.title": "Einstellungen (Strg/Cmd+,)",
   "toolbar.settings.aria": "Einstellungen",
 
   "menu.new": "Neu",
   "menu.open": "Öffnen…",
+  "menu.exportHtml": "HTML exportieren",
+  "menu.exportPdf": "PDF exportieren",
 
   "about.tagline": "Portabler WYSIWYG-Markdown-Editor",
-  "about.credit": "von Ali Naderi · MIT-Lizenz",
+  "about.credit": "zakee039 · MIT-Lizenz",
+  "about.forkedFrom": "Forked from",
   "about.close": "Schließen",
 
   "doc.untitled": "Ohne Titel",
@@ -199,8 +191,6 @@ const DE: Partial<Record<I18nKey, string>> = {
   "dialog.discardChanges": "Ungespeicherte Änderungen an {name} verwerfen?",
   "dialog.unsavedQuit": "Es gibt ungespeicherte Änderungen. Ohne Speichern beenden?",
   "dialog.htmlExported": "HTML exportiert.",
-  "dialog.chooseExport": "Als HTML-Datei exportieren?  (Nein = drucken / als PDF speichern)",
-  "dialog.exportTitle": "Exportieren",
   "dialog.startupFailed": "Start fehlgeschlagen: {err}",
   "dialog.readonlyHint": "Programmordner ist schreibgeschützt — Einstellungen gespeichert unter {path}",
 
@@ -218,10 +208,6 @@ const DE: Partial<Record<I18nKey, string>> = {
   "settings.language.system": "System",
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
-  "settings.direction": "Schreibrichtung",
-  "settings.direction.hint": "Standard für neue Dateien (jede Datei behält ihre eigene)",
-  "settings.direction.ltr": "Links nach rechts",
-  "settings.direction.rtl": "Rechts nach links",
   "settings.spellcheck": "Rechtschreib-Wellenlinien im Editor",
   "settings.quitOnEscape": "Mit Esc die App beenden",
   "settings.alwaysShowTabbar": "Tab-Leiste immer zeigen (auch bei einer Datei)",
@@ -239,7 +225,7 @@ const DE: Partial<Record<I18nKey, string>> = {
 };
 
 const ZH_CN: Partial<Record<I18nKey, string>> = {
-  "toolbar.about.title": "关于 Mowl",
+  "toolbar.about.title": "关于 MDmeow",
   "toolbar.open.title": "新建 / 打开（Ctrl/Cmd+N，Ctrl/Cmd+O）",
   "toolbar.open.aria": "新建或打开文件",
   "toolbar.save.title": "保存（Ctrl/Cmd+S）",
@@ -249,18 +235,17 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "toolbar.source.title": "编辑 Markdown 源码",
   "toolbar.sourceBack.title": "返回所见即所得视图",
   "toolbar.source.aria": "切换源码视图",
-  "toolbar.ltr.title": "从左到右",
-  "toolbar.ltr.aria": "从左到右文本",
-  "toolbar.rtl.title": "从右到左",
-  "toolbar.rtl.aria": "从右到左文本",
   "toolbar.settings.title": "设置（Ctrl/Cmd+,）",
   "toolbar.settings.aria": "设置",
 
   "menu.new": "新建",
   "menu.open": "打开…",
+  "menu.exportHtml": "导出 HTML",
+  "menu.exportPdf": "导出 PDF",
 
   "about.tagline": "便携式所见即所得 Markdown 编辑器",
-  "about.credit": "Ali Naderi · MIT License",
+  "about.credit": "zakee039 · MIT License",
+  "about.forkedFrom": "Forked from",
   "about.close": "关闭",
 
   "doc.untitled": "未命名",
@@ -302,11 +287,9 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "dialog.discardChanges": "放弃对 {name} 的未保存更改吗？",
   "dialog.unsavedQuit": "仍有未保存的更改。确定不保存并退出吗？",
   "dialog.htmlExported": "HTML 已导出。",
-  "dialog.chooseExport": "导出为 HTML 文件吗？（选择“否”将打印 / 另存为 PDF）",
-  "dialog.exportTitle": "导出",
   "dialog.startupFailed": "启动失败：{err}",
   "dialog.readonlyHint": "程序目录为只读，设置已保存到 {path}",
-  "dialog.openWithPrompt": "是否将 Mowl 注册到 Windows 的 Markdown 打开方式？这不会更改你的默认应用。",
+  "dialog.openWithPrompt": "是否将 MDmeow 注册到 Windows 的 Markdown 打开方式？这不会更改你的默认应用。",
   "dialog.openWithError": "更新 Windows 打开方式注册失败：{err}",
 
   "editor.placeholder": "在此输入 — 输入“/”插入内容块，点击 ⠿ 更改当前块类型",
@@ -326,10 +309,6 @@ const ZH_CN: Partial<Record<I18nKey, string>> = {
   "settings.language.en": "English",
   "settings.language.de": "Deutsch",
   "settings.language.zh-CN": "简体中文",
-  "settings.direction": "书写方向",
-  "settings.direction.hint": "新文件的默认方向（每个文件会保留自己的方向）",
-  "settings.direction.ltr": "从左到右",
-  "settings.direction.rtl": "从右到左",
   "settings.spellcheck": "在编辑器中显示拼写检查波浪线",
   "settings.quitOnEscape": "按 Esc 退出应用",
   "settings.alwaysShowTabbar": "始终显示标签栏（即使只有一个文件）",

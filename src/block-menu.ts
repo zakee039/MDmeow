@@ -617,7 +617,7 @@ export function runBlockAction(crepe: Crepe, id: BlockActionId): void {
     try {
       item.run(ctx, target);
     } catch (err) {
-      console.error("[mowl] block shortcut failed", err);
+      console.error("[mdmeow] block shortcut failed", err);
     }
     view.focus();
   });
@@ -639,7 +639,7 @@ class BlockMenu {
   constructor(crepe: Crepe) {
     this.#crepe = crepe;
     this.#el = document.createElement("div");
-    this.#el.className = "mowl-block-menu";
+    this.#el.className = "mdmeow-block-menu";
     this.#el.hidden = true;
     document.body.appendChild(this.#el);
     this.#build();
@@ -767,7 +767,7 @@ class BlockMenu {
       try {
         item.run(ctx, target);
       } catch (err) {
-        console.error("[mowl] block action failed", err);
+        console.error("[mdmeow] block action failed", err);
       }
       ctx.get(editorViewCtx).focus();
     });

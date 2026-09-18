@@ -15,7 +15,6 @@ import {
 /** The subset of `Settings` (main.ts) the panel reads/writes. */
 export interface PanelSettings {
   language: string;
-  direction: string;
   spellcheck: boolean;
   quit_on_escape: boolean;
   always_show_tabbar: boolean;
@@ -65,16 +64,6 @@ const SECTIONS: Section[] = [
           { value: "en", label: "settings.language.en" },
           { value: "de", label: "settings.language.de" },
           { value: "zh-CN", label: "settings.language.zh-CN" },
-        ],
-      },
-      {
-        key: "direction",
-        kind: "select",
-        label: "settings.direction",
-        hint: "settings.direction.hint",
-        options: [
-          { value: "ltr", label: "settings.direction.ltr" },
-          { value: "rtl", label: "settings.direction.rtl" },
         ],
       },
       { key: "accent", kind: "color", label: "settings.accent" },
@@ -294,8 +283,8 @@ export class SettingsPanel {
           (ctl as HTMLInputElement).checked = Boolean(raw);
         } else if (f.kind === "color") {
           const [color, text] = ctl.querySelectorAll("input");
-          const hex = typeof raw === "string" && raw ? raw : "";
-          (color as HTMLInputElement).value = hex || "#4a7dff";
+          const hex = typeof raw === "string" && raw ? raw : "#39C5BB";
+          (color as HTMLInputElement).value = hex;
           (text as HTMLInputElement).value = hex;
         } else {
           (ctl as HTMLInputElement | HTMLSelectElement).value = String(raw ?? "");
@@ -494,7 +483,7 @@ export class SettingsPanel {
       color.type = "color";
       const text = document.createElement("input");
       text.type = "text";
-      text.placeholder = "#4a7dff";
+      text.placeholder = "#39C5BB";
       text.spellcheck = false;
       const clear = document.createElement("button");
       clear.type = "button";
@@ -508,9 +497,9 @@ export class SettingsPanel {
       color.addEventListener("input", () => commit(color.value));
       text.addEventListener("change", () => {
         const v = text.value.trim();
-        commit(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : "");
+        commit(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : "#39C5BB");
       });
-      clear.addEventListener("click", () => commit(""));
+      clear.addEventListener("click", () => commit("#39C5BB"));
       wrap.append(color, text, clear);
       control = wrap;
     } else {

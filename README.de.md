@@ -1,36 +1,36 @@
-![Mowl](docs/logo.png)
+![MDmeow](docs/logo.png)
 
 [English](README.md) · **Deutsch** · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
 
 > ℹ️ Diese Übersetzung wurde maschinell erstellt. Maßgeblich ist das englische
 > [README](README.md).
 
-# Mowl
+# MDmeow
 
 **Ein minimalistischer, portabler WYSIWYG‑Markdown‑Editor.**
 
 Markdown tippen, sofort formatiert sehen — im Typora‑Stil. Mächtig genug für
-echtes Schreiben (Tabellen, Formeln, Code, Fußnoten, RTL), und trotzdem eine
+echtes Schreiben (Tabellen, Formeln, Code, Fußnoten), und trotzdem eine
 einzige \~7‑MB‑Anwendung, die sofort startet und nicht im Weg steht.
 
 [Funktionen](#funktionen) · [Screenshots](#screenshots) · [Download](#download) · [Konfiguration](#konfiguration) · [Selbst bauen](#selbst-bauen)
 
 ***
 
-## Warum Mowl
+## Warum MDmeow
 
 - **Überraschend mächtig.** Inline‑WYSIWYG‑Bearbeitung, Dokumente in Tabs, ein
   Blockmenü, GFM‑Tabellen mit Ziehen zum Umsortieren, KaTeX‑Formeln,
-  syntaxhervorgehobener Code, Suchen & Ersetzen, Rechts‑nach‑links‑Unterstützung
-  und in sich geschlossener HTML‑/PDF‑Export.
-- **Extrem schlank.** Kein Electron. Mowl baut auf [Tauri](https://tauri.app) und
+  syntaxhervorgehobener Code, Suchen & Ersetzen und in sich geschlossener
+  HTML‑/PDF‑Export.
+- **Extrem schlank.** Kein Electron. MDmeow baut auf [Tauri](https://tauri.app) und
   der WebView deines Betriebssystems auf, sodass die ganze App eine **einzige
   portable Anwendung von rund 7 MB** ist — kein Installer nötig, nichts zu
   entpacken, keine Hintergrunddienste.
 - **Wirklich schnell.** Der Kern ist Rust, das Fenster nativ, und der Kaltstart
   praktisch sofort. Es fühlt sich wie ein Texteditor an, nicht wie eine Web‑App.
 - **Portabel von Grund auf.** Eine einzige, von Hand editierbare `settings.toml`
-  liegt neben der Anwendung. Zieh `Mowl.exe` auf einen USB‑Stick und deine
+  liegt neben der Anwendung. Zieh `mdmeow.exe` auf einen USB‑Stick und deine
   Einstellungen reisen mit.
 
 ## Funktionen
@@ -58,14 +58,6 @@ Pfaden**, die gegen den Ordner des Dokuments aufgelöst werden
 — nicht nur bei `http(s)`‑URLs. Über das `⠿`‑Blockmenü hinzufügen („Image"), dann
 einen Link einfügen oder eine Datei auswählen.
 
-### ↔️ Rechts‑nach‑links‑Unterstützung
-
-Die Schreibrichtung ist **pro Datei**: Ein Klick schaltet das aktive Dokument
-zwischen **LTR und RTL** um — für Persisch, Arabisch oder Hebräisch. Beim Öffnen
-wird die Richtung aus dem Inhalt erkannt (erstes richtungsgebundenes Zeichen).
-Codeblöcke bleiben immer von links nach rechts — auch in einem RTL‑Dokument — und
-die Richtung wird in den HTML‑Export übernommen (`<html dir="rtl">`).
-
 ### 🧱 Blockmenü
 
 Über einen Block fahren und auf den `⠿`‑Knopf klicken für ein Schnellmenü, das auf
@@ -90,7 +82,7 @@ Doppelpunkt zum Emoji. Natives Unicode, keine Bilder, nichts wird geladen.
 
 ### 📑 Tabs mit Sitzungswiederherstellung
 
-Mehrere Dokumente als Tabs öffnen. Mowl schließen, wieder öffnen, und deine Tabs —
+Mehrere Dokumente als Tabs öffnen. MDmeow schließen, wieder öffnen, und deine Tabs —
 samt Scrollpositionen — sind zurück. (In der Konfiguration abschaltbar.)
 
 ### 👁️ Quelltextansicht
@@ -128,13 +120,13 @@ Dazu der Rest von GFM: Aufgabenlisten, Fußnoten, Durchstreichen, Autolinks.
 
 ### 🎨 Miku Cream & Erscheinungsbild
 
-Mowl verwendet **Miku Cream** als einheitliches Rendering für Dokumente,
+MDmeow verwendet **Miku Cream** als einheitliches Rendering für Dokumente,
 Codeblöcke, KaTeX-Formeln, Tabellen, Zitate, Listen und Bilder. Editor‑Schrift,
 Schriftgröße, Quelltext‑Schrift und Akzentfarbe sind konfigurierbar.
 
 ### 🗂️ Dateizuordnungen
 
-Mowl als Standard‑App für `.md`‑/`.markdown`‑Dateien festlegen (über den
+MDmeow als Standard‑App für `.md`‑/`.markdown`‑Dateien festlegen (über den
 Installer). Ein Doppelklick auf eine Markdown‑Datei öffnet sie in einem neuen Tab
 des laufenden Fensters.
 
@@ -144,9 +136,9 @@ Jede Einstellung lässt sich in der App ändern — der Einstellungen-Knopf in d
 Toolbar (oder `Strg/Cmd+,`) klappt die Einstellungsseite über den Editor herein,
 mit einem Bedienelement pro Option; Änderungen werden sofort angewendet und
 gespeichert. Oder die einzige, kommentierte `settings.toml` neben der Anwendung
-in einem beliebigen Texteditor bearbeiten — Mowl **übernimmt die Änderung
+in einem beliebigen Texteditor bearbeiten — MDmeow **übernimmt die Änderung
 innerhalb einer Sekunde, ohne Neustart**. Ist der Programmordner schreibgeschützt,
-weicht Mowl auf das Konfigurationsverzeichnis des Betriebssystems aus und weist im
+weicht MDmeow auf das Konfigurationsverzeichnis des Betriebssystems aus und weist im
 Fenster darauf hin. Jede Veröffentlichung bringt außerdem eine vollständig
 kommentierte `settings.example.toml` mit.
 
@@ -160,11 +152,9 @@ Einstellungen).
 
 | Hell                                                               | Dunkel                                           |
 | ------------------------------------------------------------------ | ------------------------------------------------ |
-| ![Mowl beim Bearbeiten eines Dokuments](docs/screenshot-light.png) | ![Mowl im Dunkelmodus](docs/screenshot-dark.png) |
+| ![MDmeow beim Bearbeiten eines Dokuments](docs/screenshot-light.png) | ![MDmeow im Dunkelmodus](docs/screenshot-dark.png) |
 
-| Rechts‑nach‑links (pro Datei)                              |                        Blockmenü                        |
-| ---------------------------------------------------------- | :-----------------------------------------------------: |
-| ![Dokument von rechts nach links](docs/screenshot-rtl.png) | ![Blockmenü am ⠿-Knopf](docs/screenshot-block-menu.png) |
+![Blockmenü am ⠿-Knopf](docs/screenshot-block-menu.png)
 
 ## Tastenkürzel
 
@@ -189,13 +179,13 @@ Einstellungen).
 
 Den aktuellen Build gibt es auf der Seite [Releases](../../releases).
 
-- **Windows (x64)** — jetzt verfügbar: portable `Mowl.exe` (\~7 MB, ohne
+- **Windows (x64)** — jetzt verfügbar: portable `mdmeow.exe` (\~7 MB, ohne
   Installation) oder der NSIS‑Installer
 - **macOS** (x64 + arm64) und **Linux** (x64 + arm64 AppImage) — *demnächst.*
   Die plattformübergreifende Release‑Pipeline steht bereits
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)); diese Builds
   kommen mit einer künftigen getaggten Veröffentlichung. Bis dahin auf dem
-  Zielsystem aus dem Quellcode bauen (siehe [Selbst bauen](#selbst-bauen)) — Mowl
+  Zielsystem aus dem Quellcode bauen (siehe [Selbst bauen](#selbst-bauen)) — MDmeow
   ist eine Tauri‑App und läuft auf allen dreien.
 
 Die Builds sind **nicht** signiert oder notarisiert, das Betriebssystem kann beim
@@ -203,8 +193,8 @@ ersten Start also warnen:
 
 - **Windows** — SmartScreen: *Weitere Informationen → Trotzdem ausführen*
 - **macOS** — Rechtsklick auf die App → *Öffnen*, oder
-  `xattr -dr com.apple.quarantine /pfad/zu/Mowl.app`
-- **Linux** — `chmod +x Mowl*.AppImage` und ausführen
+  `xattr -dr com.apple.quarantine /pfad/zu/MDmeow.app`
+- **Linux** — `chmod +x MDmeow*.AppImage` und ausführen
 
 Zu jeder Veröffentlichung werden SHA‑256‑Prüfsummen bereitgestellt.
 
@@ -217,7 +207,6 @@ Abschnitt ist für die Bearbeitung von Hand gedacht und wird live neu geladen
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
@@ -228,9 +217,9 @@ editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)
 source_font_size = 15
-accent = ""                 # accent colour, e.g. "#0969da"
+accent = "#39C5BB"         # accent colour; reset/default is Miku teal
 
-# below this line: managed by the app — window geometry, open tabs, per-file direction
+# below this line: managed by the app — window geometry, open tabs
 ```
 
 ## Selbst bauen
@@ -255,7 +244,7 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust-Unit-Tests
 pushen — `.github/workflows/release.yml` baut Windows / macOS / Linux
 (x64 + arm64) und öffnet einen GitHub‑Release‑Entwurf mit Prüfsummen.
 
-Mowl erweitern? Lies **[ARCHITECTURE.md](ARCHITECTURE.md)** — dort ist jede Datei
+MDmeow erweitern? Lies **[ARCHITECTURE.md](ARCHITECTURE.md)** — dort ist jede Datei
 verzeichnet und es wird gezeigt, wie man Toolbar‑Knöpfe, Blockmenü‑Einträge,
 Einstellungen und Kommandos hinzufügt.
 
@@ -267,9 +256,3 @@ Einstellungen und Kommandos hinzufügt.
 | Editor                 | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
 | Markdown → HTML‑Export | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
 | Formeln                | [KaTeX](https://katex.org)                              |
-
-## Unterstützung
-
-Wenn Mowl dir Zeit spart, kannst du die Entwicklung auf Ko‑fi unterstützen. ☕
-
-<a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

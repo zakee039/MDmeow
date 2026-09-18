@@ -1,10 +1,10 @@
-![Mowl](docs/logo.png)
+![MDmeow](docs/logo.png)
 
 **English** · [简体中文](README.zh-CN.md) · [Deutsch](README.de.md) · [فارسی](README.fa.md) · [العربية](README.ar.md) · [עברית](README.he.md)
 
-# Mowl
+# MDmeow
 
-A small, fast WYSIWYG Markdown editor built with Tauri and Milkdown. Mowl keeps the file on disk as ordinary Markdown while giving you a Typora-style inline editing experience.
+A small, fast WYSIWYG Markdown editor built with Tauri and Milkdown. MDmeow keeps the file on disk as ordinary Markdown while giving you a Typora-style inline editing experience.
 
 This edition uses **Miku Cream** as the built-in rendering system: cream document surfaces, `#39C5BB` accents, a light syntax-highlighting palette, KaTeX math, compact tables, and restrained UI chrome.
 
@@ -19,14 +19,13 @@ This edition uses **Miku Cream** as the built-in rendering system: cream documen
 - **Blog marker compatibility** — `<!--more-->` remains in Markdown but is hidden in the WYSIWYG view.
 - **Configurable shortcuts** — click a shortcut field in Settings and press the new key combination.
 - **English / Deutsch / 简体中文** — UI language can follow the OS or be selected explicitly.
-- **LTR / RTL writing** — new documents default to left-to-right; document direction can be switched from the toolbar.
 - **Tabs and session restore** — reopen the documents from your previous session.
 - **Portable settings** — `settings.toml` normally lives beside the executable and is reloaded live.
 - **HTML / PDF export** — self-contained HTML with offline KaTeX and syntax highlighting; PDF through the system print dialog.
 
 ## Markdown rendering
 
-Mowl intentionally keeps Markdown portable. Standard Markdown is preferred, but a small compatibility layer handles common raw HTML used by note apps and blogging workflows.
+MDmeow intentionally keeps Markdown portable. Standard Markdown is preferred, but a small compatibility layer handles common raw HTML used by note apps and blogging workflows.
 
 ```md
 ![diagram](./assets/diagram.png)
@@ -36,7 +35,7 @@ Mowl intentionally keeps Markdown portable. Standard Markdown is preferred, but 
 <!--more-->
 ```
 
-Both image forms are rendered in the editor. For raw HTML images, Mowl preserves the original HTML in the Markdown document while using safe display attributes for the WYSIWYG view. `<!--more-->` is preserved but not visibly rendered.
+Both image forms are rendered in the editor. For raw HTML images, MDmeow preserves the original HTML in the Markdown document while using safe display attributes for the WYSIWYG view. `<!--more-->` is preserved but not visibly rendered.
 
 ## Miku Cream code rendering
 
@@ -46,7 +45,7 @@ The syntax palette centers on Miku teal (`#39C5BB`) with distinct solid colours 
 
 ## Source view
 
-Press **`Ctrl/Cmd+/`** or use the source button in the toolbar to switch between WYSIWYG and raw Markdown. Source view always remains left-to-right and now includes a gray line-number gutter outside the editable text area. `Tab` / `Shift+Tab` indent and outdent selected lines.
+Press **`Ctrl/Cmd+/`** or use the source button in the toolbar to switch between WYSIWYG and raw Markdown. Source view includes a gray line-number gutter outside the editable text area. `Tab` / `Shift+Tab` indent and outdent selected lines.
 
 ## Images
 
@@ -74,23 +73,21 @@ Application shortcuts can be rebound in **Settings → Shortcuts**. These are th
 
 ## Settings
 
-The settings panel opens with a short fade and saves changes immediately. Settings include language, default writing direction, spell-check, list marker, session behavior, fonts, font sizes, accent colour, and application shortcuts.
+The settings panel opens with a short fade and saves changes immediately. Settings include language, spell-check, list marker, session behavior, fonts, font sizes, accent colour, and application shortcuts.
 
-`settings.toml` is watched for external edits, so most hand-edited preferences take effect without restarting Mowl. If the executable directory is read-only, Mowl falls back to the OS configuration directory.
+`settings.toml` is watched for external edits, so most hand-edited preferences take effect without restarting MDmeow. If the executable directory is read-only, MDmeow falls back to the OS configuration directory.
 
 A generated `settings.example.toml` is included with release builds.
 
-## Screenshots
+## Screenshot
 
-| Right-to-left document | Block menu |
-| --- | --- |
-| ![Right-to-left document](docs/screenshot-rtl.png) | ![Block menu](docs/screenshot-block-menu.png) |
+![Block menu](docs/screenshot-block-menu.png)
 
 ## Windows builds
 
 A normal Tauri release build produces:
 
-- portable `mowl.exe`
+- portable `mdmeow.exe`
 - NSIS setup executable
 - MSI installer
 
@@ -124,7 +121,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ```toml
 language = "system"         # system | en | de | zh-CN
-direction = "ltr"           # default for new documents
 spellcheck = true
 quit_on_escape = false
 list_marker = "*"
@@ -135,7 +131,7 @@ editor_font = ""
 editor_font_size = 16
 source_font = ""
 source_font_size = 15
-accent = ""
+accent = "#39C5BB"
 
 [shortcuts]
 toggle_source = "Mod+/"
@@ -158,4 +154,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the code map and extension points.
 
 ## Credits and license
 
-Mowl was created by **Ali Naderi** and is distributed under the **MIT License**. This codebase keeps that credit while extending the editor with localization, configurable shortcuts, compatibility fixes, and the Miku Cream rendering system.
+MDmeow is a fork of **Mowl**, created by **Ali Naderi**, and remains distributed under the **MIT License**. This fork is maintained by **zakee039** and extends the original editor with localization, configurable shortcuts, compatibility fixes, Windows integration, and the Miku Cream rendering system.

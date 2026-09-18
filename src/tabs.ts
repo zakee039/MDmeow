@@ -13,8 +13,6 @@ export interface Tab {
   content: string;
   dirty: boolean;
   scrollTop: number;
-  /** Writing direction for this document (per-file, not global). */
-  direction: "ltr" | "rtl";
 }
 
 let seq = 0;
@@ -68,7 +66,6 @@ export class TabBar {
     path: string | null,
     content: string,
     activate = true,
-    direction: "ltr" | "rtl" = "ltr",
   ): Tab {
     const tab: Tab = {
       id: nextId(),
@@ -77,7 +74,6 @@ export class TabBar {
       content,
       dirty: false,
       scrollTop: 0,
-      direction,
     };
     this.tabs.push(tab);
     this.onStructureChange();

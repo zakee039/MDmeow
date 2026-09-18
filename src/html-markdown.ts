@@ -2,7 +2,7 @@
 // preserving the original HTML node for Markdown round-tripping.
 //
 // Milkdown's default HTML node deliberately displays raw HTML as literal text.
-// For Mowl we special-case two common authoring constructs:
+// For MDmeow we special-case two common authoring constructs:
 //   * <img ...>          -> render as an actual image, preserving the raw HTML.
 //   * <!--more-->        -> keep in the document, but hide it in WYSIWYG mode.
 
@@ -64,8 +64,8 @@ function rawImageDom(value: string, image: RawImageAttrs): [string, Record<strin
     src: image.src,
     "data-type": "html",
     "data-value": value,
-    "data-mowl-html-img": "true",
-    "data-mowl-src": image.src,
+    "data-mdmeow-html-img": "true",
+    "data-mdmeow-src": image.src,
   };
   if (image.alt) attrs.alt = image.alt;
   if (image.title) attrs.title = image.title;
@@ -98,7 +98,7 @@ export function patchHtmlMarkdown(crepe: Crepe): void {
           {
             "data-type": "html",
             "data-value": value,
-            "data-mowl-hidden-html": "more",
+            "data-mdmeow-hidden-html": "more",
             "aria-hidden": "true",
           },
         ];
@@ -112,11 +112,11 @@ export function patchHtmlMarkdown(crepe: Crepe): void {
     const parseDOM = Array.isArray(spec.parseDOM) ? spec.parseDOM : [];
     spec.parseDOM = [
       {
-        tag: 'img[data-mowl-html-img="true"]',
+        tag: 'img[data-mdmeow-html-img="true"]',
         getAttrs: (dom: HTMLElement) => ({ value: dom.dataset.value ?? "" }),
       },
       {
-        tag: 'span[data-mowl-hidden-html="more"]',
+        tag: 'span[data-mdmeow-hidden-html="more"]',
         getAttrs: (dom: HTMLElement) => ({ value: dom.dataset.value ?? "<!--more-->" }),
       },
       ...parseDOM,
@@ -131,8 +131,8 @@ export function resolveRawHtmlImages(
   resolver: (src: string) => string | Promise<string>,
 ): void {
   requestAnimationFrame(() => {
-    host.querySelectorAll<HTMLImageElement>('img[data-mowl-html-img="true"]').forEach((img) => {
-      const raw = img.dataset.mowlSrc ?? img.getAttribute("src") ?? "";
+    host.querySelectorAll<HTMLImageElement>('img[data-mdmeow-html-img="true"]').forEach((img) => {
+      const raw = img.dataset.mdmeowSrc ?? img.getAttribute("src") ?? "";
       if (!raw) return;
       Promise.resolve(resolver(raw))
         .then((resolved) => {

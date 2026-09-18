@@ -1,10 +1,10 @@
-![Mowl](docs/logo.png)
+![MDmeow](docs/logo.png)
 
 [English](README.md) · [Deutsch](README.de.md) · [فارسی](README.fa.md) · **العربية** · [עברית](README.he.md)
 
 > ℹ️ هذه الترجمة آلية. النسخة الإنجليزية ([README](README.md)) هي المرجع.
 
-# Mowl
+# MDmeow
 
 **محرّر Markdown مبسّط ومحمول يعمل بأسلوب "ما تراه هو ما تحصل عليه" (WYSIWYG).**
 
@@ -14,18 +14,18 @@
 
 ***
 
-## لماذا Mowl
+## لماذا MDmeow
 
 - **أقوى مما يبدو.** تحرير مباشر (WYSIWYG)، مستندات في ألسنة تبويب، قائمة كتلة،
   جداول GFM مع السحب لإعادة الترتيب، معادلات KaTeX، شيفرة ملوّنة، بحث واستبدال،
   دعم الكتابة من اليمين إلى اليسار، وتصدير HTML/PDF مكتفٍ بذاته.
-- **خفيف للغاية.** بلا Electron. Mowl مبنيّ على [Tauri](https://tauri.app) وعلى
+- **خفيف للغاية.** بلا Electron. MDmeow مبنيّ على [Tauri](https://tauri.app) وعلى
   WebView الخاص بنظام تشغيلك، لذا فالتطبيق كله **ملفّ تنفيذيّ محمول واحد بحجم نحو
   7 ميغابايت** — لا حاجة إلى مثبِّت، لا شيء لفكّ ضغطه، ولا خدمات في الخلفية.
 - **سريع حقًّا.** نواته Rust، والنافذة أصلية، وبدء التشغيل البارد فوريّ عمليًّا.
   يبدو كمحرّر نصوص، لا كتطبيق ويب.
 - **محمول من الأساس.** ملفّ `settings.toml` واحد قابل للتحرير يدويًّا يقع بجوار
-  الملفّ التنفيذيّ. انقل `Mowl.exe` إلى ذاكرة USB وستنتقل إعداداتك معه.
+  الملفّ التنفيذيّ. انقل `mdmeow.exe` إلى ذاكرة USB وستنتقل إعداداتك معه.
 
 ## المزايا
 
@@ -49,14 +49,6 @@
 `../shared/logo.svg`) والمسارات المحلّية المطلقة — لا روابط `http(s)` فقط. أضف
 واحدة من قائمة الكتلة `⠿` («Image»)، ثم الصق رابطًا أو اختر ملفًّا.
 
-### ↔️ دعم الكتابة من اليمين إلى اليسار
-
-اتّجاه الكتابة **لكلّ ملفّ على حدة**: نقرة واحدة تبدّل المستند النشط بين
-**اليسار‑إلى‑اليمين واليمين‑إلى‑اليسار** — للعربية والفارسية والعبرية. عند الفتح
-يُكتشَف الاتّجاه من المحتوى (أوّل محرف ذي اتّجاه قويّ). كتل الشيفرة تبقى دائمًا
-من اليسار إلى اليمين — حتى داخل مستند من اليمين إلى اليسار — ويُنقَل الاتّجاه إلى
-تصدير HTML (`<html dir="rtl">`).
-
 ### 🧱 قائمة الكتلة
 
 مرِّر فوق أيّ كتلة وانقر زرّ `⠿` لقائمة سريعة تعمل على تلك الكتلة:
@@ -78,7 +70,7 @@
 
 ### 📑 ألسنة تبويب مع استعادة الجلسة
 
-افتح عدّة مستندات في ألسنة. أغلق Mowl وأعد فتحه، وستعود ألسنتك — بل ومواضع
+افتح عدّة مستندات في ألسنة. أغلق MDmeow وأعد فتحه، وستعود ألسنتك — بل ومواضع
 التمرير فيها. (يمكن تعطيله في الإعدادات.)
 
 ### 👁️ عرض المصدر
@@ -118,7 +110,7 @@
 
 ### 🗂️ ربط الملفّات
 
-اجعل Mowl التطبيق الافتراضيّ لملفّات `.md` / `.markdown` (عبر المثبِّت). النقر
+اجعل MDmeow التطبيق الافتراضيّ لملفّات `.md` / `.markdown` (عبر المثبِّت). النقر
 المزدوج على ملفّ Markdown يفتحه في لسان تبويب جديد في النافذة العاملة.
 
 ### ⚙️ الإعدادات: واجهة أو ملفّ
@@ -126,8 +118,8 @@
 يمكن تغيير كلّ إعداد من داخل التطبيق — زرّ الإعدادات في شريط الأدوات (أو
 `Ctrl/Cmd+,`) يفتح صفحة الإعدادات فوق المحرّر، بعنصر تحكّم لكلّ خيار، وتُطبَّق
 التغييرات وتُحفَظ فور إجرائها. أو حرّر ملفّ `settings.toml` الوحيد الموثَّق
-بجوار الملفّ التنفيذيّ في أيّ محرّر نصوص — يلتقط Mowl **التغيير خلال ثانية، دون
-إعادة تشغيل**. إذا كان مجلَّد البرنامج للقراءة فقط، يعود Mowl إلى مجلَّد إعداد
+بجوار الملفّ التنفيذيّ في أيّ محرّر نصوص — يلتقط MDmeow **التغيير خلال ثانية، دون
+إعادة تشغيل**. إذا كان مجلَّد البرنامج للقراءة فقط، يعود MDmeow إلى مجلَّد إعداد
 نظام التشغيل ويخبرك بذلك في النافذة. كلّ إصدار يرافقه أيضًا
 `settings.example.toml` موثَّق بالكامل.
 
@@ -140,11 +132,9 @@
 
 | فاتح                                                 | داكن                                              |
 | ---------------------------------------------------- | ------------------------------------------------- |
-| ![Mowl أثناء تحرير مستند](docs/screenshot-light.png) | ![Mowl في الوضع الداكن](docs/screenshot-dark.png) |
+| ![MDmeow أثناء تحرير مستند](docs/screenshot-light.png) | ![MDmeow في الوضع الداكن](docs/screenshot-dark.png) |
 
-| من اليمين إلى اليسار (لكلّ ملفّ)                       |                         قائمة الكتلة                         |
-| ------------------------------------------------------ | :----------------------------------------------------------: |
-| ![مستند من اليمين إلى اليسار](docs/screenshot-rtl.png) | ![قائمة الكتلة على الزرّ ⠿](docs/screenshot-block-menu.png) |
+![قائمة الكتلة على الزرّ ⠿](docs/screenshot-block-menu.png)
 
 ## اختصارات لوحة المفاتيح
 
@@ -169,20 +159,20 @@
 
 احصل على أحدث بناء من صفحة [Releases](../../releases).
 
-- **ويندوز (x64)** — متاح الآن: `Mowl.exe` المحمول (\~7 ميغابايت، بلا تثبيت) أو
+- **ويندوز (x64)** — متاح الآن: `mdmeow.exe` المحمول (\~7 ميغابايت، بلا تثبيت) أو
   مثبِّت NSIS
 - **macOS** (x64 + arm64) و**لينكس** (x64 + arm64 بصيغة AppImage) — *قريبًا.*
   خطّ إنتاج الإصدارات متعدّد المنصّات جاهز بالفعل
   ([`.github/workflows/release.yml`](.github/workflows/release.yml))؛ ستصل هذه
   البناءات مع إصدار موسوم لاحق. حتى ذلك الحين، ابنِ من المصدر على المنصّة الهدف
-  (قسم [Building](README.md#building)) — Mowl تطبيق Tauri ويعمل على الثلاثة جميعًا.
+  (قسم [Building](README.md#building)) — MDmeow تطبيق Tauri ويعمل على الثلاثة جميعًا.
 
 البناءات **غير موقَّعة** ولا موثَّقة، لذا قد يحذّر نظام التشغيل عند أوّل تشغيل:
 
 - **ويندوز** — SmartScreen: *More info → Run anyway*
 - **macOS** — نقر بالزرّ الأيمن على التطبيق → *Open*، أو
-  `xattr -dr com.apple.quarantine /path/to/Mowl.app`
-- **لينكس** — `chmod +x Mowl*.AppImage` ثم التشغيل
+  `xattr -dr com.apple.quarantine /path/to/MDmeow.app`
+- **لينكس** — `chmod +x MDmeow*.AppImage` ثم التشغيل
 
 مع كلّ إصدار تُنشَر مجاميع تحقّق SHA‑256.
 
@@ -194,7 +184,6 @@
 
 ```toml
 language = "system"         # system (follow the OS) | en | de
-direction = "ltr"           # ltr | rtl  (default for new tabs; direction is per file)
 spellcheck = true
 quit_on_escape = false      # press Esc to quit
 list_marker = "*"           # bullet-list marker on save: * | - | +
@@ -205,9 +194,9 @@ editor_font = ""            # WYSIWYG font family (blank = default)
 editor_font_size = 16       # headings scale from this
 source_font = ""            # Markdown source font (monospace)
 source_font_size = 15
-accent = ""                 # accent colour, e.g. "#0969da"
+accent = "#39C5BB"         # accent colour; reset/default is Miku teal
 
-# below this line: managed by the app — window geometry, open tabs, per-file direction
+# below this line: managed by the app — window geometry, open tabs
 ```
 
 ## البناء من المصدر
@@ -232,7 +221,7 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 `.github/workflows/release.yml` نسخ ويندوز / macOS / لينكس (x64 + arm64) ويفتح
 مسوّدة إصدار على GitHub مع مجاميع التحقّق.
 
-توسّع Mowl؟ اقرأ **[ARCHITECTURE.md](ARCHITECTURE.md)** — يرسم خريطة لكلّ ملفّ
+توسّع MDmeow؟ اقرأ **[ARCHITECTURE.md](ARCHITECTURE.md)** — يرسم خريطة لكلّ ملفّ
 ويوضّح كيف تضيف أزرار شريط الأدوات وعناصر قائمة الكتلة والإعدادات والأوامر.
 
 ## حزمة التقنية
@@ -243,9 +232,3 @@ cargo test --manifest-path src-tauri/Cargo.toml   # Rust unit tests
 | المحرّر               | [`@milkdown/crepe`](https://milkdown.dev) (ProseMirror) |
 | تصدير Markdown ← HTML | [`comrak`](https://github.com/kivikakk/comrak) (Rust)   |
 | المعادلات             | [KaTeX](https://katex.org)                              |
-
-## الدعم
-
-إذا كان Mowl يوفّر وقتك، يمكنك دعم تطويره على Ko‑fi. ☕
-
-<a href='https://ko-fi.com/N7N123QIX0' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

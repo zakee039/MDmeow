@@ -123,7 +123,7 @@ function makeMediaHandler(image: boolean) {
   return handler;
 }
 
-/** Apply Mowl's serializer preferences to a Milkdown editor context. */
+/** Apply MDmeow's serializer preferences to a Milkdown editor context. */
 export function configureMarkdownSerializer(ctx: Ctx, marker: ListMarker): void {
   const current = ctx.get(remarkStringifyOptionsCtx) as any;
   ctx.set(remarkStringifyOptionsCtx, {

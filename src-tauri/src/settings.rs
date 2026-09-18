@@ -80,8 +80,6 @@ pub struct Settings {
     // --- hand-editable preferences ---
     /// UI language: "system" (OS locale) | "en" | "de" | "zh-CN"
     pub language: String,
-    /// "ltr" | "rtl" — base writing direction of the editor.
-    pub direction: String,
     pub spellcheck: bool,
     /// When true, pressing Esc quits the app.
     pub quit_on_escape: bool,
@@ -100,19 +98,16 @@ pub struct Settings {
     /// Markdown source-view font family ("" = built-in monospace).
     pub source_font: String,
     pub source_font_size: u16,
-    /// Accent colour ("" = default), e.g. "#0969da".
+    /// Accent colour. MDmeow defaults to Miku teal (#39C5BB).
     pub accent: String,
     /// User-configurable application shortcuts.
     pub shortcuts: ShortcutSettings,
 
     // --- app-managed state ---
-    /// Suppress the startup prompt asking to register Mowl in Windows Open With.
+    /// Suppress the startup prompt asking to register MDmeow in Windows Open With.
     pub open_with_prompt_dismissed: bool,
     /// Files to reopen on next launch (session restore).
     pub open_files: Vec<PathBuf>,
-    /// Writing direction ("ltr"|"rtl") per entry in `open_files`, so a restored
-    /// tab keeps the orientation it had. Shorter/longer than `open_files` is fine.
-    pub open_dirs: Vec<String>,
     /// Index into `open_files` of the tab that was active.
     pub active_tab: usize,
     pub window: WindowState,
@@ -122,7 +117,6 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             language: "system".to_string(),
-            direction: "ltr".to_string(),
             spellcheck: true,
             quit_on_escape: false,
             list_marker: "*".to_string(),
@@ -133,11 +127,10 @@ impl Default for Settings {
             editor_font_size: 16,
             source_font: String::new(),
             source_font_size: 15,
-            accent: String::new(),
+            accent: "#39C5BB".to_string(),
             shortcuts: ShortcutSettings::default(),
             open_with_prompt_dismissed: false,
             open_files: Vec::new(),
-            open_dirs: Vec::new(),
             active_tab: 0,
             window: WindowState::default(),
         }
@@ -164,10 +157,18 @@ impl Store {
         }
 
         let base = portable::config_base().unwrap_or_else(std::env::temp_dir);
-        let dir = base.join("Mowl");
+        let dir = base.join("MDmeow");
+        let path = dir.join("settings.toml");
+        if !path.exists() {
+            let legacy = base.join("Mowl").join("settings.toml");
+            if legacy.is_file() {
+                let _ = std::fs::create_dir_all(&dir);
+                let _ = std::fs::copy(&legacy, &path);
+            }
+        }
         let _ = std::fs::create_dir_all(&dir);
         Self {
-            path: dir.join("settings.toml"),
+            path,
             portable: false,
         }
     }

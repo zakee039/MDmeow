@@ -4,15 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/src/styles.css" />
-    <title>Mowl</title>
+    <title>MDmeow</title>
     <script type="module" src="/src/main.ts" defer></script>
   </head>
   <body>
     <div id="app">
       <header id="titlebar" data-tauri-drag-region>
-        <button id="btn-about" data-i18n-title="toolbar.about.title" data-i18n-aria="toolbar.about.title" title="About Mowl" aria-label="About Mowl">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l4.5 6L12 7v10"/><path d="M17 8v8"/><path d="M13.5 12.5 17 16l3.5-3.5"/></svg>
-        </button>
         <span id="doc-title" data-tauri-drag-region>Untitled</span>
         <div id="actions">
           <button id="btn-open" data-i18n-title="toolbar.open.title" data-i18n-aria="toolbar.open.aria" title="New / Open (Ctrl/Cmd+N, Ctrl/Cmd+O)" aria-label="New or open file" aria-haspopup="menu">
@@ -21,22 +18,19 @@
           <button id="btn-save" data-i18n-title="toolbar.save.title" data-i18n-aria="toolbar.save.aria" title="Save (Ctrl/Cmd+S)" aria-label="Save">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
           </button>
-          <button id="btn-export" data-i18n-title="toolbar.export.title" data-i18n-aria="toolbar.export.aria" title="Export HTML / PDF" aria-label="Export">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          <button id="btn-export" data-i18n-title="toolbar.export.title" data-i18n-aria="toolbar.export.aria" title="Export HTML / PDF" aria-label="Export" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="M13 12h8"/><path d="m18 7 5 5-5 5"/></svg>
           </button>
           <button id="btn-source" data-i18n-title="toolbar.source.title" data-i18n-aria="toolbar.source.aria" title="Toggle source view" aria-label="Toggle source view">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
           </button>
           <span class="sep" aria-hidden="true"></span>
-          <button id="btn-ltr" data-i18n-title="toolbar.ltr.title" data-i18n-aria="toolbar.ltr.aria" title="Left-to-right" aria-label="Left-to-right text">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h16"/><path d="M15 15l3 3-3 3"/></svg>
-          </button>
-          <button id="btn-rtl" data-i18n-title="toolbar.rtl.title" data-i18n-aria="toolbar.rtl.aria" title="Right-to-left" aria-label="Right-to-left text">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6H4"/><path d="M20 12h-10"/><path d="M20 18H4"/><path d="M9 15l-3 3 3 3"/></svg>
-          </button>
-          <span class="sep" aria-hidden="true"></span>
           <button id="btn-settings" data-i18n-title="toolbar.settings.title" data-i18n-aria="toolbar.settings.aria" title="Settings (Ctrl/Cmd+,)" aria-label="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          </button>
+          <span class="sep" aria-hidden="true"></span>
+          <button id="btn-about" data-i18n-title="toolbar.about.title" data-i18n-aria="toolbar.about.title" title="About MDmeow" aria-label="About MDmeow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10v6"/><path d="M12 7h.01"/></svg>
           </button>
         </div>
       </header>
@@ -51,14 +45,19 @@
         <button type="button" role="menuitem" data-act="new" data-i18n="menu.new">New</button>
         <button type="button" role="menuitem" data-act="open" data-i18n="menu.open">Open…</button>
       </div>
+      <div id="export-menu" role="menu" hidden>
+        <button type="button" role="menuitem" data-act="html" data-i18n="menu.exportHtml">Export HTML</button>
+        <button type="button" role="menuitem" data-act="pdf" data-i18n="menu.exportPdf">Export PDF</button>
+      </div>
       <div id="about" hidden>
         <div class="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
           <button class="about-close" data-i18n-aria="about.close" aria-label="Close">&times;</button>
-          <svg class="about-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l4.5 6L12 7v10"/><path d="M17 8v8"/><path d="M13.5 12.5 17 16l3.5-3.5"/></svg>
-          <h2 id="about-title">Mowl <span id="about-version"></span></h2>
+          <img class="about-logo" src="/mdmeow.png" alt="" />
+          <h2 id="about-title">MDmeow <span id="about-version"></span></h2>
           <p class="about-tag" data-i18n="about.tagline">Portable WYSIWYG Markdown editor</p>
-          <p class="about-meta" data-i18n="about.credit">by Ali Naderi &middot; MIT License</p>
-          <p><a id="about-link" href="https://github.com/naderi">github.com/naderi</a></p>
+          <p class="about-meta" data-i18n="about.credit">zakee039 &middot; MIT License</p>
+          <p><a id="about-link" href="https://github.com/zakee039/mowl">github.com/zakee039/mowl</a></p>
+          <p class="about-fork"><span data-i18n="about.forkedFrom">Forked from</span> <a id="about-upstream-link" href="https://github.com/naderi/mowl">Ali Naderi / mowl</a></p>
           <p class="about-path" id="about-settings-path"></p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-// Miku Cream is Mowl's single built-in rendering theme. We still inject
+// Miku Cream is MDmeow's single built-in rendering theme. We still inject
 // Crepe's light frame stylesheet because it contains the editor component
 // structure; src/styles.css then owns the visual rendering.
 import frameLight from "@milkdown/crepe/theme/frame.css?inline";

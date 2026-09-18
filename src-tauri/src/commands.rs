@@ -69,7 +69,9 @@ pub fn read_document(path: String) -> Result<String, String> {
 #[tauri::command]
 pub fn write_document(path: String, contents: String) -> Result<String, String> {
     let is_markdown = matches!(
-        std::path::Path::new(&path).extension().and_then(|e| e.to_str()),
+        std::path::Path::new(&path)
+            .extension()
+            .and_then(|e| e.to_str()),
         Some("md") | Some("markdown") | Some("mdx") | Some("txt") | None
     );
     let formatted = if is_markdown {
@@ -85,13 +87,8 @@ pub fn write_document(path: String, contents: String) -> Result<String, String> 
 /// file being exported) is the base for resolving relative image paths, which
 /// are inlined as `data:` URLs so the HTML / print output is self-contained.
 #[tauri::command]
-pub fn render_html(
-    markdown: String,
-    title: String,
-    dir: String,
-    doc_path: Option<String>,
-) -> String {
-    export::render_html(&markdown, &title, &dir, doc_path.as_deref())
+pub fn render_html(markdown: String, title: String, doc_path: Option<String>) -> String {
+    export::render_html(&markdown, &title, doc_path.as_deref())
 }
 
 /// Read a local image referenced by a document and return it as a `data:` URL.

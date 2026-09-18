@@ -89,7 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ env.RELEASE_TAG }}
-          releaseName: "Mowl ${{ env.RELEASE_TAG }}"
+          releaseName: "MDmeow ${{ env.RELEASE_TAG }}"
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

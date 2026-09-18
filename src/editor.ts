@@ -60,7 +60,7 @@ export class Editor {
           mutation.target instanceof Element
             ? mutation.target
             : mutation.target.parentElement;
-        if (target?.closest(".mowl-code-line-numbers")) continue;
+        if (target?.closest(".mdmeow-code-line-numbers")) continue;
 
         if (target?.closest(".milkdown-code-block")) {
           this.scheduleExternalCodeLineNumbers();
@@ -102,16 +102,16 @@ export class Editor {
       const content = block.querySelector<HTMLElement>(".cm-content");
       const lines = content?.querySelectorAll<HTMLElement>(".cm-line");
       if (!content || !lines?.length) {
-        block.querySelector(":scope > .mowl-code-line-numbers")?.remove();
+        block.querySelector(":scope > .mdmeow-code-line-numbers")?.remove();
         continue;
       }
 
       let rail = block.querySelector<HTMLElement>(
-        ":scope > .mowl-code-line-numbers",
+        ":scope > .mdmeow-code-line-numbers",
       );
       if (!rail) {
         rail = document.createElement("div");
-        rail.className = "mowl-code-line-numbers";
+        rail.className = "mdmeow-code-line-numbers";
         rail.setAttribute("aria-hidden", "true");
         block.appendChild(rail);
       }
@@ -150,14 +150,14 @@ export class Editor {
       window.clearTimeout(previous[1]);
     }
 
-    button.classList.remove("mowl-copy-returning");
-    button.classList.add("mowl-copy-success");
+    button.classList.remove("mdmeow-copy-returning");
+    button.classList.add("mdmeow-copy-success");
 
     const returnTimer = window.setTimeout(() => {
-      button.classList.add("mowl-copy-returning");
+      button.classList.add("mdmeow-copy-returning");
     }, 620);
     const resetTimer = window.setTimeout(() => {
-      button.classList.remove("mowl-copy-success", "mowl-copy-returning");
+      button.classList.remove("mdmeow-copy-success", "mdmeow-copy-returning");
       this.copyFeedbackTimers.delete(button);
     }, 900);
 
@@ -257,14 +257,6 @@ export class Editor {
     this.host
       .querySelector(".ProseMirror")
       ?.setAttribute("spellcheck", String(on));
-  }
-
-  setDirection(dir: "ltr" | "rtl"): void {
-    this.host.querySelector(".ProseMirror")?.setAttribute("dir", dir);
-    (this.host.querySelector(".milkdown") as HTMLElement | null)?.setAttribute(
-      "dir",
-      dir,
-    );
   }
 
   focus(): void {
