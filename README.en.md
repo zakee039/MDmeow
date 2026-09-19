@@ -1,67 +1,171 @@
-![MDmeow](docs/logo.png)
-
 [简体中文](README.md) · **English** · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 # MDmeow
 
-MDmeow is a small and fast WYSIWYG Markdown editor built with **Tauri + Milkdown/Crepe**. It keeps documents as ordinary Markdown files while providing a Typora-like inline editing experience.
+> **Open Markdown. Get straight to work.**
+>
+> **A lightweight WYSIWYG Markdown editor for the AI era.**
 
-The current edition uses the **Miku Cream** rendering system: light document surfaces, `#39C5BB` accents, light syntax highlighting, KaTeX math, compact tables, and restrained desktop chrome.
+As we work with AI agents more often, **Markdown is becoming one of the most common document formats shared between people and AI**.
 
-## Highlights
+Specs, development notes, AI output, research notes, README files—more and more of our daily work ends up in a `.md` file.
 
-- Inline WYSIWYG Markdown editing.
-- Raw Markdown source view with line numbers.
-- Tabs and previous-session restore.
-- Dedicated **Save** and **Save As** toolbar buttons.
-- Click the filename in the title bar to rename the current file in place.
-- Self-contained HTML export and PDF export through the system print flow.
-- Standard Markdown images plus common raw HTML `<img>` compatibility.
-- KaTeX inline and display math.
-- Rebindable application shortcuts.
-- Windows “Open with” integration using the unified `MDmeow.Markdown` ProgID.
-- Four UI languages: 简体中文, English, 日本語, and Deutsch.
+But most of the time, you do not need another heavyweight writing platform. You need a Markdown editor that **opens quickly, edits what you see, and stays out of the way**.
 
-## Releases
+That is why **MDmeow** exists.
 
-Official releases cover Windows, Linux, and macOS:
+Its goal is simple:
 
-```text
-Windows
-MDmeow-<version>.exe
-MDmeow_<version>_x64.msi
+**Open Markdown as quickly as a text file, then edit it as naturally as a normal document.**
 
-Linux x64
-MDmeow-<version>-linux-x86_64.AppImage
-MDmeow-<version>-linux-x86_64.deb
-MDmeow-<version>-linux-x86_64.rpm
+Lightweight, quiet, and focused. Whether you are reviewing an AI-generated document, updating a README, or jotting down notes, open the file and start working.
 
-Linux ARM64
-MDmeow-<version>-linux-aarch64.AppImage
-MDmeow-<version>-linux-aarch64.deb
-MDmeow-<version>-linux-aarch64.rpm
+## Lightweight is part of the product
 
-macOS
-MDmeow-<version>-macOS-universal.dmg
+![MDmeow lightweight runtime example](docs/readme/lightweight.png)
+
+> The screenshot shows an empty document on one Windows machine. Actual resource usage varies with document content, WebView2, and the system environment.
+
+MDmeow is built with **Tauri + Milkdown/Crepe**. It is not trying to become a large knowledge-management suite. It is designed to be a practical desktop editor for everyday Markdown work.
+
+## Why MDmeow
+
+### WYSIWYG, without giving up Markdown
+
+You work in a formatted document view, while the file on disk remains readable Markdown.
+
+- Edit headings, lists, quotes, task lists, tables, links, footnotes, and other common Markdown directly
+- Switch to a dedicated **source view** at any time
+- Keep Markdown files portable instead of locking content into a private format
+- Support both standard Markdown images and common raw HTML `<img>` blocks
+- Preserve content such as `<!--more-->` in source without cluttering the WYSIWYG view
+
+MDmeow should fit into your workflow, not own it.
+
+### Images should be easy to edit too
+
+Click an image to open a compact image toolbar:
+
+- Edit the image title
+- Align left / center / right
+- Scale from 25% to 200%
+- Delete the image
+- Use the same interaction for Markdown images and raw HTML images
+
+When an image needs presentation metadata such as scale or alignment, MDmeow uses HTML that is highly compatible with Typedown:
+
+```html
+<img title="diagram" src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
 ```
 
-On Windows, the versioned EXE is the single-file portable build and the MSI is the installed build with a Chinese / English / Japanese / German installer. A valid MSI installation owns the Markdown registration; the portable build only acts as a fallback.
+Relative image paths are still resolved from the current Markdown file.
 
-On Linux, AppImage is the easiest portable-style package, while `.deb` and `.rpm` integrate with the package manager. Settings use `~/.config/MDmeow` and local data uses `~/.local/share/MDmeow`.
+### Code and math belong in the same editor
 
-On macOS, the universal DMG supports both Intel and Apple Silicon. Settings live under `~/Library/Application Support/MDmeow`. Community builds are currently unsigned/not notarized, so Gatekeeper may require right-click → Open on first launch.
+MDmeow ships with the **Miku Cream** document rendering style:
 
-## Languages
+- Light code blocks
+- Syntax highlighting
+- Dedicated code line numbers
+- Copy button with success feedback
+- Clear inline-code hierarchy
+- KaTeX inline and display math
+- Formula blocks stay in preview mode until you click in to edit the source
 
-Supported UI languages:
+For example:
 
-- 简体中文 (`zh-CN`)
-- English (`en`)
-- 日本語 (`ja`)
-- Deutsch (`de`)
-- System (`system`)
+```text
+$E = mc^2$
 
-System mode maps only to these four languages; unsupported OS locales fall back to English.
+$$
+\int_a^b f(x)\,dx
+$$
+```
+
+### Opening a file should feel natural
+
+- Drag in `.md`, `.markdown`, `.mdx`, or `.txt` files
+- Register MDmeow as a Windows “Open with” target for Markdown
+- Let the installed build own file associations when present
+- Let the portable build act as the fallback when no valid installation exists
+- Click the filename in the title bar to rename the current document
+- Work with multiple tabs
+- Restore the previous session
+
+### HTML / PDF export without another tool
+
+The export button offers two clear outputs:
+
+- **Export HTML**: create a standalone page
+- **Export PDF**: use the system print flow to generate a PDF
+
+Write the document once, then hand it off without opening another editor.
+
+### Proxy support for remote content
+
+If your Markdown references GitHub Raw, an image host, or other remote resources, MDmeow can use a configurable proxy:
+
+- HTTP / HTTPS
+- SOCKS5 / SOCKS5H
+- Built-in connection test
+- Keep and edit the address even while the proxy is disabled
+- Reuse the same proxy configuration for remote images and update traffic
+
+Examples:
+
+```text
+http://127.0.0.1:7897
+socks5://127.0.0.1:7893
+```
+
+### Updates directly from GitHub
+
+MDmeow can check GitHub Releases for a newer version and verifies downloaded update artifacts with signatures.
+
+On Windows:
+
+- **Installed build**: download the new MSI and start the update flow
+- **Portable build**: download the new EXE beside the current program
+- The portable build never silently overwrites the running executable
+- Check manually at any time
+- Background checks run at most once every 24 hours by default
+- Failed automatic checks stay silent and do not interrupt editing
+
+GitHub Releases are the update service—no extra update server is required.
+
+## More everyday conveniences
+
+- **Four UI languages**: 简体中文, English, 日本語, Deutsch
+- **Rebindable shortcuts**
+- **Separate editor/source fonts and sizes**
+- **Configurable accent color**, defaulting to `#39C5BB`
+- **Spellcheck**
+- Options such as showing full paths or always showing the tab bar
+- **Portable EXE and MSI installer** with behavior suited to each mode
+
+## Download
+
+Latest release:
+
+**https://github.com/zakee039/MDmeow/releases/latest**
+
+### Windows
+
+Choose the build that fits your workflow:
+
+```text
+MDmeow-<version>.exe
+```
+
+Single-file portable build. Put it in a tools folder, on a USB drive, or anywhere you want to run MDmeow without installing it.
+
+```text
+MDmeow_<version>_x64.msi
+```
+
+Standard MSI installer for long-term use and Windows file associations.
+
+The repository also keeps Linux and macOS build workflows. If the release page does not contain a package for your platform, you can build MDmeow from source.
 
 ## Shortcuts
 
@@ -78,29 +182,48 @@ System mode maps only to these four languages; unsupported OS locales fall back 
 | Replace | `Ctrl/Cmd+H` |
 | Emoji picker | `Ctrl/Cmd+.` |
 | Settings | `Ctrl/Cmd+,` |
+| Change block type | `Ctrl/Cmd+0` – `7` |
 
-All application shortcuts can be rebound in Settings.
+All application shortcuts can be rebound in **Settings → Shortcuts**.
 
 ## Configuration
 
+MDmeow stores settings in `settings.toml` and supports hot reload.
+
+Common options:
+
 ```toml
-language = "system"         # system | zh-CN | en | ja | de
+language = "system"
 spellcheck = true
 quit_on_escape = false
-list_marker = "*"
-show_path = false
 open_last_session = true
 always_show_tabbar = false
+show_path = false
+
 editor_font = ""
 editor_font_size = 16
 source_font = ""
 source_font_size = 15
+
 accent = "#39C5BB"
+
+proxy_enabled = false
+proxy_url = ""
+auto_check_updates = true
 ```
 
-## Build
+`Mod` means Ctrl on Windows/Linux and Cmd on macOS.
 
-Requirements: Node.js 20+, `pnpm`, Rust stable, and the normal Tauri platform prerequisites.
+## Build from source
+
+Requirements:
+
+- Node.js 20+
+- `pnpm`
+- Rust stable
+- Windows: Visual C++ Build Tools, Windows SDK, WebView2
+
+Development:
 
 ```bash
 pnpm install
@@ -108,7 +231,7 @@ pnpm build
 pnpm tauri dev
 ```
 
-Final platform release builds:
+Release builds:
 
 ```powershell
 # Windows
@@ -119,11 +242,9 @@ pnpm release:windows
 # Linux
 pnpm release:linux
 
-# macOS universal
+# macOS
 pnpm release:macos
 ```
-
-Each command writes only that platform's public artifacts into the repository-root `release/` directory. Pushing a version tag automatically builds Linux x64/ARM64 and macOS universal in GitHub Actions, verifies those artifacts, and publishes `SHA256SUMS.txt`. Windows EXE/MSI are built locally and uploaded manually by the maintainer.
 
 Useful checks:
 
@@ -145,6 +266,12 @@ cargo test --manifest-path src-tauri/Cargo.toml
 | Export syntax highlighting | highlight.js |
 | Windows installer | WiX / MSI |
 
-## Credits and license
+## Credits
 
-MDmeow is based on **Ali Naderi / Mowl** and remains distributed under the **MIT License**. This fork is maintained by **zakee039**.
+MDmeow is based on **Ali Naderi / Mowl** and remains available under the **MIT License**.
+
+Thanks to the upstream project for providing a clean and elegant starting point.
+
+From there, MDmeow has been rebuilt around practical desktop workflows: WYSIWYG/source dual views, Miku Cream rendering, image editing, code and math improvements, HTML/PDF export, localization, shortcuts, Windows file associations, portable/installed modes, proxy support, and signed GitHub updates.
+
+> **Open Markdown. Get straight to work.**

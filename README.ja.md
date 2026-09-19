@@ -1,65 +1,171 @@
-![MDmeow](docs/logo.png)
-
 [简体中文](README.md) · [English](README.en.md) · **日本語** · [Deutsch](README.de.md)
 
 # MDmeow
 
-MDmeow は、**Tauri + Milkdown/Crepe** で構築された軽量で高速な WYSIWYG Markdown エディターです。Markdown ファイルを通常のテキストとして保ちながら、Typora に近いインライン編集体験を提供します。
+> **Markdown を開く。すぐ作業を始める。**
+>
+> **AI 時代のための、軽快な WYSIWYG Markdown エディター。**
 
-現在の版では **Miku Cream** レンダリングを採用し、明るいドキュメント背景、`#39C5BB` のアクセント、ライトテーマのコード表示、KaTeX 数式、コンパクトな表、控えめなデスクトップ UI を組み合わせています。
+AI エージェントとやり取りする機会が増えるにつれて、**Markdown は人と AI のあいだで最もよく使われる文書形式のひとつ**になりつつあります。
 
-## 主な機能
+要件定義、開発メモ、AI の出力、研究ノート、README……日々の作業の多くが、最終的にはひとつの `.md` ファイルにまとまります。
 
-- WYSIWYG Markdown 編集。
-- 行番号付き Markdown ソース表示。
-- タブと前回セッションの復元。
-- ツールバーに **保存** と **名前を付けて保存** を個別配置。
-- タイトルバーのファイル名をクリックして、その場でファイル名を変更。
-- 自己完結型 HTML エクスポートと、システム印刷を利用した PDF 出力。
-- 標準 Markdown 画像と一般的な HTML `<img>` の互換表示。
-- KaTeX 数式。
-- アプリ内ショートカットの再設定。
-- `MDmeow.Markdown` を使った Windows「プログラムから開く」統合。
-- 简体中文 / English / 日本語 / Deutsch の 4 言語 UI。
+でも、いつも大きな執筆プラットフォームが必要なわけではありません。必要なのは、**すぐ開けて、見たまま編集できて、作業の邪魔をしない** Markdown エディターです。
 
-## 配布物
+そこで **MDmeow** が生まれました。
 
-正式リリースは Windows / Linux / macOS を提供します。
+目標はとてもシンプルです。
 
-```text
-Windows
-MDmeow-<version>.exe
-MDmeow_<version>_x64.msi
+**テキストファイルのように素早く Markdown を開き、普通の文書のようにそのまま編集すること。**
 
-Linux x64
-MDmeow-<version>-linux-x86_64.AppImage
-MDmeow-<version>-linux-x86_64.deb
-MDmeow-<version>-linux-x86_64.rpm
+軽く、速く、静かに。AI が生成した文書でも、README でも、ちょっとしたメモでも、開いたらすぐ作業を始められます。
 
-Linux ARM64
-MDmeow-<version>-linux-aarch64.AppImage
-MDmeow-<version>-linux-aarch64.deb
-MDmeow-<version>-linux-aarch64.rpm
+## 軽快さは機能のひとつ
 
-macOS
-MDmeow-<version>-macOS-universal.dmg
+![MDmeow 軽量動作例](docs/readme/lightweight.png)
+
+> 上の画像は、ある Windows 環境で空の文書を開いたときの一例です。実際のリソース使用量は、文書内容、WebView2、システム環境によって変わります。
+
+MDmeow は **Tauri + Milkdown/Crepe** で構築されています。大規模なナレッジ管理ツールを目指すのではなく、日常の Markdown 作業にちょうどよいデスクトップエディターを目指しています。
+
+## なぜ MDmeow なのか
+
+### WYSIWYG でも、ファイルは Markdown のまま
+
+画面では整形された文書を編集しながら、保存されるファイルは他のツールでも読める Markdown のままです。
+
+- 見出し、リスト、引用、タスクリスト、表、リンク、脚注などをそのまま編集
+- いつでも専用の **ソース表示** に切り替え
+- 独自形式に閉じ込めず、Markdown の可搬性を維持
+- 標準 Markdown 画像と一般的な HTML `<img>` の両方に対応
+- `<!--more-->` などはソースに保持しつつ、WYSIWYG 表示では邪魔をしない
+
+MDmeow はあなたのワークフローに溶け込みます。文書を囲い込むためのツールではありません。
+
+### 画像も普通の内容と同じように編集
+
+画像をクリックすると、コンパクトな画像ツールバーが開きます。
+
+- 画像タイトルの編集
+- 左寄せ / 中央 / 右寄せ
+- 25% ～ 200% の拡大縮小
+- 画像の削除
+- Markdown 画像と HTML 画像を同じ操作で編集
+
+拡大率や配置情報が必要な場合、MDmeow は Typedown と高い互換性を持つ HTML を使います。
+
+```html
+<img title="diagram" src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
 ```
 
-Windows の EXE は単一ファイルのポータブル版、MSI はインストール版です。MSI には中国語・英語・日本語・ドイツ語の言語選択があります。
+相対パスは引き続き現在の Markdown ファイルを基準に解決されます。
 
-Linux は AppImage / deb / rpm を x64 と ARM64 の両方で提供します。設定は `~/.config/MDmeow`、ローカルデータは `~/.local/share/MDmeow` に保存されます。
+### コードも数式も、同じエディターで
 
-macOS は Intel + Apple Silicon 対応の universal DMG です。設定は `~/Library/Application Support/MDmeow` に保存されます。現在のコミュニティビルドは未署名・未公証のため、初回起動時に Finder で右クリック →「開く」が必要な場合があります。
+MDmeow には **Miku Cream** のドキュメントスタイルが組み込まれています。
 
-## 言語
+- 明るいコードブロック
+- シンタックスハイライト
+- 独立したコード行番号
+- コピー成功のフィードバック
+- 見分けやすいインラインコード
+- KaTeX のインライン数式 / ブロック数式
+- 数式は通常プレビュー表示し、編集したいときだけソースを開く
 
-- 简体中文 (`zh-CN`)
-- English (`en`)
-- 日本語 (`ja`)
-- Deutsch (`de`)
-- システムに従う (`system`)
+例：
 
-`system` は上記 4 言語のみに自動マッピングされ、それ以外の OS 言語では English にフォールバックします。
+```text
+$E = mc^2$
+
+$$
+\int_a^b f(x)\,dx
+$$
+```
+
+### ファイルを開く操作も自然に
+
+- `.md` / `.markdown` / `.mdx` / `.txt` をドラッグ＆ドロップ
+- Windows の Markdown「プログラムから開く」に登録可能
+- インストール版がある場合は、そちらがファイル関連付けを優先
+- 有効なインストール版がない場合は、ポータブル版がフォールバック
+- タイトルバーのファイル名をクリックして、その場で名前変更
+- 複数タブ
+- 前回セッションの復元
+
+### HTML / PDF へ、そのまま出力
+
+エクスポートボタンには 2 つの明確な出口があります。
+
+- **HTML をエクスポート**：単独で開けるページを生成
+- **PDF をエクスポート**：システム印刷フローから PDF を出力
+
+文書を書き終えたあと、別のエディターに持ち替える必要はありません。
+
+### リモート画像向けのプロキシ
+
+Markdown が GitHub Raw、画像ホスティング、その他のリモートリソースを参照する場合、MDmeow ではプロキシを設定できます。
+
+- HTTP / HTTPS
+- SOCKS5 / SOCKS5H
+- 接続テスト
+- 無効時でもアドレスは保持・編集可能
+- リモート画像と更新確認で同じプロキシ設定を利用
+
+例：
+
+```text
+http://127.0.0.1:7897
+socks5://127.0.0.1:7893
+```
+
+### GitHub から直接アップデート
+
+MDmeow は GitHub Releases から新しいバージョンを確認し、ダウンロードした更新ファイルを署名で検証します。
+
+Windows では：
+
+- **インストール版**：新しい MSI をダウンロードして更新処理を開始
+- **ポータブル版**：新しい EXE を現在のプログラムと同じフォルダーに保存
+- 実行中の EXE を勝手に上書きしない
+- 手動でいつでも更新確認
+- 自動確認は既定で最大 24 時間に 1 回
+- 自動確認に失敗しても編集を邪魔しない
+
+追加の更新サーバーは不要です。GitHub Release がそのまま更新元になります。
+
+## 日常作業のための機能
+
+- **4 言語 UI**：简体中文 / English / 日本語 / Deutsch
+- **ショートカットの再設定**
+- **本文とソース表示のフォントを個別設定**
+- **アクセント色の変更**（既定は `#39C5BB`）
+- **スペルチェック**
+- フルパス表示、タブバー常時表示などの動作設定
+- **ポータブル EXE / MSI インストール版** を用途に合わせて選択可能
+
+## ダウンロード
+
+最新リリース：
+
+**https://github.com/zakee039/MDmeow/releases/latest**
+
+### Windows
+
+用途に合わせて選べます。
+
+```text
+MDmeow-<version>.exe
+```
+
+単一ファイルのポータブル版です。ツールフォルダーや USB ドライブなど、インストールせずに使いたい場所へ置けます。
+
+```text
+MDmeow_<version>_x64.msi
+```
+
+長期利用や Windows のファイル関連付けに向いた標準 MSI インストール版です。
+
+リポジトリには Linux / macOS 向けのビルドフローも残されています。Release に必要なパッケージがない場合は、ソースからビルドできます。
 
 ## ショートカット
 
@@ -76,23 +182,48 @@ macOS は Intel + Apple Silicon 対応の universal DMG です。設定は `~/Li
 | 置換 | `Ctrl/Cmd+H` |
 | Emoji | `Ctrl/Cmd+.` |
 | 設定 | `Ctrl/Cmd+,` |
+| ブロック種別を切替 | `Ctrl/Cmd+0` – `7` |
+
+アプリのショートカットは **設定 → ショートカット** から変更できます。
 
 ## 設定
 
+MDmeow の設定は `settings.toml` に保存され、ホットリロードに対応しています。
+
+主な設定：
+
 ```toml
-language = "system"         # system | zh-CN | en | ja | de
+language = "system"
 spellcheck = true
 quit_on_escape = false
-list_marker = "*"
-show_path = false
 open_last_session = true
 always_show_tabbar = false
+show_path = false
+
+editor_font = ""
+editor_font_size = 16
+source_font = ""
+source_font_size = 15
+
 accent = "#39C5BB"
+
+proxy_enabled = false
+proxy_url = ""
+auto_check_updates = true
 ```
 
-## ビルド
+`Mod` は Windows/Linux では Ctrl、macOS では Cmd を表します。
 
-必要環境: Node.js 20+、`pnpm`、Rust stable、Tauri の各プラットフォーム依存環境。
+## ソースからビルド
+
+必要環境：
+
+- Node.js 20+
+- `pnpm`
+- Rust stable
+- Windows：Visual C++ Build Tools、Windows SDK、WebView2
+
+開発：
 
 ```bash
 pnpm install
@@ -100,7 +231,7 @@ pnpm build
 pnpm tauri dev
 ```
 
-各プラットフォームの最終配布ビルド:
+正式ビルド：
 
 ```powershell
 # Windows
@@ -111,11 +242,17 @@ pnpm release:windows
 # Linux
 pnpm release:linux
 
-# macOS universal
+# macOS
 pnpm release:macos
 ```
 
-各コマンドは対象プラットフォームの正式な配布物だけをリポジトリ直下の `release/` に出力します。バージョン tag を push すると、GitHub Actions が Linux x64/ARM64 と macOS universal を自動ビルドし、`SHA256SUMS.txt` も生成します。Windows の EXE/MSI はメンテナーがローカルでビルドして手動アップロードします。
+主なチェック：
+
+```bash
+pnpm exec tsc --noEmit
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
+```
 
 ## 技術スタック
 
@@ -126,8 +263,15 @@ pnpm release:macos
 | ソース編集 | CodeMirror |
 | 数式 | KaTeX |
 | Markdown → HTML | comrak |
+| エクスポート時のシンタックスハイライト | highlight.js |
 | Windows インストーラー | WiX / MSI |
 
-## クレジットとライセンス
+## クレジット
 
-MDmeow は **Ali Naderi / Mowl** をベースにしたフォークで、**MIT License** のもとで公開されています。このフォークは **zakee039** が保守しています。
+MDmeow は **Ali Naderi / Mowl** をベースにし、引き続き **MIT License** のもとで公開されています。
+
+シンプルで優れた出発点を提供してくれた上流プロジェクトに感謝します。
+
+MDmeow はそこから、実際のデスクトップ作業を中心に再構成されました。WYSIWYG / ソースの二重表示、Miku Cream、画像編集、コードと数式、HTML/PDF 出力、多言語、ショートカット、Windows ファイル関連付け、ポータブル/インストール版、プロキシ、GitHub 署名付き更新などを追加しています。
+
+> **Markdown を開く。すぐ作業を始める。**
