@@ -35,6 +35,7 @@
           <span class="sep" aria-hidden="true"></span>
           <button id="btn-about" data-i18n-title="toolbar.about.title" data-i18n-aria="toolbar.about.title" title="About MDmeow" aria-label="About MDmeow">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10v6"/><path d="M12 7h.01"/></svg>
+            <span id="update-dot" aria-hidden="true" hidden></span>
           </button>
         </div>
       </header>
@@ -62,6 +63,19 @@
           <p class="about-meta" data-i18n="about.credit">zakee039 &middot; MIT License</p>
           <p><a id="about-link" href="https://github.com/zakee039/mowl">github.com/zakee039/mowl</a></p>
           <p class="about-fork"><span data-i18n="about.forkedFrom">Forked from</span> <a id="about-upstream-link" href="https://github.com/naderi/mowl">Ali Naderi / mowl</a></p>
+          <section class="about-update" aria-live="polite">
+            <button id="about-check-update" class="about-update-primary" type="button" data-i18n="update.check">Check for updates</button>
+            <div id="about-update-status" class="about-update-status" hidden></div>
+            <div id="about-update-notes" class="about-update-notes" hidden></div>
+            <div id="about-update-progress" class="about-update-progress" hidden>
+              <div class="about-update-progress-track"><div id="about-update-progress-bar"></div></div>
+              <span id="about-update-progress-text">0%</span>
+            </div>
+            <div id="about-update-actions" class="about-update-actions" hidden>
+              <button id="about-update-secondary" type="button" class="about-update-secondary"></button>
+              <button id="about-update-primary-action" type="button" class="about-update-primary"></button>
+            </div>
+          </section>
           <p class="about-path" id="about-settings-path"></p>
         </div>
       </div>

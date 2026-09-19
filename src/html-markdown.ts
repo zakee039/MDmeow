@@ -121,6 +121,96 @@ function parseRawImage(value: string): RawImageAttrs | null {
   return attrs;
 }
 
+export interface RawHtmlImagePresentation {
+  align: "left" | "center" | "right";
+  ratio: number;
+  title: string;
+}
+
+/** Read the presentation metadata used by the shared image toolbar without
+ * converting the underlying raw-HTML node into a Markdown image node. */
+export function rawHtmlImagePresentation(
+  value: string,
+): RawHtmlImagePresentation | null {
+  const image = parseRawImage(value);
+  if (!image) return null;
+
+  const zoom = Number.parseFloat(String(image.zoom ?? "100").replace("%", ""));
+  const ratio = Number.isFinite(zoom) && zoom > 0
+    ? (String(image.zoom ?? "").includes("%") ? zoom / 100 : zoom)
+    : 1;
+
+  return {
+    align:
+      image.align === "left" || image.align === "right"
+        ? image.align
+        : "center",
+    ratio,
+    title: image.title ?? "",
+  };
+}
+
+export function buildRawHtmlImage(options: {
+  src: string;
+  alt?: string;
+  title?: string;
+  align?: RawHtmlImagePresentation["align"];
+  ratio?: number;
+}): string {
+  const el = document.createElement("img");
+  el.setAttribute("title", options.title ?? "");
+  el.setAttribute("src", options.src);
+  el.setAttribute("alt", options.alt ?? "");
+
+  const ratio = Math.max(0.01, options.ratio ?? 1);
+  if (Math.abs(ratio - 1) >= 0.0001) {
+    el.style.setProperty("zoom", `${Math.round(ratio * 10000) / 100}%`);
+  }
+  el.setAttribute("data-align", options.align ?? "center");
+  return el.outerHTML;
+}
+
+/** Update the editable metadata of a raw HTML <img>. The document continues to
+ * round-trip as ordinary HTML compatible with Typedown-style image markup. */
+export function updateRawHtmlImagePresentation(
+  value: string,
+  patch: Partial<RawHtmlImagePresentation>,
+): string | null {
+  const trimmed = value.trim();
+  if (!parseRawImage(trimmed)) return null;
+
+  const template = document.createElement("template");
+  template.innerHTML = trimmed;
+  const el = template.content.firstElementChild;
+  if (!(el instanceof HTMLImageElement)) return null;
+
+  // Never emit MDmeow-private source attributes. The runtime-only
+  // data-mdmeow-html-img marker is added by toDOM and is not serialized.
+  el.removeAttribute("data-mdmeow-image");
+  if (!el.hasAttribute("title")) el.setAttribute("title", "");
+  if (!el.hasAttribute("alt")) el.setAttribute("alt", "");
+
+  if (patch.align) {
+    el.setAttribute("data-align", patch.align);
+    // Prefer our non-deprecated data attribute after the first toolbar edit.
+    el.removeAttribute("align");
+  }
+
+  if (patch.ratio !== undefined) {
+    const ratio = Math.max(0.01, patch.ratio);
+    const style = el.style;
+    if (Math.abs(ratio - 1) < 0.0001) style.removeProperty("zoom");
+    else style.setProperty("zoom", `${Math.round(ratio * 10000) / 100}%`);
+    if (!style.cssText.trim()) el.removeAttribute("style");
+  }
+
+  if (patch.title !== undefined) {
+    el.setAttribute("title", patch.title);
+  }
+
+  return el.outerHTML;
+}
+
 function rawImageDom(value: string, image: RawImageAttrs): [string, Record<string, string>] {
   const attrs: Record<string, string> = {
     src: image.src,

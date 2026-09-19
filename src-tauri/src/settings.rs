@@ -101,12 +101,20 @@ pub struct Settings {
     pub source_font_size: u16,
     /// Accent colour. MDmeow defaults to Miku teal (#39C5BB).
     pub accent: String,
+    /// Route remote assets through a user-specified HTTP/HTTPS/SOCKS5 proxy.
+    pub proxy_enabled: bool,
+    /// Proxy endpoint, e.g. http://127.0.0.1:7897 or socks5://127.0.0.1:7893.
+    pub proxy_url: String,
+    /// Check for new versions in the background.
+    pub auto_check_updates: bool,
     /// User-configurable application shortcuts.
     pub shortcuts: ShortcutSettings,
 
     // --- app-managed state ---
     /// Suppress the startup prompt asking to register MDmeow in Windows Open With.
     pub open_with_prompt_dismissed: bool,
+    /// Epoch seconds of the most recent automatic version check attempt.
+    pub last_update_check: u64,
     /// Files to reopen on next launch (session restore).
     pub open_files: Vec<PathBuf>,
     /// Index into `open_files` of the tab that was active.
@@ -129,8 +137,12 @@ impl Default for Settings {
             source_font: String::new(),
             source_font_size: 15,
             accent: "#39C5BB".to_string(),
+            proxy_enabled: false,
+            proxy_url: String::new(),
+            auto_check_updates: true,
             shortcuts: ShortcutSettings::default(),
             open_with_prompt_dismissed: false,
+            last_update_check: 0,
             open_files: Vec::new(),
             active_tab: 0,
             window: WindowState::default(),

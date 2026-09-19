@@ -1,5 +1,6 @@
 {
   "bundle": {
+    "createUpdaterArtifacts": false,
     "targets": ["dmg"],
     "fileAssociations": [
       {

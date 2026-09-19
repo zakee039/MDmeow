@@ -503,14 +503,16 @@ body {
    weight contrast between ordinary and bold code. */
 #editor .milkdown .ProseMirror code:not(.cm-content code) {
   color: #5c2e91;
-  background: #f3eef9;
-  border: 1px solid #ded0ee;
+  background: #e2f4f1;
+  border: 1px solid #c6e9e5;
   border-radius: 5px;
   padding: 0.12em 0.34em;
   font-weight: 500;
 }
 #editor .milkdown .ProseMirror strong code:not(.cm-content code),
-#editor .milkdown .ProseMirror b code:not(.cm-content code) {
+#editor .milkdown .ProseMirror b code:not(.cm-content code),
+#editor .milkdown .ProseMirror code:not(.cm-content code) strong,
+#editor .milkdown .ProseMirror code:not(.cm-content code) b {
   color: #4b2478;
   font-weight: 700;
 }
@@ -664,6 +666,14 @@ body {
   height: 20px;
   display: block;
 }
+.mdmeow-image-title-button {
+  width: auto;
+  min-width: 42px;
+  padding: 0 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
 .mdmeow-image-delete-button:hover {
   background: #f8e8e6;
   color: #b43b32;
@@ -677,7 +687,8 @@ body {
 .mdmeow-image-scale-menu {
   position: absolute;
   right: 44px;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
+  bottom: auto;
   min-width: 104px;
   padding: 5px;
   background: rgba(252, 251, 250, 0.98);
@@ -685,6 +696,44 @@ body {
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(20, 20, 19, 0.14);
   overflow: hidden;
+}
+.mdmeow-image-scale-menu.open-up {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.mdmeow-image-title-popover {
+  position: absolute;
+  left: 6px;
+  top: calc(100% + 8px);
+  bottom: auto;
+  padding: 6px;
+  background: rgba(252, 251, 250, 0.98);
+  border: 1px solid #d8d3cd;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(20, 20, 19, 0.14);
+}
+.mdmeow-image-title-popover[hidden] {
+  display: none !important;
+}
+.mdmeow-image-title-popover.open-up {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.mdmeow-image-title-input {
+  width: min(260px, 56vw);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d8d3cd;
+  border-radius: 7px;
+  outline: none;
+  background: #fff;
+  color: #353330;
+  font: inherit;
+  font-size: 13px;
+}
+.mdmeow-image-title-input:focus {
+  border-color: #39c5bb;
+  box-shadow: 0 0 0 2px rgba(57, 197, 187, 0.13);
 }
 .mdmeow-image-scale-item {
   width: 100%;
@@ -936,6 +985,35 @@ body {
 .settings-action:hover:not(:disabled) { background: var(--hover); }
 .settings-action:focus { outline: none; border-color: var(--accent, #39c5bb); }
 .settings-action:disabled { opacity: 0.55; cursor: default; }
+.settings-proxy-toggle.active {
+  border-color: color-mix(in srgb, var(--accent, #39c5bb) 65%, var(--border));
+  background: color-mix(in srgb, var(--accent, #39c5bb) 12%, var(--bg));
+  color: color-mix(in srgb, var(--accent, #39c5bb) 70%, var(--fg));
+}
+.settings-row input.settings-proxy-address {
+  width: min(320px, 58vw);
+}
+.settings-proxy-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 260px;
+  justify-content: flex-end;
+}
+.settings-proxy-result {
+  min-width: 68px;
+  font-size: 12px;
+  text-align: right;
+  opacity: 0.72;
+}
+.settings-proxy-result.ok {
+  color: #17806f;
+  opacity: 1;
+}
+.settings-proxy-result.error {
+  color: #b43b32;
+  opacity: 1;
+}
 .settings-color { display: flex; align-items: center; gap: 6px; }
 .settings-color input[type="color"] {
   width: 28px;
@@ -1144,7 +1222,8 @@ body {
 }
 .about-card {
   position: relative;
-  max-width: 350px;
+  width: min(420px, calc(100vw - 48px));
+  max-width: 420px;
   padding: 26px 32px 24px;
   text-align: center;
   background: var(--bg);
@@ -1200,6 +1279,97 @@ body {
   font-family: var(--source-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   word-break: break-all;
 }
+#btn-about { position: relative; }
+#update-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent, #39c5bb);
+  box-shadow: 0 0 0 2px var(--bar-bg, #f8f7f4);
+}
+.about-update {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.about-update-primary,
+.about-update-secondary {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.about-update-primary {
+  border-color: color-mix(in srgb, var(--accent, #39c5bb) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent, #39c5bb) 10%, var(--bg));
+}
+.about-update-primary:hover,
+.about-update-secondary:hover { background: var(--hover); }
+.about-update-primary:disabled,
+.about-update-secondary:disabled { opacity: 0.55; cursor: default; }
+.about-update-status {
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.about-update-notes {
+  margin-top: 8px;
+  max-height: 104px;
+  overflow: auto;
+  padding: 8px 10px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 7px;
+  background: var(--hover);
+  color: var(--bar-fg);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.about-update-progress {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.about-update-progress[hidden] {
+  display: none !important;
+}
+.about-update-progress-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hover);
+}
+#about-update-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent, #39c5bb);
+  transition: width 120ms ease;
+}
+#about-update-progress-text {
+  min-width: 34px;
+  text-align: right;
+  color: var(--bar-fg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.about-update-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
 
 /* Hidden five-click About-logo easter egg. */
 #miku-easter {
@@ -1226,4 +1396,17 @@ body {
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.48);
   cursor: pointer;
   user-select: none;
+}
+
+/* Native file-drop feedback. Tauri owns the actual OS drop event. */
+body.mdmeow-file-drag::after {
+  content: "";
+  position: fixed;
+  inset: 8px;
+  z-index: 200;
+  pointer-events: none;
+  border: 2px dashed rgba(57, 197, 187, 0.78);
+  border-radius: 14px;
+  background: rgba(57, 197, 187, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.14);
 }

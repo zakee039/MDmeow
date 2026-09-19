@@ -3,7 +3,9 @@ mod commands;
 mod export;
 mod mdfmt;
 mod portable;
+mod proxy;
 mod settings;
+mod update;
 mod windows_integration;
 
 use std::path::Path;
@@ -111,6 +113,12 @@ pub fn run() {
             commands::rename_document,
             commands::render_html,
             commands::read_image_data_url,
+            proxy::test_proxy,
+            proxy::fetch_remote_image_data_url,
+            update::check_for_update,
+            update::prepare_new_version,
+            update::use_prepared_version,
+            update::show_prepared_version,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

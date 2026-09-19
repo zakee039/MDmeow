@@ -1,5 +1,6 @@
 {
   "bundle": {
+    "createUpdaterArtifacts": false,
     "targets": ["appimage", "deb", "rpm"],
     "fileAssociations": [
       {

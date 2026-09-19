@@ -26,6 +26,9 @@ export interface PanelSettings {
   source_font: string;
   source_font_size: number;
   accent: string;
+  proxy_enabled: boolean;
+  proxy_url: string;
+  auto_check_updates: boolean;
   shortcuts: ShortcutSettings;
 }
 
@@ -48,7 +51,8 @@ type Field =
 
 interface Section {
   title: I18nKey;
-  fields: Field[];
+  fields?: Field[];
+  custom?: "proxy";
 }
 
 const SECTIONS: Section[] = [
@@ -71,6 +75,31 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    title: "settings.section.behavior",
+    fields: [
+      { key: "quit_on_escape", kind: "checkbox", label: "settings.quitOnEscape" },
+      {
+        key: "always_show_tabbar",
+        kind: "checkbox",
+        label: "settings.alwaysShowTabbar",
+      },
+      {
+        key: "open_last_session",
+        kind: "checkbox",
+        label: "settings.openLastSession",
+      },
+      {
+        key: "auto_check_updates",
+        kind: "checkbox",
+        label: "settings.autoCheckUpdates",
+      },
+    ],
+  },
+  {
+    title: "settings.section.proxy",
+    custom: "proxy",
+  },
+  {
     title: "settings.section.editor",
     fields: [
       { key: "spellcheck", kind: "checkbox", label: "settings.spellcheck" },
@@ -85,22 +114,6 @@ const SECTIONS: Section[] = [
         ],
       },
       { key: "show_path", kind: "checkbox", label: "settings.showPath" },
-    ],
-  },
-  {
-    title: "settings.section.behavior",
-    fields: [
-      { key: "quit_on_escape", kind: "checkbox", label: "settings.quitOnEscape" },
-      {
-        key: "always_show_tabbar",
-        kind: "checkbox",
-        label: "settings.alwaysShowTabbar",
-      },
-      {
-        key: "open_last_session",
-        kind: "checkbox",
-        label: "settings.openLastSession",
-      },
     ],
   },
   {
@@ -173,12 +186,16 @@ export class SettingsPanel {
   #openWithManagedByMsi = false;
   #openWithCanModify = false;
   #openWithBusy = false;
+  #proxyTestBusy = false;
+  #proxyTestState: "idle" | "ok" | "error" = "idle";
+  #proxyTestDetail = "";
 
   /** Reports every user change. main.ts applies + persists. */
   onChange: (key: SettingKey, value: string | number | boolean) => void =
     () => {};
   onShortcutChange: (action: ShortcutAction, value: string) => void = () => {};
   onOpenWithToggle: () => void | Promise<void> = () => {};
+  onProxyTest: (proxyUrl: string) => Promise<void> = async () => {};
   /** Return focus to the editor after closing. */
   onClose: () => void = () => {};
 
@@ -274,7 +291,11 @@ export class SettingsPanel {
   refresh(): void {
     const s = this.#get();
     for (const section of SECTIONS) {
-      for (const f of section.fields) {
+      if (section.custom === "proxy") {
+        this.#refreshProxyControls();
+        continue;
+      }
+      for (const f of section.fields ?? []) {
         if (f.kind === "action") {
           this.#refreshOpenWithControl();
           continue;
@@ -341,7 +362,11 @@ export class SettingsPanel {
       const lg = document.createElement("legend");
       lg.textContent = t(section.title);
       fs.appendChild(lg);
-      for (const f of section.fields) fs.appendChild(this.#control(f));
+      if (section.custom === "proxy") {
+        fs.appendChild(this.#proxyControls());
+      } else {
+        for (const f of section.fields ?? []) fs.appendChild(this.#control(f));
+      }
       card.appendChild(fs);
     }
 
@@ -353,6 +378,132 @@ export class SettingsPanel {
     card.appendChild(foot);
 
     this.#el.appendChild(card);
+  }
+
+  #proxyControls(): DocumentFragment {
+    const fragment = document.createDocumentFragment();
+
+    const statusRow = document.createElement("div");
+    statusRow.className = "settings-row settings-row--proxy";
+    const statusLabel = document.createElement("span");
+    statusLabel.className = "settings-label";
+    statusLabel.textContent = t("settings.proxy.status");
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "settings-action settings-proxy-toggle";
+    toggle.dataset.proxyToggle = "true";
+    toggle.addEventListener("click", () => {
+      this.#emit("proxy_enabled", !this.#get().proxy_enabled);
+      this.#proxyTestState = "idle";
+      this.#proxyTestDetail = "";
+      this.#refreshProxyControls();
+    });
+    statusRow.append(statusLabel, toggle);
+
+    const addressRow = document.createElement("label");
+    addressRow.className = "settings-row settings-row--proxy";
+    const addressLabel = document.createElement("span");
+    addressLabel.className = "settings-label";
+    addressLabel.textContent = t("settings.proxy.address");
+    const address = document.createElement("input");
+    address.type = "text";
+    address.spellcheck = false;
+    address.className = "settings-proxy-address";
+    address.dataset.key = "proxy_url";
+    address.placeholder = "http://127.0.0.1:7897  /  socks5://127.0.0.1:7893";
+    address.addEventListener("change", () => {
+      this.#proxyTestState = "idle";
+      this.#proxyTestDetail = "";
+      this.#emit("proxy_url", address.value.trim());
+      this.#refreshProxyControls();
+    });
+    addressRow.append(addressLabel, address);
+
+    const testRow = document.createElement("div");
+    testRow.className = "settings-row settings-row--proxy";
+    const testLabel = document.createElement("span");
+    testLabel.className = "settings-label";
+    testLabel.textContent = t("settings.proxy.test");
+    const testWrap = document.createElement("span");
+    testWrap.className = "settings-proxy-test";
+    const testButton = document.createElement("button");
+    testButton.type = "button";
+    testButton.className = "settings-action";
+    testButton.dataset.proxyTest = "true";
+    testButton.textContent = t("settings.proxy.testButton");
+    testButton.addEventListener("click", async () => {
+      if (this.#proxyTestBusy) return;
+      const value =
+        this.#el.querySelector<HTMLInputElement>('[data-key="proxy_url"]')?.value.trim() ??
+        this.#get().proxy_url.trim();
+      if (!value) {
+        this.#proxyTestState = "error";
+        this.#proxyTestDetail = t("settings.proxy.addressRequired");
+        this.#refreshProxyControls();
+        return;
+      }
+      this.#proxyTestBusy = true;
+      this.#proxyTestState = "idle";
+      this.#proxyTestDetail = "";
+      this.#refreshProxyControls();
+      try {
+        await this.onProxyTest(value);
+        this.#proxyTestState = "ok";
+      } catch (err) {
+        this.#proxyTestState = "error";
+        this.#proxyTestDetail = String(err);
+      } finally {
+        this.#proxyTestBusy = false;
+        this.#refreshProxyControls();
+      }
+    });
+    const result = document.createElement("span");
+    result.className = "settings-proxy-result";
+    result.dataset.proxyResult = "true";
+    testWrap.append(testButton, result);
+    testRow.append(testLabel, testWrap);
+
+    fragment.append(statusRow, addressRow, testRow);
+    requestAnimationFrame(() => this.#refreshProxyControls());
+    return fragment;
+  }
+
+  #refreshProxyControls(): void {
+    const s = this.#get();
+    const toggle = this.#el.querySelector<HTMLButtonElement>("[data-proxy-toggle]");
+    if (toggle) {
+      toggle.textContent = t(
+        s.proxy_enabled ? "settings.proxy.enabled" : "settings.proxy.disabled",
+      );
+      toggle.classList.toggle("active", s.proxy_enabled);
+      toggle.setAttribute("aria-pressed", String(s.proxy_enabled));
+    }
+
+    const address = this.#el.querySelector<HTMLInputElement>('[data-key="proxy_url"]');
+    if (address && document.activeElement !== address) {
+      address.value = s.proxy_url ?? "";
+    }
+
+    const button = this.#el.querySelector<HTMLButtonElement>("[data-proxy-test]");
+    if (button) {
+      button.disabled = this.#proxyTestBusy;
+      button.textContent = this.#proxyTestBusy
+        ? t("settings.proxy.testing")
+        : t("settings.proxy.testButton");
+    }
+
+    const result = this.#el.querySelector<HTMLElement>("[data-proxy-result]");
+    if (result) {
+      result.classList.toggle("ok", this.#proxyTestState === "ok");
+      result.classList.toggle("error", this.#proxyTestState === "error");
+      result.textContent =
+        this.#proxyTestState === "ok"
+          ? t("settings.proxy.ok")
+          : this.#proxyTestState === "error"
+            ? t("settings.proxy.failed")
+            : "";
+      result.title = this.#proxyTestDetail;
+    }
   }
 
   #control(f: Field): HTMLElement {

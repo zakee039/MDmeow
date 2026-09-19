@@ -27,6 +27,10 @@ list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
 always_show_tabbar = false  # keep the tab bar visible even with only one file open
+auto_check_updates = true   # check GitHub Releases in the background at most once every 24h
+
+proxy_enabled = false       # route remote images/resources through the proxy below
+proxy_url = ""              # e.g. "http://127.0.0.1:7897" or "socks5://127.0.0.1:7893"
 
 editor_font = ""            # WYSIWYG font family ("" = built-in default)
 editor_font_size = 16       # base editor size in px (headings scale from this)

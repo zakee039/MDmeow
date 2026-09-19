@@ -52,8 +52,12 @@ interface Settings {
   source_font: string;
   source_font_size: number;
   accent: string;
+  proxy_enabled: boolean;
+  proxy_url: string;
+  auto_check_updates: boolean;
   shortcuts: ShortcutSettings;
   open_with_prompt_dismissed: boolean;
+  last_update_check: number;
   open_files: string[];
   active_tab: number;
   window: WindowState;
@@ -73,6 +77,31 @@ interface OpenWithStatus {
   registered: boolean;
   managed_by_msi: boolean;
   can_modify: boolean;
+}
+
+interface VersionInfo {
+  currentVersion: string;
+  latestVersion: string;
+  updateAvailable: boolean;
+  mode: "portable" | "installed" | "unsupported";
+  releaseUrl: string;
+  notes: string;
+  publishedAt: string | null;
+  canDownload: boolean;
+  assetName: string | null;
+  assetSize: number | null;
+}
+
+interface PreparedVersion {
+  version: string;
+  mode: "portable" | "installed";
+  path: string;
+  alreadyDownloaded: boolean;
+}
+
+interface VersionTransferProgress {
+  downloaded: number;
+  total: number;
 }
 
 const win = getCurrentWindow();
@@ -188,6 +217,7 @@ onLangChange(() => {
   updateSourceButton();
   updateShortcutTitles();
   updateTitle();
+  renderVersionInfo();
 });
 
 function stem(path: string | null): string {
@@ -398,6 +428,17 @@ emojiPicker.onPick = (glyph) => {
 };
 emojiPicker.onClose = () => (sourceMode ? sourceEl : editor).focus();
 
+function applyProxySettings(reloadEditor: boolean): void {
+  editor.setProxyConfig(settings.proxy_enabled, settings.proxy_url);
+  if (!reloadEditor || sourceMode) return;
+  switching = true;
+  void editor.reload().then(() => {
+    editor.setSpellcheck(settings.spellcheck);
+    switching = false;
+    markDirtyFromView();
+  });
+}
+
 // The settings GUI reports each change here; we own the object + the save.
 settingsPanel.onChange = (key: SettingKey, value) => {
   (settings as unknown as Record<string, unknown>)[key] = value;
@@ -434,6 +475,10 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "accent":
       applyAppearance();
       break;
+    case "proxy_enabled":
+    case "proxy_url":
+      applyProxySettings(true);
+      break;
     // quit_on_escape / open_last_session: no immediate effect
   }
   persistSoon();
@@ -447,6 +492,9 @@ settingsPanel.onShortcutChange = (action, value) => {
 settingsPanel.onOpenWithToggle = async () => {
   if (!openWithStatus.can_modify) return;
   await setOpenWithRegistration(!openWithStatus.registered);
+};
+settingsPanel.onProxyTest = async (proxyUrl) => {
+  await invoke("test_proxy", { proxyUrl });
 };
 settingsPanel.onClose = () => (sourceMode ? sourceEl : editor).focus();
 
@@ -535,6 +583,35 @@ async function openDialog(): Promise<void> {
     filters: [{ name: "Markdown", extensions: ["md", "markdown", "mdx", "txt"] }],
   });
   if (typeof picked === "string") await openPath(picked);
+}
+
+function isSupportedDroppedFile(path: string): boolean {
+  return /\.(?:md|markdown|mdx|txt)$/i.test(path);
+}
+
+async function wireFileDrop(): Promise<void> {
+  await win.onDragDropEvent((event) => {
+    const payload = event.payload;
+    if (payload.type === "enter" || payload.type === "over") {
+      document.body.classList.add("mdmeow-file-drag");
+      return;
+    }
+
+    document.body.classList.remove("mdmeow-file-drag");
+    if (payload.type !== "drop") return;
+
+    const paths = payload.paths.filter(isSupportedDroppedFile);
+    if (paths.length === 0) return;
+    void (async () => {
+      for (const path of paths) await openPath(path);
+      try {
+        await win.unminimize();
+        await win.setFocus();
+      } catch {
+        /* not critical */
+      }
+    })();
+  });
 }
 
 async function saveDoc(): Promise<boolean> {
@@ -828,15 +905,49 @@ function openFind(withReplace: boolean): void {
 // --- about panel --------------------------------------------------------
 
 const aboutEl = document.getElementById("about") as HTMLElement;
+const updateDot = document.getElementById("update-dot") as HTMLElement;
+const updateCheckButton = document.getElementById(
+  "about-check-update",
+) as HTMLButtonElement;
+const updateStatusEl = document.getElementById(
+  "about-update-status",
+) as HTMLElement;
+const updateNotesEl = document.getElementById(
+  "about-update-notes",
+) as HTMLElement;
+const updateProgressEl = document.getElementById(
+  "about-update-progress",
+) as HTMLElement;
+const updateProgressBar = document.getElementById(
+  "about-update-progress-bar",
+) as HTMLElement;
+const updateProgressText = document.getElementById(
+  "about-update-progress-text",
+) as HTMLElement;
+const updateActionsEl = document.getElementById(
+  "about-update-actions",
+) as HTMLElement;
+const updateSecondaryButton = document.getElementById(
+  "about-update-secondary",
+) as HTMLButtonElement;
+const updatePrimaryButton = document.getElementById(
+  "about-update-primary-action",
+) as HTMLButtonElement;
 const mikuEasterEl = document.getElementById("miku-easter") as HTMLElement;
 const mikuEasterImage = document.getElementById(
   "miku-easter-image",
 ) as HTMLImageElement;
 let aboutLogoClickCount = 0;
 let aboutLogoClickTimer: number | null = null;
+let versionInfo: VersionInfo | null = null;
+let preparedVersion: PreparedVersion | null = null;
+let versionBusy = false;
+let updatePrimaryAction: (() => void | Promise<void>) | null = null;
+let updateSecondaryAction: (() => void | Promise<void>) | null = null;
 
 function openAbout(): void {
   findBar.close();
+  renderVersionInfo();
   aboutEl.hidden = false;
 }
 
@@ -852,8 +963,245 @@ function closeMikuEaster(): void {
   mikuEasterEl.hidden = true;
 }
 
+function setUpdateActions(
+  secondary: { label: string; action: (() => void | Promise<void>) | null } | null,
+  primary: { label: string; action: (() => void | Promise<void>) | null } | null,
+): void {
+  updateSecondaryAction = secondary?.action ?? null;
+  updatePrimaryAction = primary?.action ?? null;
+  updateSecondaryButton.hidden = !secondary;
+  updatePrimaryButton.hidden = !primary;
+  if (secondary) updateSecondaryButton.textContent = secondary.label;
+  if (primary) updatePrimaryButton.textContent = primary.label;
+  updateActionsEl.hidden = !secondary && !primary;
+}
+
+function setUpdateProgress(downloaded = 0, total = 0): void {
+  const ratio = total > 0 ? Math.min(1, downloaded / total) : 0;
+  const percent = Math.round(ratio * 100);
+  updateProgressEl.hidden = total <= 0;
+  updateProgressBar.style.width = `${percent}%`;
+  updateProgressText.textContent = `${percent}%`;
+}
+
+function renderVersionInfo(): void {
+  updateCheckButton.disabled = versionBusy;
+  updateCheckButton.textContent = versionBusy ? t("update.checking") : t("update.check");
+
+  if (!versionInfo) {
+    updateStatusEl.hidden = true;
+    updateNotesEl.hidden = true;
+    setUpdateActions(null, null);
+    return;
+  }
+
+  if (preparedVersion) {
+    updateDot.hidden = false;
+    updateStatusEl.hidden = false;
+    updateNotesEl.hidden = true;
+    updateStatusEl.textContent =
+      preparedVersion.mode === "portable"
+        ? t("update.downloadedPortable", { version: preparedVersion.version })
+        : t("update.downloadedInstalled", { version: preparedVersion.version });
+    if (preparedVersion.mode === "portable") {
+      setUpdateActions(
+        {
+          label: t("update.openFolder"),
+          action: () =>
+            invoke("show_prepared_version", { version: preparedVersion!.version }),
+        },
+        { label: t("update.openNew"), action: usePreparedVersion },
+      );
+    } else {
+      setUpdateActions(
+        {
+          label: t("update.releasePage"),
+          action: () => openUrl(versionInfo!.releaseUrl),
+        },
+        { label: t("update.install"), action: usePreparedVersion },
+      );
+    }
+    return;
+  }
+
+  if (!versionInfo.updateAvailable) {
+    updateDot.hidden = true;
+    updateStatusEl.hidden = false;
+    updateStatusEl.textContent = t("update.latest");
+    updateNotesEl.hidden = true;
+    setUpdateActions(null, null);
+    return;
+  }
+
+  updateDot.hidden = false;
+  updateStatusEl.hidden = false;
+  updateStatusEl.textContent = t("update.available", {
+    version: versionInfo.latestVersion,
+  });
+  updateNotesEl.textContent = versionInfo.notes.trim();
+  updateNotesEl.hidden = !versionInfo.notes.trim();
+
+  if (!versionInfo.canDownload || versionInfo.mode === "unsupported") {
+    setUpdateActions(
+      {
+        label: t("update.releasePage"),
+        action: () => openUrl(versionInfo!.releaseUrl),
+      },
+      null,
+    );
+    if (!versionInfo.canDownload) {
+      updateStatusEl.textContent += ` ${t("update.assetPending")}`;
+    }
+    return;
+  }
+
+  setUpdateActions(
+    {
+      label: t("update.releasePage"),
+      action: () => openUrl(versionInfo!.releaseUrl),
+    },
+    {
+      label:
+        versionInfo.mode === "portable"
+          ? t("update.downloadPortable")
+          : t("update.downloadInstalled"),
+      action: prepareLatestVersion,
+    },
+  );
+}
+
+async function checkVersion(silent: boolean): Promise<void> {
+  if (versionBusy) return;
+  versionBusy = true;
+  preparedVersion = null;
+  setUpdateProgress();
+  if (!silent) renderVersionInfo();
+  settings.last_update_check = Math.floor(Date.now() / 1000);
+  persistSoon();
+  try {
+    versionInfo = await invoke<VersionInfo>("check_for_update", {
+      proxyEnabled: settings.proxy_enabled,
+      proxyUrl: settings.proxy_url,
+    });
+    renderVersionInfo();
+  } catch (err) {
+    if (!silent) {
+      versionInfo = null;
+      updateStatusEl.hidden = false;
+      updateStatusEl.textContent = t("update.failed", { err: String(err) });
+      updateNotesEl.hidden = true;
+      setUpdateActions(null, null);
+    }
+  } finally {
+    versionBusy = false;
+    if (!silent || versionInfo?.updateAvailable) renderVersionInfo();
+  }
+}
+
+async function usePreparedVersion(): Promise<void> {
+  if (!preparedVersion) return;
+  if (tabBar.tabs.some((tab) => tab.dirty)) {
+    const proceed = await ask(t("update.unsavedInstall"), {
+      title: "MDmeow",
+      kind: "warning",
+    });
+    if (!proceed) return;
+  }
+
+  await captureGeometry();
+  await flushSettings();
+  await invoke("use_prepared_version", { version: preparedVersion.version });
+  await win.destroy();
+}
+
+async function prepareLatestVersion(): Promise<void> {
+  if (!versionInfo?.updateAvailable || !versionInfo.canDownload || versionBusy) {
+    return;
+  }
+
+  versionBusy = true;
+  updateCheckButton.disabled = true;
+  updateStatusEl.hidden = false;
+  updateStatusEl.textContent = t("update.downloading");
+  updateNotesEl.hidden = true;
+  setUpdateActions(null, null);
+  const initialTotal = versionInfo.assetSize ?? 0;
+  setUpdateProgress(0, initialTotal);
+
+  try {
+    preparedVersion = await invoke<PreparedVersion>("prepare_new_version", {
+      expectedVersion: versionInfo.latestVersion,
+      proxyEnabled: settings.proxy_enabled,
+      proxyUrl: settings.proxy_url,
+    });
+    setUpdateProgress();
+    updateStatusEl.textContent =
+      preparedVersion.mode === "portable"
+        ? t("update.downloadedPortable", { version: preparedVersion.version })
+        : t("update.downloadedInstalled", { version: preparedVersion.version });
+
+    if (preparedVersion.mode === "portable") {
+      setUpdateActions(
+        {
+          label: t("update.openFolder"),
+          action: () =>
+            invoke("show_prepared_version", { version: preparedVersion!.version }),
+        },
+        {
+          label: t("update.openNew"),
+          action: usePreparedVersion,
+        },
+      );
+    } else {
+      setUpdateActions(
+        {
+          label: t("update.releasePage"),
+          action: () => openUrl(versionInfo!.releaseUrl),
+        },
+        {
+          label: t("update.install"),
+          action: usePreparedVersion,
+        },
+      );
+    }
+  } catch (err) {
+    preparedVersion = null;
+    setUpdateProgress();
+    updateStatusEl.textContent = t("update.failed", { err: String(err) });
+    updateNotesEl.hidden = true;
+    setUpdateActions(
+      versionInfo
+        ? {
+            label: t("update.releasePage"),
+            action: () => openUrl(versionInfo!.releaseUrl),
+          }
+        : null,
+      null,
+    );
+  } finally {
+    versionBusy = false;
+    updateCheckButton.disabled = false;
+    updateCheckButton.textContent = t("update.check");
+  }
+}
+
+function maybeCheckVersionInBackground(): void {
+  if (!settings.auto_check_updates) return;
+  const now = Math.floor(Date.now() / 1000);
+  const last = Number(settings.last_update_check) || 0;
+  if (now - last < 24 * 60 * 60) return;
+  void checkVersion(true);
+}
+
 function wireAbout(): void {
   document.getElementById("btn-about")?.addEventListener("click", openAbout);
+  updateCheckButton.addEventListener("click", () => void checkVersion(false));
+  updatePrimaryButton.addEventListener("click", () => {
+    if (updatePrimaryAction) void updatePrimaryAction();
+  });
+  updateSecondaryButton.addEventListener("click", () => {
+    if (updateSecondaryAction) void updateSecondaryAction();
+  });
   aboutEl.querySelector(".about-close")?.addEventListener("click", closeAbout);
   aboutEl.addEventListener("click", (e) => {
     if (e.target === aboutEl) closeAbout(); // click on the backdrop
@@ -1249,6 +1597,7 @@ async function bootstrap(): Promise<void> {
   applyAppearance();
   installMikuCreamRendering();
   editor.setListMarker(settings.list_marker);
+  applyProxySettings(false);
   tabBar.setAlwaysShow(settings.always_show_tabbar);
 
   // React to hand edits of settings.toml (the file watcher emits this).
@@ -1266,10 +1615,15 @@ async function bootstrap(): Promise<void> {
     settings.source_font = ext.source_font;
     settings.source_font_size = ext.source_font_size;
     settings.accent = ext.accent;
+    settings.proxy_enabled = ext.proxy_enabled;
+    settings.proxy_url = ext.proxy_url;
+    settings.auto_check_updates = ext.auto_check_updates;
+    settings.last_update_check = ext.last_update_check;
     settings.shortcuts = withDefaultShortcuts(ext.shortcuts);
     settings.open_with_prompt_dismissed = ext.open_with_prompt_dismissed;
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
+    applyProxySettings(true);
     updateShortcutTitles();
     editor.setSpellcheck(settings.spellcheck);
     updateTitle();
@@ -1324,8 +1678,13 @@ async function bootstrap(): Promise<void> {
 
   wireButtons();
   wireAbout();
+  void listen<VersionTransferProgress>("update-download-progress", (event) => {
+    if (!versionBusy) return;
+    setUpdateProgress(event.payload.downloaded, event.payload.total);
+  });
   wireOpenMenu();
   wireExportMenu();
+  await wireFileDrop();
   updateSourceButton();
   updateShortcutTitles();
   wireShortcuts();
@@ -1334,6 +1693,7 @@ async function bootstrap(): Promise<void> {
   // Do not block first paint on registry inspection. The lightweight Windows
   // Open With check runs only after the main window and editor are ready.
   void initializeOpenWithIntegration();
+  maybeCheckVersionInBackground();
 }
 
 bootstrap().catch(async (e) => {

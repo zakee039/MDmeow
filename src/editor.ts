@@ -51,6 +51,8 @@ export class Editor {
   private listMarker: ListMarker = "*";
   /** Path of the document in the active tab — the base for relative images. */
   private docPath: string | null = null;
+  private proxyEnabled = false;
+  private proxyUrl = "";
   /** Resolved `data:` URLs, keyed by `docPath \0 src`. */
   private readonly imageCache = new Map<string, string>();
 
@@ -232,15 +234,40 @@ export class Editor {
     this.docPath = path;
   }
 
+  setProxyConfig(enabled: boolean, url: string): void {
+    const nextUrl = url.trim();
+    if (this.proxyEnabled === enabled && this.proxyUrl === nextUrl) return;
+    this.proxyEnabled = enabled;
+    this.proxyUrl = nextUrl;
+    this.imageCache.clear();
+  }
+
   /** `proxyDomURL` hook: map a Markdown image target to something the WebView
    *  can actually display. Remote / data URLs pass through; local paths are
    *  read by the backend and returned as a `data:` URL. */
   private resolveImageSrc = (src: string): string | Promise<string> => {
     const raw = (src ?? "").trim();
+    const remote = raw.startsWith("//") ? `https:${raw}` : raw;
+    if (/^https?:\/\//i.test(remote)) {
+      if (!this.proxyEnabled) return src;
+      const key = `proxy\u0000${this.proxyUrl}\u0000${remote}`;
+      const cached = this.imageCache.get(key);
+      if (cached) return cached;
+      return invoke<string>("fetch_remote_image_data_url", {
+        src: remote,
+        proxyUrl: this.proxyUrl,
+      })
+        .then((url) => {
+          this.imageCache.set(key, url);
+          return url;
+        })
+        .catch(() =>
+          "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120' viewBox='0 0 240 120'%3E%3Crect width='240' height='120' rx='12' fill='%23f3f1ee'/%3E%3Cpath d='M96 42l48 36M144 42L96 78' stroke='%23b8b2aa' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E",
+        );
+    }
     if (
       !raw ||
       raw.startsWith("#") ||
-      raw.startsWith("//") ||
       /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ||
       /^(data|blob):/i.test(raw)
     ) {

@@ -8,6 +8,7 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $ReleaseDir = Join-Path $Root "release"
 $StageDir = Join-Path $Root "release.__staging"
 $TargetRelease = Join-Path $Root "src-tauri\target\release"
+$TargetBundle = Join-Path $TargetRelease "bundle"
 
 function Read-CargoVersion {
     $match = Select-String -Path (Join-Path $Root "src-tauri\Cargo.toml") -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
@@ -32,6 +33,11 @@ try {
         }
     }
 
+    $tauriSecretDir = Join-Path $env:USERPROFILE ".tauri"
+    $releaseCredential = Get-Item -LiteralPath (Join-Path $tauriSecretDir "mdmeow-updater.key") -ErrorAction SilentlyContinue
+    if (-not $releaseCredential) {
+        throw "MDmeow release credential was not found in $tauriSecretDir."
+    }
     $package = Get-Content -LiteralPath "package.json" -Raw | ConvertFrom-Json
     $tauri = Get-Content -LiteralPath "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
     $cargoVersion = Read-CargoVersion
@@ -56,7 +62,7 @@ try {
 
     Remove-IfExists $ReleaseDir
     Remove-IfExists $StageDir
-    Remove-IfExists $TargetRelease
+    Remove-IfExists $TargetBundle
 
     Write-Host "[release] Building frontend..."
     pnpm build
@@ -85,17 +91,46 @@ try {
     if ($msis.Count -ne 1) {
         throw "Expected exactly one MSI in $msiDir, found $($msis.Count)."
     }
-
     New-Item -ItemType Directory -Path $StageDir | Out-Null
     $portableName = "MDmeow-$version.exe"
     $msiName = "MDmeow_$($version)_x64.msi"
-    Copy-Item -LiteralPath $internalExe -Destination (Join-Path $StageDir $portableName)
-    Copy-Item -LiteralPath $msis[0].FullName -Destination (Join-Path $StageDir $msiName)
+    $portablePath = Join-Path $StageDir $portableName
+    $msiPath = Join-Path $StageDir $msiName
+    Copy-Item -LiteralPath $internalExe -Destination $portablePath
+    Copy-Item -LiteralPath $msis[0].FullName -Destination $msiPath
+
+    Write-Host "[release] Signing Windows artifacts..."
+    pnpm tauri signer sign -f $releaseCredential.FullName --password= $portablePath
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath "$portablePath.sig")) {
+        throw "Portable executable signing failed."
+    }
+    pnpm tauri signer sign -f $releaseCredential.FullName --password= $msiPath
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath "$msiPath.sig")) {
+        throw "MSI signing failed."
+    }
+
+    $releaseBase = "https://github.com/zakee039/MDmeow/releases/download/v$version"
+    $latest = @{
+        version = $version
+        platforms = @{
+            "windows-x86_64" = @{
+                url = "$releaseBase/$msiName"
+                signature = (Get-Content -LiteralPath "$msiPath.sig" -Raw).Trim()
+            }
+        }
+    }
+    $latest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $StageDir "latest.json") -Encoding utf8
 
     $files = @(Get-ChildItem -LiteralPath $StageDir -File)
-    $expected = @($portableName, $msiName)
-    if ($files.Count -ne 2 -or @($files.Name | Where-Object { $_ -notin $expected }).Count -ne 0) {
-        throw "Release staging validation failed; only $portableName and $msiName are allowed."
+    $expected = @(
+        $portableName,
+        "$portableName.sig",
+        $msiName,
+        "$msiName.sig",
+        "latest.json"
+    )
+    if ($files.Count -ne $expected.Count -or @($files.Name | Where-Object { $_ -notin $expected }).Count -ne 0) {
+        throw "Release staging validation failed; updater artifact set is incomplete."
     }
 
     Move-Item -LiteralPath $StageDir -Destination $ReleaseDir
@@ -109,7 +144,7 @@ try {
         Write-Host ("  {0}  {1} bytes" -f $_.Name, $_.Length)
         Write-Host ("    SHA256 {0}" -f $hash.Hash)
     }
-    Write-Host "Result: PASS (exactly two release artifacts)"
+    Write-Host "Result: PASS (signed Windows release + updater metadata)"
 }
 catch {
     Remove-IfExists $StageDir

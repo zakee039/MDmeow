@@ -2,9 +2,15 @@ import { $prose } from "@milkdown/kit/utils";
 import { NodeSelection, Plugin } from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
 
+import {
+  buildRawHtmlImage,
+  rawHtmlImagePresentation,
+  updateRawHtmlImagePresentation,
+} from "./html-markdown";
 import { t } from "./i18n";
 
 type Align = "left" | "center" | "right";
+type ImageKind = "markdown" | "html";
 
 const SCALES = [25, 33, 50, 67, 80, 100, 150, 200] as const;
 
@@ -32,29 +38,146 @@ function makeButton(
   return button;
 }
 
+function normalizeAlign(value: unknown): Align {
+  const align = String(value ?? "").toLowerCase();
+  return align === "left" || align === "right" ? align : "center";
+}
+
+function syncImageAlignDom(view: EditorView): void {
+  view.state.doc.descendants((node, pos) => {
+    if (node.type.name !== "image-block") return;
+    const dom = view.nodeDOM(pos);
+    const block =
+      dom instanceof HTMLElement
+        ? dom.closest<HTMLElement>(".milkdown-image-block") ?? dom
+        : null;
+    if (!block) return;
+    block.dataset.mdmeowImageAlign = normalizeAlign(node.attrs.align);
+  });
+}
+
+function imageBlockPosFromTarget(
+  view: EditorView,
+  target: EventTarget | null,
+): number | null {
+  const element = target instanceof Element ? target : null;
+  const block = element?.closest<HTMLElement>(".milkdown-image-block");
+  const image = block?.querySelector<HTMLImageElement>('img[data-type="image-block"]');
+  if (!image || !block) return null;
+
+  let pos: number;
+  try {
+    pos = view.posAtDOM(block, 0);
+  } catch {
+    return null;
+  }
+
+  for (const candidate of [pos, pos - 1, pos + 1]) {
+    if (candidate < 0 || candidate >= view.state.doc.content.size) continue;
+    if (view.state.doc.nodeAt(candidate)?.type.name === "image-block") {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function htmlImagePosFromTarget(
+  view: EditorView,
+  target: EventTarget | null,
+): number | null {
+  const element = target instanceof Element ? target : null;
+  const image = element?.closest<HTMLImageElement>(
+    'img[data-mdmeow-html-img="true"]',
+  );
+  if (!image) return null;
+
+  let pos = -1;
+  try {
+    pos = view.posAtDOM(image, 0);
+  } catch {
+    // Leaf/atom HTML nodes may not expose a DOM offset that posAtDOM accepts.
+    // Fall through to the nodeDOM identity lookup below.
+  }
+
+  if (pos >= 0) {
+    for (const candidate of [pos, pos - 1, pos + 1]) {
+      if (candidate < 0 || candidate >= view.state.doc.content.size) continue;
+      const node = view.state.doc.nodeAt(candidate);
+      if (
+        node?.type.name === "html" &&
+        rawHtmlImagePresentation(String(node.attrs?.value ?? ""))
+      ) {
+        return candidate;
+      }
+    }
+  }
+
+  // Raw HTML images are simple atom-like DOM nodes, but keep a DOM identity
+  // fallback for browser/ProseMirror mapping differences.
+  let found: number | null = null;
+  view.state.doc.descendants((node, candidate) => {
+    if (found !== null || node.type.name !== "html") return;
+    if (!rawHtmlImagePresentation(String(node.attrs?.value ?? ""))) return;
+    const dom = view.nodeDOM(candidate);
+    if (dom === image || (dom instanceof HTMLElement && dom.contains(image))) {
+      found = candidate;
+    }
+  });
+  return found;
+}
+
 class ImageToolbarView {
   private view: EditorView;
   private readonly toolbar: HTMLDivElement;
+  private readonly titlePopover: HTMLDivElement;
+  private readonly titleInput: HTMLInputElement;
   private readonly scaleMenu: HTMLDivElement;
   private readonly alignButtons = new Map<Align, HTMLButtonElement>();
   private readonly scaleItems = new Map<number, HTMLButtonElement>();
   private scaleButton: HTMLButtonElement;
+  private titleButton: HTMLButtonElement;
+  private currentKind: ImageKind | null = null;
+  private currentPos: number | null = null;
   private currentBlock: HTMLElement | null = null;
   private currentImage: HTMLImageElement | null = null;
   private openScale = false;
+  private openTitle = false;
   private scrollHost: HTMLElement | null = null;
 
   constructor(view: EditorView) {
     this.view = view;
+    // Crepe renders image-block through a custom Vue NodeView, which may
+    // consume pointer events before ProseMirror's normal node-selection logic.
+    // Capture a click on the image itself so the toolbar always has a
+    // NodeSelection to follow.
+    view.dom.addEventListener("pointerdown", this.handleImagePointerDown, true);
 
     this.toolbar = document.createElement("div");
     this.toolbar.className = "mdmeow-image-toolbar";
     this.toolbar.hidden = true;
     this.toolbar.addEventListener("pointerdown", (event) => {
+      if (event.target instanceof Element && event.target.closest("input")) {
+        event.stopPropagation();
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
     });
     this.toolbar.addEventListener("click", (event) => event.stopPropagation());
+
+    this.titleButton = document.createElement("button");
+    this.titleButton.type = "button";
+    this.titleButton.className =
+      "mdmeow-image-toolbar-button mdmeow-image-title-button";
+    this.titleButton.textContent = t("image.title");
+    this.titleButton.title = t("image.title");
+    this.titleButton.setAttribute("aria-label", t("image.title"));
+    this.titleButton.addEventListener("click", () => this.toggleTitlePopover());
+    this.toolbar.appendChild(this.titleButton);
+
+    const titleDivider = document.createElement("span");
+    titleDivider.className = "mdmeow-image-toolbar-divider";
+    this.toolbar.appendChild(titleDivider);
 
     this.addAlignButton("left", ICONS.left, t("image.alignLeft"));
     this.addAlignButton("center", ICONS.center, t("image.alignCenter"));
@@ -86,6 +209,30 @@ class ImageToolbarView {
     }
     this.toolbar.appendChild(this.scaleMenu);
 
+    this.titlePopover = document.createElement("div");
+    this.titlePopover.className = "mdmeow-image-title-popover";
+    this.titlePopover.hidden = true;
+    this.titleInput = document.createElement("input");
+    this.titleInput.type = "text";
+    this.titleInput.className = "mdmeow-image-title-input";
+    this.titleInput.placeholder = t("image.titlePlaceholder");
+    this.titleInput.spellcheck = false;
+    this.titleInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.applyTitle(this.titleInput.value);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        this.closeTitlePopover();
+        this.view.focus();
+      }
+    });
+    this.titleInput.addEventListener("blur", () => {
+      if (this.openTitle) this.applyTitle(this.titleInput.value);
+    });
+    this.titlePopover.appendChild(this.titleInput);
+    this.toolbar.appendChild(this.titlePopover);
+
     const divider2 = document.createElement("span");
     divider2.className = "mdmeow-image-toolbar-divider";
     this.toolbar.appendChild(divider2);
@@ -107,6 +254,66 @@ class ImageToolbarView {
     this.update(view);
   }
 
+  private handleImagePointerDown = (event: PointerEvent): void => {
+    const element = event.target instanceof Element ? event.target : null;
+    const htmlImage = element?.closest<HTMLImageElement>(
+      'img[data-mdmeow-html-img="true"]',
+    );
+    if (htmlImage) {
+      const pos = htmlImagePosFromTarget(this.view, event.target);
+      if (pos === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.view.dispatch(
+        this.view.state.tr
+          .setSelection(NodeSelection.create(this.view.state.doc, pos))
+          .scrollIntoView(),
+      );
+      this.currentKind = "html";
+      this.currentPos = pos;
+      this.currentBlock = htmlImage;
+      this.currentImage = htmlImage;
+      this.toolbar.hidden = false;
+      const presentation = rawHtmlImagePresentation(
+        String(this.view.state.doc.nodeAt(pos)?.attrs?.value ?? ""),
+      );
+      this.setAlignVisual(presentation?.align ?? "center");
+      this.refreshScaleVisual();
+      requestAnimationFrame(this.position);
+      this.view.focus();
+      return;
+    }
+
+    const block = element?.closest<HTMLElement>(".milkdown-image-block");
+    const image = block?.querySelector<HTMLImageElement>('img[data-type="image-block"]');
+    if (
+      element?.closest(".image-resize-handle, .operation, .caption-input")
+    ) {
+      return;
+    }
+    const pos = imageBlockPosFromTarget(this.view, event.target);
+    if (pos === null || !image || !block) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.view.dispatch(
+      this.view.state.tr
+        .setSelection(NodeSelection.create(this.view.state.doc, pos))
+        .scrollIntoView(),
+    );
+    // Keep the toolbar display independent from Crepe's NodeView selection
+    // decoration. The document selection above remains authoritative for all
+    // edits, but the clicked DOM nodes are the most reliable positioning anchor.
+    this.currentKind = "markdown";
+    this.currentPos = pos;
+    this.currentBlock = block;
+    this.currentImage = image;
+    this.toolbar.hidden = false;
+    this.setAlignVisual(normalizeAlign(this.view.state.doc.nodeAt(pos)?.attrs.align));
+    this.refreshScaleVisual();
+    requestAnimationFrame(this.position);
+    this.view.focus();
+  };
+
   private addAlignButton(align: Align, icon: string, title: string): void {
     const button = makeButton(
       "mdmeow-image-toolbar-button",
@@ -121,49 +328,91 @@ class ImageToolbarView {
 
   update = (view: EditorView): void => {
     this.view = view;
+    syncImageAlignDom(view);
     const selection = view.state.selection;
-    if (
-      !(selection instanceof NodeSelection) ||
-      selection.node.type.name !== "image-block"
-    ) {
+    if (!(selection instanceof NodeSelection)) {
       this.hide();
       return;
     }
 
-    const dom = view.nodeDOM(selection.from);
-    const block =
-      dom instanceof HTMLElement
-        ? dom.closest<HTMLElement>(".milkdown-image-block") ?? dom
-        : null;
-    const image = block?.querySelector<HTMLImageElement>(
-      'img[data-type="image-block"]',
-    );
-    if (!block || !image) {
-      this.hide();
+    if (selection.node.type.name === "image-block") {
+      const dom = view.nodeDOM(selection.from);
+      const block =
+        dom instanceof HTMLElement
+          ? dom.closest<HTMLElement>(".milkdown-image-block") ?? dom
+          : null;
+      const image = block?.querySelector<HTMLImageElement>(
+        'img[data-type="image-block"]',
+      );
+      if (!block || !image) {
+        this.hide();
+        return;
+      }
+
+      this.currentKind = "markdown";
+      this.currentPos = selection.from;
+      this.currentBlock = block;
+      this.currentImage = image;
+      this.toolbar.hidden = false;
+      this.setAlignVisual(normalizeAlign(selection.node.attrs.align));
+      this.refreshScaleVisual();
+      requestAnimationFrame(this.position);
       return;
     }
 
-    this.currentBlock = block;
-    this.currentImage = image;
-    this.toolbar.hidden = false;
+    if (selection.node.type.name === "html") {
+      const presentation = rawHtmlImagePresentation(
+        String(selection.node.attrs?.value ?? ""),
+      );
+      const dom = view.nodeDOM(selection.from);
+      const image =
+        dom instanceof HTMLImageElement &&
+        dom.matches('img[data-mdmeow-html-img="true"]')
+          ? dom
+          : dom instanceof HTMLElement
+            ? dom.querySelector<HTMLImageElement>(
+                'img[data-mdmeow-html-img="true"]',
+              )
+            : null;
+      if (!presentation || !image) {
+        this.hide();
+        return;
+      }
 
-    const align = (block.dataset.mdmeowImageAlign as Align | undefined) ?? "center";
-    this.setAlignVisual(align);
-    this.refreshScaleVisual();
-    requestAnimationFrame(this.position);
+      this.currentKind = "html";
+      this.currentPos = selection.from;
+      this.currentBlock = image;
+      this.currentImage = image;
+      this.toolbar.hidden = false;
+      this.setAlignVisual(presentation.align);
+      this.refreshScaleVisual();
+      requestAnimationFrame(this.position);
+      return;
+    }
+
+    this.hide();
   };
 
   private hide(): void {
+    this.currentKind = null;
+    this.currentPos = null;
     this.currentBlock = null;
     this.currentImage = null;
     this.openScale = false;
+    this.openTitle = false;
     this.scaleMenu.hidden = true;
+    this.scaleMenu.classList.remove("open-up");
+    this.titlePopover.hidden = true;
+    this.titlePopover.classList.remove("open-up");
+    this.titleButton.classList.remove("active");
     this.toolbar.hidden = true;
   }
 
   private setAlignVisual(align: Align): void {
     if (!this.currentBlock) return;
-    this.currentBlock.dataset.mdmeowImageAlign = align;
+    if (this.currentKind === "markdown") {
+      this.currentBlock.dataset.mdmeowImageAlign = align;
+    }
     for (const [key, button] of this.alignButtons) {
       const active = key === align;
       button.classList.toggle("active", active);
@@ -171,13 +420,156 @@ class ImageToolbarView {
     }
   }
 
-  private applyAlign(align: Align): void {
-    this.setAlignVisual(align);
-    requestAnimationFrame(this.position);
+  private currentTitle(): string {
+    if (this.currentKind === "html" && this.currentPos !== null) {
+      const node = this.view.state.doc.nodeAt(this.currentPos);
+      return (
+        rawHtmlImagePresentation(String(node?.attrs?.value ?? ""))?.title ?? ""
+      );
+    }
+
+    const selection = this.view.state.selection;
+    if (
+      selection instanceof NodeSelection &&
+      selection.node.type.name === "image-block"
+    ) {
+      return typeof selection.node.attrs.title === "string"
+        ? selection.node.attrs.title
+        : "";
+    }
+    return "";
+  }
+
+  private convertMarkdownToHtml(
+    patch: Partial<{ align: Align; ratio: number; title: string }>,
+  ): void {
+    const selection = this.view.state.selection;
+    if (
+      !(selection instanceof NodeSelection) ||
+      selection.node.type.name !== "image-block"
+    ) {
+      return;
+    }
+
+    const htmlType = this.view.state.schema.nodes.html;
+    const paragraphType = this.view.state.schema.nodes.paragraph;
+    if (!htmlType || !paragraphType) return;
+
+    const node = selection.node;
+    const value = buildRawHtmlImage({
+      src: String(node.attrs.src ?? ""),
+      alt: typeof node.attrs.caption === "string" ? node.attrs.caption : "",
+      title:
+        patch.title ??
+        (typeof node.attrs.title === "string" ? node.attrs.title : ""),
+      ratio: patch.ratio ?? this.currentRatio(),
+      align: patch.align ?? normalizeAlign(node.attrs.align),
+    });
+    const replacement = paragraphType.create(
+      null,
+      htmlType.create({ value }),
+    );
+    const htmlPos = selection.from + 1;
+    let tr = this.view.state.tr.replaceWith(
+      selection.from,
+      selection.to,
+      replacement,
+    );
+    tr = tr.setSelection(NodeSelection.create(tr.doc, htmlPos));
+    this.view.dispatch(tr.scrollIntoView());
     this.view.focus();
   }
 
+  private toggleTitlePopover(): void {
+    if (this.openTitle) {
+      this.applyTitle(this.titleInput.value);
+      return;
+    }
+
+    this.openScale = false;
+    this.scaleMenu.hidden = true;
+    this.scaleMenu.classList.remove("open-up");
+    this.scaleButton.classList.remove("active");
+
+    this.titleInput.value = this.currentTitle();
+    this.openTitle = true;
+    this.titlePopover.hidden = false;
+    this.titleButton.classList.add("active");
+    requestAnimationFrame(() => {
+      this.positionTitlePopover();
+      this.titleInput.focus();
+      this.titleInput.select();
+    });
+  }
+
+  private closeTitlePopover(): void {
+    this.openTitle = false;
+    this.titlePopover.hidden = true;
+    this.titlePopover.classList.remove("open-up");
+    this.titleButton.classList.remove("active");
+  }
+
+  private applyTitle(title: string): void {
+    if (!this.openTitle) return;
+    this.closeTitlePopover();
+
+    if (this.currentKind === "html" && this.currentPos !== null) {
+      const node = this.view.state.doc.nodeAt(this.currentPos);
+      const updated = updateRawHtmlImagePresentation(
+        String(node?.attrs?.value ?? ""),
+        { title },
+      );
+      if (!node || node.type.name !== "html" || !updated) return;
+      const tr = this.view.state.tr.setNodeAttribute(
+        this.currentPos,
+        "value",
+        updated,
+      );
+      tr.setSelection(NodeSelection.create(tr.doc, this.currentPos));
+      this.view.dispatch(tr);
+      this.view.focus();
+      return;
+    }
+
+    if (this.currentKind === "markdown") {
+      this.convertMarkdownToHtml({ title });
+    }
+  }
+
+  private applyAlign(align: Align): void {
+    if (this.currentKind === "html" && this.currentPos !== null) {
+      const node = this.view.state.doc.nodeAt(this.currentPos);
+      const updated = updateRawHtmlImagePresentation(
+        String(node?.attrs?.value ?? ""),
+        { align },
+      );
+      if (!node || node.type.name !== "html" || !updated) return;
+      const tr = this.view.state.tr.setNodeAttribute(
+        this.currentPos,
+        "value",
+        updated,
+      );
+      tr.setSelection(NodeSelection.create(tr.doc, this.currentPos));
+      this.view.dispatch(tr);
+      this.view.focus();
+      return;
+    }
+
+    if (this.currentKind === "markdown") {
+      this.convertMarkdownToHtml({ align });
+    }
+  }
+
   private currentRatio(): number {
+    if (this.currentKind === "html" && this.currentPos !== null) {
+      const node = this.view.state.doc.nodeAt(this.currentPos);
+      if (node?.type.name === "html") {
+        return (
+          rawHtmlImagePresentation(String(node.attrs?.value ?? ""))?.ratio ?? 1
+        );
+      }
+    }
+
     const selection = this.view.state.selection;
     if (
       selection instanceof NodeSelection &&
@@ -202,50 +594,87 @@ class ImageToolbarView {
   }
 
   private toggleScaleMenu(): void {
-    this.openScale = !this.openScale;
-    this.scaleMenu.hidden = !this.openScale;
-    this.scaleButton.classList.toggle("active", this.openScale);
-  }
-
-  private applyScale(percent: number): void {
-    const selection = this.view.state.selection;
-    const image = this.currentImage;
-    if (
-      !(selection instanceof NodeSelection) ||
-      selection.node.type.name !== "image-block" ||
-      !image
-    ) {
+    if (this.openScale) {
+      this.closeScaleMenu();
       return;
     }
 
-    const currentRatio = this.currentRatio();
-    const rectHeight = image.getBoundingClientRect().height;
-    let originHeight = Number(image.dataset.origin);
-    if (!Number.isFinite(originHeight) || originHeight <= 0) {
-      originHeight =
-        currentRatio > 0 && rectHeight > 0 ? rectHeight / currentRatio : rectHeight;
-    }
-    if (!Number.isFinite(originHeight) || originHeight <= 0) return;
+    this.closeTitlePopover();
+    this.openScale = true;
+    this.scaleMenu.hidden = false;
+    this.scaleButton.classList.add("active");
+    requestAnimationFrame(() => this.positionScaleMenu());
+  }
 
-    const ratio = percent / 100;
-    const height = originHeight * ratio;
-    image.dataset.origin = originHeight.toFixed(2);
-    image.dataset.height = height.toFixed(2);
-    image.style.height = `${height.toFixed(2)}px`;
-
-    this.view.dispatch(
-      this.view.state.tr.setNodeAttribute(selection.from, "ratio", ratio),
-    );
-
+  private closeScaleMenu(): void {
     this.openScale = false;
     this.scaleMenu.hidden = true;
+    this.scaleMenu.classList.remove("open-up");
     this.scaleButton.classList.remove("active");
-    this.refreshScaleVisual();
-    requestAnimationFrame(this.position);
-    this.view.focus();
+  }
+
+  private positionScaleMenu(): void {
+    if (!this.openScale || this.scaleMenu.hidden) return;
+    const toolbarRect = this.toolbar.getBoundingClientRect();
+    const menuHeight = this.scaleMenu.offsetHeight;
+    const below = window.innerHeight - toolbarRect.bottom;
+    const above = toolbarRect.top;
+    this.scaleMenu.classList.toggle(
+      "open-up",
+      below < menuHeight + 12 && above > below,
+    );
+  }
+
+  private positionTitlePopover(): void {
+    if (!this.openTitle || this.titlePopover.hidden) return;
+    const toolbarRect = this.toolbar.getBoundingClientRect();
+    const popoverHeight = this.titlePopover.offsetHeight;
+    const below = window.innerHeight - toolbarRect.bottom;
+    const above = toolbarRect.top;
+    this.titlePopover.classList.toggle(
+      "open-up",
+      below < popoverHeight + 12 && above > below,
+    );
+  }
+
+  private applyScale(percent: number): void {
+    if (this.currentKind === "html" && this.currentPos !== null) {
+      const node = this.view.state.doc.nodeAt(this.currentPos);
+      const updated = updateRawHtmlImagePresentation(
+        String(node?.attrs?.value ?? ""),
+        { ratio: percent / 100 },
+      );
+      if (!node || node.type.name !== "html" || !updated) return;
+      const tr = this.view.state.tr.setNodeAttribute(
+        this.currentPos,
+        "value",
+        updated,
+      );
+      tr.setSelection(NodeSelection.create(tr.doc, this.currentPos));
+      this.view.dispatch(tr);
+      this.closeScaleMenu();
+      this.view.focus();
+      return;
+    }
+
+    if (this.currentKind === "markdown") {
+      this.closeScaleMenu();
+      this.convertMarkdownToHtml({ ratio: percent / 100 });
+    }
   }
 
   private deleteImage(): void {
+    if (this.currentKind === "html" && this.currentPos !== null) {
+      const node = this.view.state.doc.nodeAt(this.currentPos);
+      if (!node || node.type.name !== "html") return;
+      const from = this.currentPos;
+      const to = from + node.nodeSize;
+      this.hide();
+      this.view.dispatch(this.view.state.tr.delete(from, to).scrollIntoView());
+      this.view.focus();
+      return;
+    }
+
     const selection = this.view.state.selection;
     if (
       !(selection instanceof NodeSelection) ||
@@ -277,9 +706,16 @@ class ImageToolbarView {
 
     this.toolbar.style.left = `${Math.round(left)}px`;
     this.toolbar.style.top = `${Math.round(top)}px`;
+    if (this.openScale) this.positionScaleMenu();
+    if (this.openTitle) this.positionTitlePopover();
   };
 
   destroy(): void {
+    this.view.dom.removeEventListener(
+      "pointerdown",
+      this.handleImagePointerDown,
+      true,
+    );
     this.scrollHost?.removeEventListener("scroll", this.position);
     window.removeEventListener("resize", this.position);
     this.toolbar.remove();

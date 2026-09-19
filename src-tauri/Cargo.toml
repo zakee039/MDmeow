@@ -1,6 +1,6 @@
 [package]
 name = "mdmeow"
-version = "1.7.5"
+version = "1.7.7"
 description = "MDmeow - a minimalist WYSIWYG Markdown editor"
 authors = ["zakee039", "Ali Naderi"]
 edition = "2021"
@@ -23,6 +23,10 @@ serde_json = "1"
 toml = "0.8"
 comrak = "0.54"
 anyhow = "1"
+reqwest = { version = "0.12", features = ["socks", "json"] }
+base64 = "0.22"
+semver = "1"
+minisign-verify = "0.2.5"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"
