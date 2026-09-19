@@ -1,102 +1,169 @@
-![MDmeow](docs/logo.png)
-
 **简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 # MDmeow
 
-MDmeow 是一款轻量、快速的 WYSIWYG Markdown 编辑器，基于 **Tauri + Milkdown/Crepe** 构建。它尽量保持 Markdown 文件本身的纯净与可迁移性，同时提供接近 Typora 的即时排版体验。
+> **AI 时代，一款轻快、所见即所得的 Markdown 编辑器。**
 
-当前版本采用 **Miku Cream** 渲染体系：亮色文档背景、`#39C5BB` 初音青强调色、浅色代码高亮、KaTeX 数学公式、紧凑表格与克制的桌面端界面。
+AI 时代，我们和 Agent 打交道越来越频繁，而 **Markdown 正在成为人与 AI 之间最常用的文档语言之一**。
 
-## 主要特性
+需求说明、开发记录、AI 输出、研究笔记、README……越来越多内容最终都会落到一个 `.md` 文件里。
 
-- **所见即所得 Markdown**：标题、列表、引用、任务列表、表格、链接、图片、脚注等常见语法可直接编辑。
-- **源码视图**：一键切换原始 Markdown，带独立行号栏；默认快捷键 `Ctrl/Cmd+/`。
-- **多标签页与会话恢复**：自动恢复上次打开的文档。
-- **保存 / 另存为**：工具栏分别提供保存与另存为；另存为默认快捷键 `Ctrl/Cmd+Shift+S`。
-- **标题栏直接重命名**：点击当前文件名即可原地修改文件名。
-- **HTML / PDF 导出**：HTML 为自包含页面；PDF 通过系统打印流程输出。
-- **图片兼容**：支持标准 Markdown 图片和常见原始 HTML `<img>` 写法，局部相对路径以当前 Markdown 文件为基准解析。
-- **KaTeX 数学公式**：支持行内 `$…$` 与块级 `$$…$$`。
-- **可配置快捷键**：设置页中可直接录入新的组合键。
-- **Windows“打开方式”集成**：统一使用 `MDmeow.Markdown`，安装版优先，便携版在没有有效安装版时兜底注册。
-- **四种界面语言**：简体中文、English、日本語、Deutsch；可跟随系统语言。
+但很多时候，我们需要的并不是一个庞大的写作平台，而只是一个能够 **点开就写、所见即所得、占用克制** 的 Markdown 编辑器。
 
-## 下载与运行
+于是，**MDmeow 诞生了。**
 
-正式 Release 覆盖 Windows、Linux 和 macOS：
+它希望做一件很简单的事：
+
+**像打开记事本一样快地打开 Markdown，像编辑普通文档一样直接修改它。**
+
+轻量、快速、安静，不打扰你的工作流。无论是一份 AI 生成的文档、一篇 README，还是随手记录的 Markdown 文件，双击即可开始阅读和编辑。
+
+## 轻快，不只是口号
+
+![MDmeow 轻量运行示例](docs/readme/lightweight.png)
+
+> 上图是一台 Windows 设备上的空白文档运行示例。实际资源占用会随文档内容、WebView2 与系统环境变化。
+
+MDmeow 基于 **Tauri + Milkdown/Crepe** 构建，目标不是成为一个沉重的知识管理平台，而是做一款真正适合日常 Markdown 工作流的桌面编辑器。
+
+## 为什么是 MDmeow
+
+### 所见即所得，但仍然是 Markdown
+
+你看到的是排版后的文档，保存下来的仍然是可以被其它工具读取的 Markdown。
+
+- 标题、列表、引用、任务列表、表格、链接、脚注等常见语法直接编辑
+- 一键切换 **源码视图**
+- 尽量保持 Markdown 文件本身干净、可迁移
+- 支持标准 Markdown 图片，也兼容常见原始 HTML `<img>`
+- `<!--more-->` 等内容可以保留在源码中，而不干扰 WYSIWYG 阅读
+
+MDmeow 不希望把你的文档锁进某种私有格式。
+
+### 图片也应该像普通内容一样好编辑
+
+点击图片即可打开轻量工具栏：
+
+- 设置图片标题
+- 左对齐 / 居中 / 右对齐
+- 25% ～ 200% 多档缩放
+- 删除图片
+- 标准 Markdown 图片与 HTML 图片使用统一交互
+
+当图片需要记录缩放或对齐信息时，MDmeow 使用与 Typedown 高度兼容的 HTML 表达，例如：
+
+```html
+<img title="diagram" src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
+```
+
+相对路径仍然以当前 Markdown 文件为基准解析。
+
+### 代码和公式，不必切换到另一个工具
+
+MDmeow 内置 **Miku Cream** 文档渲染风格：
+
+- 浅色代码块
+- 语法高亮
+- 独立代码行号
+- 复制按钮与成功反馈
+- 清晰的行内代码层级
+- KaTeX 行内公式与块级公式
+- 公式默认以预览为主，需要修改时再进入源码编辑
+
+支持：
 
 ```text
-Windows
-MDmeow-<版本>.exe
-MDmeow_<版本>_x64.msi
+$E = mc^2$
 
-Linux x64
-MDmeow-<版本>-linux-x86_64.AppImage
-MDmeow-<版本>-linux-x86_64.deb
-MDmeow-<版本>-linux-x86_64.rpm
-
-Linux ARM64
-MDmeow-<版本>-linux-aarch64.AppImage
-MDmeow-<版本>-linux-aarch64.deb
-MDmeow-<版本>-linux-aarch64.rpm
-
-macOS
-MDmeow-<版本>-macOS-universal.dmg
+$$
+\int_a^b f(x)\,dx
+$$
 ```
+
+### 打开文件要快，打开方式也要自然
+
+- 支持直接拖拽 `.md` / `.markdown` / `.mdx` / `.txt`
+- Windows 可注册为 Markdown 的“打开方式”
+- 安装版优先管理文件关联
+- 没有安装版时，便携版可以接管自己的关联
+- 标题栏直接点击文件名即可重命名
+- 多标签页编辑
+- 可恢复上一次会话
+
+### HTML / PDF，写完直接交付
+
+工具栏中的导出按钮提供两种明确的出口：
+
+- **导出 HTML**：生成可独立打开的页面
+- **导出 PDF**：调用系统打印流程输出 PDF
+
+不需要为了交付文档再打开另一个编辑器。
+
+### 代理与远程图片
+
+如果你的 Markdown 引用了 GitHub Raw、图床或其它远程资源，可以在设置中配置代理：
+
+- HTTP / HTTPS
+- SOCKS5 / SOCKS5H
+- 代理地址可以独立测试
+- 关闭代理时仍可保留和编辑地址
+- 远程图片与版本更新统一复用同一套代理配置
+
+例如：
+
+```text
+http://127.0.0.1:7897
+socks5://127.0.0.1:7893
+```
+
+### GitHub 版本更新
+
+MDmeow 可以直接从 GitHub Release 检查新版本，并使用签名校验更新包。
+
+Windows 下：
+
+- **安装版**：下载新的 MSI 后进入安装更新流程
+- **便携版**：把新的 EXE 下载到当前程序目录，与旧版本并存
+- 便携版不会偷偷覆盖正在运行的程序
+- 可手动检查更新
+- 默认最多每 24 小时后台检查一次
+- 自动检查失败时不会打扰编辑
+
+更新服务不需要额外服务器，GitHub Release 就是 MDmeow 的更新源。
+
+## 其它体验
+
+- **四种界面语言**：简体中文、English、日本語、Deutsch
+- **可配置快捷键**：应用级快捷键可在设置中直接重新绑定
+- **字体设置**：正文与源码视图字体可独立配置
+- **主题强调色**：默认使用 `#39C5BB` 初音青
+- **拼写检查**
+- **显示完整路径 / 始终显示标签栏** 等行为选项
+- **便携版 / MSI 安装版** 使用各自合适的数据目录与系统集成方式
+
+## 下载
+
+最新版本：
+
+**https://github.com/zakee039/MDmeow/releases/latest**
 
 ### Windows
 
-`MDmeow-<版本>.exe` 是单文件便携版，配置和数据保存在程序所在目录；`MDmeow_<版本>_x64.msi` 是标准 MSI 安装版，内置简体中文、English、日本語、Deutsch 四种安装语言。
+推荐按使用习惯选择：
 
-安装版使用：
-
-- `%APPDATA%\MDmeow` 保存配置；
-- `%LOCALAPPDATA%\MDmeow` 保存本地运行数据；
-- `HKLM\Software\MDmeow` 记录安装状态；
-- `MDmeow.Markdown` 作为统一 Markdown ProgID。
-
-### Linux
-
-推荐优先使用 AppImage；Debian/Ubuntu 可使用 `.deb`，Fedora/RHEL 系可使用 `.rpm`。Linux 正式包会把设置保存在 `~/.config/MDmeow`，运行数据保存在 `~/.local/share/MDmeow`，并由桌面包注册 `.md/.markdown/.mdx` 文件关联。
-
-AppImage 首次运行前可能需要：
-
-```bash
-chmod +x MDmeow-*.AppImage
+```text
+MDmeow-<版本>.exe
 ```
 
-### macOS
+单文件便携版。放在哪里就在哪里使用，适合 U 盘、工具目录或不想安装软件的场景。
 
-提供 Intel + Apple Silicon 通用 `.dmg`。设置与本地数据存放在 `~/Library/Application Support/MDmeow`。当前社区构建未做 Apple Developer ID 签名/公证，如 Gatekeeper 阻止首次启动，可在 Finder 中右键应用并选择“打开”。
-
-> Windows 可能对未签名的社区构建显示 SmartScreen 提示；macOS 未签名构建也可能触发 Gatekeeper。
-
-## 语言
-
-应用内支持：
-
-- 简体中文（`zh-CN`）
-- English（`en`）
-- 日本語（`ja`）
-- Deutsch（`de`）
-- 跟随系统（`system`）
-
-`system` 只会映射到上述四种语言；其它系统语言回退到 English。
-
-## Markdown 与图片
-
-MDmeow 优先保持标准 Markdown：
-
-```md
-![diagram](./assets/diagram.png)
-
-<img src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
-
-<!--more-->
+```text
+MDmeow_<版本>_x64.msi
 ```
 
-两种图片写法都会在编辑器中渲染；`<!--more-->` 会保留在 Markdown 文件中，但不会在 WYSIWYG 视图里显示。
+标准 MSI 安装版，适合长期使用，并负责 Windows 文件关联。
+
+仓库同时保留 Linux 和 macOS 的构建流程；如果 Release 中没有你需要的平台产物，也可以直接从源码构建。
 
 ## 常用快捷键
 
@@ -119,28 +186,35 @@ MDmeow 优先保持标准 Markdown：
 
 ## 配置
 
-`settings.toml` 支持热加载。常见配置：
+MDmeow 的设置保存在 `settings.toml` 中，并支持热加载。
+
+常见配置包括：
 
 ```toml
-language = "system"         # system | zh-CN | en | ja | de
+language = "system"
 spellcheck = true
 quit_on_escape = false
-list_marker = "*"
-show_path = false
 open_last_session = true
 always_show_tabbar = false
+show_path = false
+
 editor_font = ""
 editor_font_size = 16
 source_font = ""
 source_font_size = 15
+
 accent = "#39C5BB"
+
+proxy_enabled = false
+proxy_url = ""
+auto_check_updates = true
 ```
 
 `Mod` 在 Windows/Linux 上表示 Ctrl，在 macOS 上表示 Cmd。
 
-## 构建
+## 从源码构建
 
-### 环境要求
+环境要求：
 
 - Node.js 20+
 - `pnpm`
@@ -155,7 +229,7 @@ pnpm build
 pnpm tauri dev
 ```
 
-各平台最终发布构建：
+正式构建：
 
 ```powershell
 # Windows
@@ -166,11 +240,9 @@ pnpm release:windows
 # Linux
 pnpm release:linux
 
-# macOS（universal）
+# macOS
 pnpm release:macos
 ```
-
-每个命令都会把当前平台的正式产物收敛到项目根目录的 `release/`。推送版本 tag 后，GitHub Actions 会自动构建 Linux x64/ARM64 和 macOS universal，汇总产物并生成 `SHA256SUMS.txt`；Windows EXE/MSI 由维护者本地构建后手动上传。
 
 常用检查：
 
@@ -192,8 +264,14 @@ cargo test --manifest-path src-tauri/Cargo.toml
 | 导出语法高亮 | highlight.js |
 | Windows 安装器 | WiX / MSI |
 
-## 致谢与许可
+## 致谢
 
-MDmeow 基于 **Ali Naderi / Mowl** 二次开发，继续以 **MIT License** 发布。
+MDmeow 基于 **Ali Naderi / Mowl** 二次开发，并继续以 **MIT License** 发布。
 
-本分支由 **zakee039** 维护，主要扩展了多语言、可配置快捷键、Windows 文件关联、便携/安装版区分、发布体系、Markdown 兼容修复与 Miku Cream 渲染。
+感谢上游项目提供了一个优秀、简洁的起点。
+
+在此基础上，MDmeow 重新打磨了面向实际桌面使用的工作流：WYSIWYG 与源码双视图、Miku Cream 文档渲染、图片编辑、代码与公式体验、HTML/PDF 导出、多语言、快捷键、Windows 文件关联、便携/安装版区分、代理以及 GitHub 签名更新等。
+
+MDmeow 仍然想保持最开始的目标：
+
+> **打开 Markdown，然后马上开始工作。**
