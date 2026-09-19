@@ -60,7 +60,6 @@ try {
         Write-Host "[release] Working tree is clean."
     }
 
-    Remove-IfExists $ReleaseDir
     Remove-IfExists $StageDir
     Remove-IfExists $TargetBundle
 
@@ -133,22 +132,28 @@ try {
         throw "Release staging validation failed; updater artifact set is incomplete."
     }
 
-    Move-Item -LiteralPath $StageDir -Destination $ReleaseDir
+    if (-not (Test-Path -LiteralPath $ReleaseDir)) {
+        New-Item -ItemType Directory -Path $ReleaseDir | Out-Null
+    }
+    foreach ($name in $expected) {
+        Copy-Item -LiteralPath (Join-Path $StageDir $name) -Destination (Join-Path $ReleaseDir $name) -Force
+    }
+    Remove-IfExists $StageDir
 
     Write-Host ""
     Write-Host "=== MDmeow release build ==="
     Write-Host "Version: $version"
     Write-Host "Artifacts:"
-    Get-ChildItem -LiteralPath $ReleaseDir -File | Sort-Object Name | ForEach-Object {
-        $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
-        Write-Host ("  {0}  {1} bytes" -f $_.Name, $_.Length)
+    $expected | Sort-Object | ForEach-Object {
+        $file = Get-Item -LiteralPath (Join-Path $ReleaseDir $_)
+        $hash = Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256
+        Write-Host ("  {0}  {1} bytes" -f $file.Name, $file.Length)
         Write-Host ("    SHA256 {0}" -f $hash.Hash)
     }
     Write-Host "Result: PASS (signed Windows release + updater metadata)"
 }
 catch {
     Remove-IfExists $StageDir
-    Remove-IfExists $ReleaseDir
     Write-Error $_
     exit 1
 }

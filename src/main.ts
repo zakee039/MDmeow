@@ -1208,7 +1208,7 @@ function wireAbout(): void {
   });
   document.getElementById("about-link")?.addEventListener("click", (e) => {
     e.preventDefault();
-    void openUrl("https://github.com/zakee039/mowl");
+    void openUrl("https://github.com/zakee039/MDmeow");
   });
   document.getElementById("about-upstream-link")?.addEventListener("click", (e) => {
     e.preventDefault();
