@@ -16,6 +16,7 @@ const description=document.querySelector("#showcase-description");
 const topic=document.querySelector("#showcase-topic");
 const caption=document.querySelector("#showcase-caption");
 const image=document.querySelector("#showcase-image");
+const showcaseWindow=document.querySelector(".showcase-window");
 const hint=document.querySelector("#page-hint");
 const progress=document.querySelector("#progress");
 const egg=document.querySelector("#easter-egg");
@@ -28,6 +29,8 @@ function applyShowcase(index){
   caption.textContent=item.caption;
   image.src=item.src;
   image.alt=item.alt;
+  showcaseWindow.classList.toggle("tilt-left",index%2===0);
+  showcaseWindow.classList.toggle("tilt-right",index%2===1);
 }
 function go(next,updateHash=true){
   current=Math.max(0,Math.min(cuts.length-1,next));
