@@ -17,3 +17,14 @@ html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto;backgrou
 .app-icon{display:block;width:48px;height:48px;object-fit:contain;flex-shrink:0}
 
 .logo-secret{display:grid;place-items:center;padding:0;width:44px;height:44px;background:transparent;border:0;flex-shrink:0;border-radius:10px;touch-action:manipulation;user-select:none}.logo-secret .app-icon{width:44px;height:44px}.logo-secret:focus-visible{outline:2px solid #39C5BB;outline-offset:4px}#easter-egg{border:1px solid #b4dace;border-radius:22px;padding:14px;background:#fffdf6;max-width:min(90vw,680px);max-height:90svh;box-shadow:0 25px 100px #203f3b40;overflow:visible;cursor:default}#easter-egg::backdrop{background:#163d37aa;backdrop-filter:blur(8px)}#easter-egg>img{display:block;max-width:100%;max-height:calc(90svh - 30px);object-fit:contain;border-radius:12px}.easter-close{position:absolute;right:10px;top:10px;width:36px;height:36px;border-radius:50%;border:1px solid #c7dfd5;background:#fffdf6ee;color:#295450;font:27px/1 sans-serif;z-index:1}.easter-close:focus-visible{outline:3px solid #39C5BB}.footer-quote{margin-left:auto;margin-right:0}@media(max-width:720px){.logo-secret,.logo-secret .app-icon{width:35px;height:35px}#easter-egg{padding:9px;border-radius:16px}}
+
+/* Keep desktop layouts airy instead of stretching content edge to edge. */
+header,.scene,footer{width:100%;max-width:1520px;margin-left:auto;margin-right:auto}
+
+/* Give the settings screenshots more visual weight on the rhythm page. */
+@media(min-width:1200px){
+  .scene[data-index="2"]{grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:52px}
+  .scene[data-index="2"] .compact h2{font-size:clamp(52px,3.8vw,68px)}
+  .scene[data-index="2"] .settings-pair{gap:16px}
+  .scene[data-index="2"] .settings-pair figure{width:calc(50% - 8px)}
+}
