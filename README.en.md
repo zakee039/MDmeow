@@ -6,6 +6,8 @@
 >
 > **A lightweight WYSIWYG Markdown editor for the AI era.**
 
+[🌐 Live demo](https://mdmeow.zakee.fun)
+
 As we work with AI agents more often, **Markdown is becoming one of the most common document formats shared between people and AI**.
 
 Specs, development notes, AI output, research notes, README files—more and more of our daily work ends up in a `.md` file.

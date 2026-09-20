@@ -6,7 +6,7 @@
   --cream:#fbf9f2;
   --line:#d5e4d9;
   --panel:#fffefb;
-  --content:1400px;
+  --content:1280px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:var(--cream);color:var(--ink)}
@@ -35,7 +35,7 @@ button{cursor:pointer}
 .download-link:hover{background:#66d6ca;transform:translateY(-2px)}
 .download-link:focus-visible{outline:3px solid #205e56;outline-offset:5px}
 .header-download{padding:13px 22px;border-radius:14px;margin-left:12px;font-size:17px}
-.scene{display:none;position:relative;min-height:calc(100svh - 182px);padding:36px 0 72px;align-items:center;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:64px}
+.scene{display:none;position:relative;min-height:calc(100svh - 182px);padding:36px 0 72px;align-items:center;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:44px}
 .scene.active{display:grid}
 .copy{min-width:0;position:relative;z-index:2}
 .eyebrow{font:13px Consolas,monospace;color:#3b9286;letter-spacing:3.5px;margin-bottom:28px}
@@ -73,7 +73,7 @@ h2{font-size:clamp(52px,4.5vw,78px)}
 .appearance-shot{width:min(100%,790px);justify-self:center;transform:rotate(.7deg)}
 .appearance-miku{position:absolute;width:138px;right:-6px;bottom:29px;transform:rotate(8deg)}
 .appearance-hand{position:absolute;right:31%;bottom:55px;transform:rotate(-8deg)}
-.rhythm-scene{grid-template-columns:minmax(360px,430px) minmax(0,1fr);gap:48px}
+.rhythm-scene{grid-template-columns:minmax(360px,410px) minmax(0,1fr);gap:34px}
 .rhythm-copy h2{font-size:clamp(48px,3.7vw,66px)}
 .key-pills{display:flex;flex-wrap:wrap;gap:10px;margin:29px 0 34px}
 .key-pills span{font:15px Consolas,monospace;padding:10px 13px;background:#fff;border:1px solid #d7e4d8;border-bottom-width:4px;border-radius:9px}
@@ -83,7 +83,7 @@ h2{font-size:clamp(52px,4.5vw,78px)}
 .settings-pair figcaption{font-size:17px;padding:0 14px}
 .settings-pair figcaption span{font:14px Consolas;color:#619a84;margin-right:8px}
 .settings-pair img{width:100%;aspect-ratio:1.12/1;object-fit:cover;object-position:center top}
-.showcase-scene{grid-template-columns:minmax(300px,390px) minmax(0,1fr);gap:52px}
+.showcase-scene{grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:38px}
 .showcase-copy h2{font-size:clamp(48px,3.8vw,67px)}
 .showcase-topic{display:inline-block;padding:12px 18px;border-radius:10px;background:#e3f3e9;color:#248c80;font-size:16px;margin-top:6px}
 .showcase-miku{display:block;width:125px;margin-top:34px}

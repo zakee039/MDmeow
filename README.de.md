@@ -6,6 +6,8 @@
 >
 > **Ein leichter WYSIWYG-Markdown-Editor für das KI-Zeitalter.**
 
+[🌐 Online-Demo](https://mdmeow.zakee.fun)
+
 Je häufiger wir mit KI-Agenten arbeiten, desto mehr wird **Markdown zu einem der wichtigsten Dokumentformate zwischen Mensch und KI**.
 
 Anforderungen, Entwicklungsnotizen, KI-Ausgaben, Forschungsnotizen, README-Dateien – immer mehr tägliche Arbeit landet am Ende in einer `.md`-Datei.

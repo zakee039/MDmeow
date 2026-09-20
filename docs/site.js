@@ -78,4 +78,5 @@ addEventListener("keydown",event=>{
   }
 });
 addEventListener("hashchange",()=>go((parseInt(location.hash.slice(1),10)||1)-1,false));
-go((parseInt(location.hash.slice(1),10)||1)-1,false);
+history.replaceState(null,"","#1");
+go(0,false);
