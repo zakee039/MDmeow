@@ -22,7 +22,7 @@ AI エージェントとやり取りする機会が増えるにつれて、**Mar
 
 ## 軽快さは機能のひとつ
 
-![MDmeow 軽量動作例](docs/readme/lightweight.png)
+![MDmeow 軽量動作例](docs/assets/screenshots/lightweight.png)
 
 > 上の画像は、ある Windows 環境で空の文書を開いたときの一例です。実際のリソース使用量は、文書内容、WebView2、システム環境によって変わります。
 

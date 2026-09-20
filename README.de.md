@@ -22,7 +22,7 @@ Leicht, schnell und unaufdringlich. Ob KI-generiertes Dokument, README oder kurz
 
 ## Leichtgewichtig ist Teil des Konzepts
 
-![MDmeow Beispiel für geringe Ressourcennutzung](docs/readme/lightweight.png)
+![MDmeow Beispiel für geringe Ressourcennutzung](docs/assets/screenshots/lightweight.png)
 
 > Die Abbildung zeigt ein leeres Dokument auf einem Windows-System. Der tatsächliche Ressourcenverbrauch hängt unter anderem vom Dokumentinhalt, WebView2 und der Systemumgebung ab.
 

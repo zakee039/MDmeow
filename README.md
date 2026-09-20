@@ -22,7 +22,7 @@ AI 时代，我们和 Agent 打交道越来越频繁，而 **Markdown 正在成�
 
 ## 轻快，不只是口号
 
-![MDmeow 轻量运行示例](docs/readme/lightweight.png)
+![MDmeow 轻量运行示例](docs/assets/screenshots/lightweight.png)
 
 > 上图是一台 Windows 设备上的空白文档运行示例。实际资源占用会随文档内容、WebView2 与系统环境变化。
 

@@ -22,7 +22,7 @@ Lightweight, quiet, and focused. Whether you are reviewing an AI-generated docum
 
 ## Lightweight is part of the product
 
-![MDmeow lightweight runtime example](docs/readme/lightweight.png)
+![MDmeow lightweight runtime example](docs/assets/screenshots/lightweight.png)
 
 > The screenshot shows an empty document on one Windows machine. Actual resource usage varies with document content, WebView2, and the system environment.
 
