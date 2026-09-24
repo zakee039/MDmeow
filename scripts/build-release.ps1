@@ -9,6 +9,7 @@ $ReleaseDir = Join-Path $Root "release"
 $StageDir = Join-Path $Root "release.__staging"
 $TargetRelease = Join-Path $Root "src-tauri\target\release"
 $TargetBundle = Join-Path $TargetRelease "bundle"
+$TemporaryReleaseCredential = $null
 
 function Read-CargoVersion {
     $match = Select-String -Path (Join-Path $Root "src-tauri\Cargo.toml") -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
@@ -34,9 +35,28 @@ try {
     }
 
     $tauriSecretDir = Join-Path $env:USERPROFILE ".tauri"
-    $releaseCredential = Get-Item -LiteralPath (Join-Path $tauriSecretDir "mdmeow-updater.key") -ErrorAction SilentlyContinue
-    if (-not $releaseCredential) {
-        throw "MDmeow release credential was not found in $tauriSecretDir."
+    $localCredentialPath = Join-Path $tauriSecretDir "mdmeow-updater.key"
+    $releaseCredentialPath = $null
+    $releaseCredentialPassword = ""
+
+    # Local releases use ~/.tauri/mdmeow-updater.key. CI can inject the same
+    # Minisign/Tauri updater private key through GitHub Actions secrets without
+    # ever committing it to the repository.
+    if (-not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+        $tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
+        $TemporaryReleaseCredential = Join-Path $tempRoot "mdmeow-updater-$PID.key"
+        $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+        [System.IO.File]::WriteAllText($TemporaryReleaseCredential, $env:TAURI_SIGNING_PRIVATE_KEY, $utf8NoBom)
+        $releaseCredentialPath = $TemporaryReleaseCredential
+        if (-not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
+            $releaseCredentialPassword = $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+        }
+        Write-Host "[release] Using updater signing credential from environment."
+    } elseif (Test-Path -LiteralPath $localCredentialPath) {
+        $releaseCredentialPath = $localCredentialPath
+        Write-Host "[release] Using local updater signing credential."
+    } else {
+        throw "MDmeow updater signing credential was not found. Provide TAURI_SIGNING_PRIVATE_KEY or $localCredentialPath."
     }
     $package = Get-Content -LiteralPath "package.json" -Raw | ConvertFrom-Json
     $tauri = Get-Content -LiteralPath "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
@@ -99,11 +119,12 @@ try {
     Copy-Item -LiteralPath $msis[0].FullName -Destination $msiPath
 
     Write-Host "[release] Signing Windows artifacts..."
-    pnpm tauri signer sign -f $releaseCredential.FullName --password= $portablePath
+    $passwordArg = "--password=$releaseCredentialPassword"
+    pnpm tauri signer sign -f $releaseCredentialPath $passwordArg $portablePath
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath "$portablePath.sig")) {
         throw "Portable executable signing failed."
     }
-    pnpm tauri signer sign -f $releaseCredential.FullName --password= $msiPath
+    pnpm tauri signer sign -f $releaseCredentialPath $passwordArg $msiPath
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath "$msiPath.sig")) {
         throw "MSI signing failed."
     }
@@ -158,5 +179,8 @@ catch {
     exit 1
 }
 finally {
+    if ($TemporaryReleaseCredential -and (Test-Path -LiteralPath $TemporaryReleaseCredential)) {
+        Remove-Item -LiteralPath $TemporaryReleaseCredential -Force
+    }
     Pop-Location
 }

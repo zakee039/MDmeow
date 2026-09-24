@@ -1,13 +1,17 @@
 name: release
 
-# Linux/macOS release automation.
+# Full-platform release automation.
 #
-# Normal release path: push an annotated vX.Y.Z tag. The tag push automatically
-# builds Linux x64/ARM64 and macOS universal artifacts, verifies the exact file
-# set, generates SHA256SUMS.txt, and updates a draft GitHub Release.
+# Normal path: push an annotated vX.Y.Z tag. GitHub Actions builds signed
+# Windows portable/MSI artifacts, Linux x64/ARM64 packages, and a universal
+# macOS DMG, verifies the exact artifact set, generates SHA256SUMS.txt, and
+# publishes one GitHub Release.
 #
-# Windows is intentionally excluded here: MDmeow Windows EXE/MSI are built
-# locally with pnpm release:windows and uploaded by the maintainer.
+# Required repository secret:
+#   TAURI_SIGNING_PRIVATE_KEY
+# Optional when the updater key is password-protected:
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+
 on:
   push:
     tags:
@@ -15,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to rebuild (for example v1.7.2)"
+        description: "Release tag to rebuild (for example v1.8.0)"
         required: false
         default: ""
         type: string
@@ -55,6 +59,70 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build-windows:
+    needs: prepare
+    runs-on: windows-latest
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Require updater signing secret
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            throw "Repository secret TAURI_SIGNING_PRIVATE_KEY is required for Windows release signing."
+          }
+
+      - name: Build signed Windows release
+        shell: pwsh
+        run: pnpm release:windows
+
+      - name: Verify Windows artifact contract
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          $expected = @(
+            "MDmeow-$env:VERSION.exe",
+            "MDmeow-$env:VERSION.exe.sig",
+            "MDmeow_$($env:VERSION)_x64.msi",
+            "MDmeow_$($env:VERSION)_x64.msi.sig",
+            "latest.json"
+          ) | Sort-Object
+          $actual = @(Get-ChildItem release -File | ForEach-Object Name | Sort-Object)
+          $diff = Compare-Object -ReferenceObject $expected -DifferenceObject $actual
+          if ($diff) {
+            $diff | Format-Table | Out-String | Write-Host
+            throw "Unexpected Windows release artifact set."
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows-x86_64
+          path: release/*
+          if-no-files-found: error
 
   build-linux:
     needs: prepare
@@ -181,7 +249,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: [prepare, build-linux, build-macos]
+    needs: [prepare, build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -192,11 +260,16 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Verify complete Linux/macOS release set
+      - name: Verify complete cross-platform release set
         shell: bash
         run: |
           set -euo pipefail
           expected=(
+            "MDmeow-$VERSION.exe"
+            "MDmeow-$VERSION.exe.sig"
+            "MDmeow_$VERSION_x64.msi"
+            "MDmeow_$VERSION_x64.msi.sig"
+            "latest.json"
             "MDmeow-$VERSION-linux-x86_64.AppImage"
             "MDmeow-$VERSION-linux-x86_64.deb"
             "MDmeow-$VERSION-linux-x86_64.rpm"
@@ -218,12 +291,15 @@ jobs:
         working-directory: dist
         run: sha256sum * | tee SHA256SUMS.txt
 
-      - name: Publish draft GitHub Release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           name: "MDmeow ${{ env.RELEASE_TAG }}"
-          draft: true
+          draft: false
           prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          overwrite_files: true
           files: |
             dist/*
