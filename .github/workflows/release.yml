@@ -257,8 +257,24 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
-          path: dist
-          merge-multiple: true
+          path: artifacts
+
+      - name: Normalize downloaded artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          while IFS= read -r -d '' file; do
+            name="$(basename "$file")"
+            if [[ -e "dist/$name" ]]; then
+              echo "::error::Duplicate release artifact name: $name"
+              exit 1
+            fi
+            cp "$file" "dist/$name"
+          done < <(find artifacts -type f -print0)
+          echo "Normalized artifacts:"
+          find dist -maxdepth 1 -type f -printf '  %f\n' | sort
 
       - name: Verify complete cross-platform release set
         shell: bash
