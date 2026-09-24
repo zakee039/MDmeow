@@ -9,7 +9,6 @@ $ReleaseDir = Join-Path $Root "release"
 $StageDir = Join-Path $Root "release.__staging"
 $TargetRelease = Join-Path $Root "src-tauri\target\release"
 $TargetBundle = Join-Path $TargetRelease "bundle"
-$TemporaryReleaseCredential = $null
 
 function Read-CargoVersion {
     $match = Select-String -Path (Join-Path $Root "src-tauri\Cargo.toml") -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
@@ -37,20 +36,17 @@ try {
     $tauriSecretDir = Join-Path $env:USERPROFILE ".tauri"
     $localCredentialPath = Join-Path $tauriSecretDir "mdmeow-updater.key"
     $releaseCredentialPath = $null
-    $releaseCredentialPassword = ""
+    $useEnvironmentSigningKey = $false
 
     # Local releases use ~/.tauri/mdmeow-updater.key. CI can inject the same
     # Minisign/Tauri updater private key through GitHub Actions secrets without
     # ever committing it to the repository.
     if (-not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
-        $tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
-        $TemporaryReleaseCredential = Join-Path $tempRoot "mdmeow-updater-$PID.key"
-        $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-        [System.IO.File]::WriteAllText($TemporaryReleaseCredential, $env:TAURI_SIGNING_PRIVATE_KEY, $utf8NoBom)
-        $releaseCredentialPath = $TemporaryReleaseCredential
-        if (-not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
-            $releaseCredentialPassword = $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD
-        }
+        # Tauri CLI natively consumes TAURI_SIGNING_PRIVATE_KEY (and optional
+        # TAURI_SIGNING_PRIVATE_KEY_PASSWORD). Do not also pass -f here: that
+        # would provide both --private-key and --private-key-path, which are
+        # mutually exclusive.
+        $useEnvironmentSigningKey = $true
         Write-Host "[release] Using updater signing credential from environment."
     } elseif (Test-Path -LiteralPath $localCredentialPath) {
         $releaseCredentialPath = $localCredentialPath
@@ -119,12 +115,19 @@ try {
     Copy-Item -LiteralPath $msis[0].FullName -Destination $msiPath
 
     Write-Host "[release] Signing Windows artifacts..."
-    $passwordArg = "--password=$releaseCredentialPassword"
-    pnpm tauri signer sign -f $releaseCredentialPath $passwordArg $portablePath
+    if ($useEnvironmentSigningKey) {
+        pnpm tauri signer sign $portablePath
+    } else {
+        pnpm tauri signer sign -f $releaseCredentialPath --password= $portablePath
+    }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath "$portablePath.sig")) {
         throw "Portable executable signing failed."
     }
-    pnpm tauri signer sign -f $releaseCredentialPath $passwordArg $msiPath
+    if ($useEnvironmentSigningKey) {
+        pnpm tauri signer sign $msiPath
+    } else {
+        pnpm tauri signer sign -f $releaseCredentialPath --password= $msiPath
+    }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath "$msiPath.sig")) {
         throw "MSI signing failed."
     }
@@ -179,8 +182,5 @@ catch {
     exit 1
 }
 finally {
-    if ($TemporaryReleaseCredential -and (Test-Path -LiteralPath $TemporaryReleaseCredential)) {
-        Remove-Item -LiteralPath $TemporaryReleaseCredential -Force
-    }
     Pop-Location
 }
