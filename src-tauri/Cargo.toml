@@ -1,6 +1,6 @@
 [package]
 name = "mdmeow"
-version = "1.8.0"
+version = "1.8.1"
 description = "MDmeow - a minimalist WYSIWYG Markdown editor"
 authors = ["zakee039", "Ali Naderi"]
 edition = "2021"

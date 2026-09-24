@@ -22,6 +22,23 @@ function Remove-IfExists([string]$Path) {
     }
 }
 
+function Get-Sha256Hex([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $bytes = $sha.ComputeHash($stream)
+            return (($bytes | ForEach-Object { $_.ToString("x2") }) -join "").ToUpperInvariant()
+        }
+        finally {
+            $sha.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
 Push-Location $Root
 try {
     if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
@@ -170,9 +187,9 @@ try {
     Write-Host "Artifacts:"
     $expected | Sort-Object | ForEach-Object {
         $file = Get-Item -LiteralPath (Join-Path $ReleaseDir $_)
-        $hash = Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256
+        $hash = Get-Sha256Hex $file.FullName
         Write-Host ("  {0}  {1} bytes" -f $file.Name, $file.Length)
-        Write-Host ("    SHA256 {0}" -f $hash.Hash)
+        Write-Host ("    SHA256 {0}" -f $hash)
     }
     Write-Host "Result: PASS (signed Windows release + updater metadata)"
 }
