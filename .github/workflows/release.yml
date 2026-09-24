@@ -283,8 +283,8 @@ jobs:
           expected=(
             "MDmeow-$VERSION.exe"
             "MDmeow-$VERSION.exe.sig"
-            "MDmeow_$VERSION_x64.msi"
-            "MDmeow_$VERSION_x64.msi.sig"
+            "MDmeow_${VERSION}_x64.msi"
+            "MDmeow_${VERSION}_x64.msi.sig"
             "latest.json"
             "MDmeow-$VERSION-linux-x86_64.AppImage"
             "MDmeow-$VERSION-linux-x86_64.deb"
