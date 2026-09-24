@@ -27,6 +27,8 @@ pub struct WindowState {
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub maximized: bool,
+    /// 0/1 = legacy logical coordinates, 2 = physical outer-frame position.
+    pub geometry_version: u8,
 }
 
 impl Default for WindowState {
@@ -37,6 +39,7 @@ impl Default for WindowState {
             x: None,
             y: None,
             maximized: false,
+            geometry_version: 0,
         }
     }
 }
@@ -99,6 +102,14 @@ pub struct Settings {
     /// Markdown source-view font family ("" = built-in monospace).
     pub source_font: String,
     pub source_font_size: u16,
+    /// Alternate row tint in Markdown source / Code mode.
+    pub code_alternate_rows: bool,
+    /// Background colour used for alternating rows in Code mode.
+    pub code_alternate_row_color: String,
+    /// Restore the previous window position and size on startup.
+    pub remember_window_position: bool,
+    /// File extensions the user wants MDmeow registered to open on Windows.
+    pub file_associations: Vec<String>,
     /// Accent colour. MDmeow defaults to Miku teal (#39C5BB).
     pub accent: String,
     /// Route remote assets through a user-specified HTTP/HTTPS/SOCKS5 proxy.
@@ -136,6 +147,14 @@ impl Default for Settings {
             editor_font_size: 16,
             source_font: String::new(),
             source_font_size: 15,
+            code_alternate_rows: true,
+            code_alternate_row_color: "#FAFFFF".to_string(),
+            remember_window_position: false,
+            file_associations: vec![
+                ".md".to_string(),
+                ".markdown".to_string(),
+                ".mdx".to_string(),
+            ],
             accent: "#39C5BB".to_string(),
             proxy_enabled: false,
             proxy_url: String::new(),

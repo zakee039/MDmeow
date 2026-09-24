@@ -22,22 +22,14 @@ pub struct AppState {
     pub last_write: LastWrite,
 }
 
-/// First existing Markdown-ish file among CLI args (from "Open with" / file
-/// associations). `args` includes argv[0], which is skipped.
+/// First existing file among CLI args (from "Open with" / file associations).
+/// Text-vs-binary validation happens in `read_document`, so extensionless and
+/// uncommon UTF-8 text files can still use the Plain Text Code mode.
 pub fn file_arg(args: &[String]) -> Option<String> {
-    args.iter().skip(1).find(|a| is_markdown_file(a)).cloned()
-}
-
-fn is_markdown_file(arg: &str) -> bool {
-    let p = Path::new(arg);
-    p.is_file()
-        && matches!(
-            p.extension()
-                .and_then(|e| e.to_str())
-                .map(str::to_ascii_lowercase)
-                .as_deref(),
-            Some("md") | Some("markdown") | Some("mdx") | Some("txt")
-        )
+    args.iter()
+        .skip(1)
+        .find(|arg| Path::new(arg).is_file())
+        .cloned()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -107,6 +99,7 @@ pub fn run() {
             commands::save_settings,
             commands::get_open_with_status,
             commands::register_open_with,
+            commands::register_file_associations,
             commands::unregister_open_with,
             commands::read_document,
             commands::write_document,

@@ -1,13 +1,21 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow, LogicalSize, LogicalPosition } from "@tauri-apps/api/window";
+import {
+  availableMonitors,
+  getCurrentWindow,
+  LogicalSize,
+  PhysicalPosition,
+  primaryMonitor,
+} from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { open, save, ask, message } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { Editor } from "./editor";
+import { CodeEditor } from "./code-editor";
 import { TabBar, baseName, type Tab } from "./tabs";
+import { isMarkdownPath, knownExtensions } from "./file-types";
 import { installMikuCreamRendering } from "./miku-cream";
-import { FindBar, type FindStatus, type FindTarget } from "./find-bar";
+import { FindBar, type FindTarget } from "./find-bar";
 import { EmojiPicker } from "./emoji";
 import { SettingsPanel, type SettingKey } from "./settings-panel";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
@@ -32,7 +40,11 @@ interface WindowState {
   x: number | null;
   y: number | null;
   maximized: boolean;
+  geometry_version: number;
 }
+
+const DEFAULT_WINDOW_WIDTH = 640;
+const DEFAULT_WINDOW_HEIGHT = 680;
 
 interface Settings {
   /** UI language: "system" (OS locale) | "en" | "de" | "ja" | "zh-CN". */
@@ -51,6 +63,10 @@ interface Settings {
   editor_font_size: number;
   source_font: string;
   source_font_size: number;
+  code_alternate_rows: boolean;
+  code_alternate_row_color: string;
+  remember_window_position: boolean;
+  file_associations: string[];
   accent: string;
   proxy_enabled: boolean;
   proxy_url: string;
@@ -77,6 +93,7 @@ interface OpenWithStatus {
   registered: boolean;
   managed_by_msi: boolean;
   can_modify: boolean;
+  registered_extensions: string[];
 }
 
 interface VersionInfo {
@@ -107,11 +124,11 @@ interface VersionTransferProgress {
 const win = getCurrentWindow();
 const editorHost = document.getElementById("editor") as HTMLElement;
 const sourceShell = document.getElementById("source-shell") as HTMLElement;
-const sourceEl = document.getElementById("source") as HTMLTextAreaElement;
-const sourceGutter = document.getElementById("source-gutter") as HTMLElement;
+const sourceEl = document.getElementById("source") as HTMLElement;
 const titleEl = document.getElementById("doc-title") as HTMLElement;
 const titleInput = document.getElementById("doc-title-input") as HTMLInputElement;
 const editor = new Editor(editorHost);
+const codeEditor = new CodeEditor(sourceEl);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
 const emojiPicker = new EmojiPicker();
@@ -123,33 +140,35 @@ let openWithStatus: OpenWithStatus = {
   registered: false,
   managed_by_msi: false,
   can_modify: false,
+  registered_extensions: [],
 };
 let switching = false;
+/** User-selected Markdown source view. Non-Markdown tabs always use Code mode. */
 let sourceMode = false;
+/** The view that is currently mounted/visible. Kept separate from active tab
+ *  so tab switches can first snapshot the previous tab correctly. */
+let codeViewVisible = false;
 let persistTimer: number | undefined;
 
-function refreshSourceGutter(): void {
-  const count = Math.max(1, sourceEl.value.split("\n").length);
-  sourceGutter.textContent = Array.from({ length: count }, (_, i) => String(i + 1)).join("\n");
-  sourceGutter.scrollTop = sourceEl.scrollTop;
+function shouldUseCodeView(tab: Tab | undefined = tabBar.active): boolean {
+  return sourceMode || Boolean(tab && !isMarkdownPath(tab.path));
 }
 
-function syncSourceGutter(): void {
-  sourceGutter.scrollTop = sourceEl.scrollTop;
+function setViewVisibility(tab: Tab | undefined = tabBar.active): void {
+  codeViewVisible = shouldUseCodeView(tab);
+  editorHost.hidden = codeViewVisible;
+  sourceShell.hidden = !codeViewVisible;
 }
 
 /** Current document text, from whichever view is active. */
 function readView(): string {
-  return sourceMode ? sourceEl.value : editor.getMarkdown();
+  return codeViewVisible ? codeEditor.getText() : editor.getMarkdown();
 }
 
 /** Load `md` into the active view (and restore a scroll offset). */
 function writeView(md: string, scrollTop = 0): void {
-  if (sourceMode) {
-    sourceEl.value = md;
-    refreshSourceGutter();
-    sourceEl.scrollTop = scrollTop;
-    syncSourceGutter();
+  if (codeViewVisible) {
+    void codeEditor.setDocument(md, tabBar.active?.path ?? null, scrollTop);
     return;
   }
   switching = true;
@@ -161,29 +180,34 @@ function writeView(md: string, scrollTop = 0): void {
 }
 
 function viewScrollTop(): number {
-  return (sourceMode ? sourceEl : editorHost).scrollTop;
+  return codeViewVisible ? codeEditor.scrollTop : editorHost.scrollTop;
 }
 
 /** How far the visible view is scrolled, as a 0..1 fraction of its range.
  *  Used to carry the reading position across a source/preview toggle. */
 function viewScrollFraction(): number {
-  const el = sourceMode ? sourceEl : editorHost;
-  const range = el.scrollHeight - el.clientHeight;
+  const range = codeViewVisible
+    ? codeEditor.scrollHeight - codeEditor.clientHeight
+    : editorHost.scrollHeight - editorHost.clientHeight;
   if (range <= 0) return 0;
-  return Math.min(1, Math.max(0, el.scrollTop / range));
+  const scrollTop = codeViewVisible ? codeEditor.scrollTop : editorHost.scrollTop;
+  return Math.min(1, Math.max(0, scrollTop / range));
 }
 
 /** Scroll the visible view to `frac` (0..1) of its range. The editor's height
  *  only settles after layout, so defer a frame there; the textarea is ready
  *  synchronously but must be set after `.focus()` (which scrolls its caret). */
 function applyScrollFraction(frac: number): void {
-  const el = sourceMode ? sourceEl : editorHost;
   const run = () => {
-    const range = el.scrollHeight - el.clientHeight;
-    el.scrollTop = range > 0 ? Math.round(frac * range) : 0;
+    if (codeViewVisible) {
+      const range = codeEditor.scrollHeight - codeEditor.clientHeight;
+      codeEditor.scrollTop = range > 0 ? Math.round(frac * range) : 0;
+    } else {
+      const range = editorHost.scrollHeight - editorHost.clientHeight;
+      editorHost.scrollTop = range > 0 ? Math.round(frac * range) : 0;
+    }
   };
-  if (sourceMode) run();
-  else requestAnimationFrame(run);
+  requestAnimationFrame(run);
 }
 
 /** Push the appearance-related settings into CSS custom properties. */
@@ -199,6 +223,7 @@ function applyAppearance(): void {
   setOrClear("--editor-font", settings.editor_font);
   setOrClear("--source-font", settings.source_font);
   setOrClear("--accent", settings.accent);
+  setOrClear("--code-alt-row-color", settings.code_alternate_row_color || "#FAFFFF");
 }
 
 /** Switch the UI language and refresh every visible string. */
@@ -253,13 +278,27 @@ async function commitTitleRename(): Promise<void> {
     return;
   }
   try {
+    const content = readView();
+    const scrollTop = viewScrollTop();
+    const wasCodeView = codeViewVisible;
     const nextPath = await invoke<string>("rename_document", {
       path: tab.path,
       newName,
     });
     tab.path = nextPath;
     editor.setDocPath(nextPath);
+    setViewVisibility(tab);
+    if (wasCodeView !== codeViewVisible) {
+      if (codeViewVisible) {
+        await codeEditor.setDocument(content, nextPath, scrollTop);
+      } else {
+        writeView(content, scrollTop);
+      }
+    } else if (codeViewVisible) {
+      void codeEditor.setLanguageForPath(nextPath);
+    }
     tabBar.render();
+    updateSourceButton();
     persistSoon();
   } catch (err) {
     await message(t("dialog.renameError", { err: String(err) }), {
@@ -308,7 +347,35 @@ async function refreshOpenWithStatus(): Promise<OpenWithStatus> {
     openWithStatus.managed_by_msi,
     openWithStatus.can_modify,
   );
+  settingsPanel.setAssociationStatus(
+    openWithStatus.available,
+    openWithStatus.registered_extensions,
+  );
   return openWithStatus;
+}
+
+async function registerFileAssociations(extensions: string[]): Promise<void> {
+  try {
+    openWithStatus = await invoke<OpenWithStatus>("register_file_associations", {
+      extensions,
+    });
+    settingsPanel.setOpenWithStatus(
+      openWithStatus.available,
+      openWithStatus.registered,
+      openWithStatus.managed_by_msi,
+      openWithStatus.can_modify,
+    );
+    settingsPanel.setAssociationStatus(
+      openWithStatus.available,
+      openWithStatus.registered_extensions,
+    );
+  } catch (err) {
+    await message(t("dialog.openWithError", { err: String(err) }), {
+      title: "MDmeow",
+      kind: "error",
+    });
+    throw err;
+  }
 }
 
 async function setOpenWithRegistration(register: boolean): Promise<void> {
@@ -321,6 +388,10 @@ async function setOpenWithRegistration(register: boolean): Promise<void> {
       openWithStatus.registered,
       openWithStatus.managed_by_msi,
       openWithStatus.can_modify,
+    );
+    settingsPanel.setAssociationStatus(
+      openWithStatus.available,
+      openWithStatus.registered_extensions,
     );
     settings.open_with_prompt_dismissed = register ? false : true;
     persistSoon();
@@ -358,7 +429,7 @@ async function initializeOpenWithIntegration(): Promise<void> {
 /** Crepe may reformat Markdown on load; adopt that as the tab's baseline so a
  *  freshly loaded document does not show up as dirty. */
 function adoptNormalized(tab: Tab): void {
-  if (sourceMode) return; // textarea keeps the text verbatim, nothing to adopt
+  if (codeViewVisible) return; // Code mode keeps source text verbatim
   const md = editor.getMarkdown();
   tab.content = md;
   if (!tab.dirty) tab.saved = md;
@@ -393,11 +464,14 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
     prev.scrollTop = viewScrollTop();
   }
   editor.setDocPath(next.path);
+  setViewVisibility(next);
   writeView(next.content, next.scrollTop);
   adoptNormalized(next);
   editor.setSpellcheck(settings.spellcheck);
+  codeEditor.setAlternateRows(settings.code_alternate_rows);
   updateTitle();
-  (sourceMode ? sourceEl : editor).focus();
+  updateSourceButton();
+  (codeViewVisible ? codeEditor : editor).focus();
   persistSoon();
 };
 
@@ -414,23 +488,28 @@ tabBar.onCloseRequest = async (tab: Tab) => {
 };
 
 editor.onChange = () => {
-  if (switching || sourceMode) return;
+  if (switching || codeViewVisible) return;
+  markDirtyFromView();
+};
+
+codeEditor.onChange = () => {
+  if (!codeViewVisible) return;
   markDirtyFromView();
 };
 
 emojiPicker.onPick = (glyph) => {
-  if (sourceMode) {
-    sourceEdit(glyph, sourceEl.selectionStart, sourceEl.selectionEnd);
+  if (codeViewVisible) {
+    codeEditor.insertText(glyph);
   } else {
     editor.insertText(glyph);
     markDirtyFromView();
   }
 };
-emojiPicker.onClose = () => (sourceMode ? sourceEl : editor).focus();
+emojiPicker.onClose = () => (codeViewVisible ? codeEditor : editor).focus();
 
 function applyProxySettings(reloadEditor: boolean): void {
   editor.setProxyConfig(settings.proxy_enabled, settings.proxy_url);
-  if (!reloadEditor || sourceMode) return;
+  if (!reloadEditor || codeViewVisible) return;
   switching = true;
   void editor.reload().then(() => {
     editor.setSpellcheck(settings.spellcheck);
@@ -458,7 +537,7 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "list_marker":
       if (isListMarker(settings.list_marker)) {
         editor.setListMarker(settings.list_marker);
-        if (!sourceMode) {
+        if (!codeViewVisible) {
           switching = true;
           void editor.reload().then(() => {
             editor.setSpellcheck(settings.spellcheck);
@@ -473,7 +552,11 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "source_font":
     case "source_font_size":
     case "accent":
+    case "code_alternate_row_color":
       applyAppearance();
+      break;
+    case "code_alternate_rows":
+      codeEditor.setAlternateRows(settings.code_alternate_rows);
       break;
     case "proxy_enabled":
     case "proxy_url":
@@ -493,47 +576,28 @@ settingsPanel.onOpenWithToggle = async () => {
   if (!openWithStatus.can_modify) return;
   await setOpenWithRegistration(!openWithStatus.registered);
 };
+settingsPanel.onRegisterAssociations = async (extensions) => {
+  settings.file_associations = [...extensions];
+  persistSoon();
+  await registerFileAssociations(extensions);
+};
+settingsPanel.onSetDefaultAssociations = async (extensions) => {
+  settings.file_associations = [...extensions];
+  persistSoon();
+  await registerFileAssociations(extensions);
+  await openUrl("ms-settings:defaultapps?registeredAppUser=MDmeow");
+};
+settingsPanel.onCheckUpdates = async () => {
+  await checkVersion(false);
+  if (!versionInfo) return t("update.failed", { err: "" }).trim();
+  return versionInfo.updateAvailable
+    ? t("update.available", { version: versionInfo.latestVersion })
+    : t("update.latest");
+};
 settingsPanel.onProxyTest = async (proxyUrl) => {
   await invoke("test_proxy", { proxyUrl });
 };
-settingsPanel.onClose = () => (sourceMode ? sourceEl : editor).focus();
-
-sourceEl.addEventListener("input", () => {
-  refreshSourceGutter();
-  if (sourceMode) markDirtyFromView();
-});
-sourceEl.addEventListener("scroll", syncSourceGutter, { passive: true });
-
-/** Edit the textarea via `execCommand` so it stays on the native undo stack
- *  (`setRangeText` / `value =` wipe undo history). Falls back if unsupported. */
-function sourceEdit(text: string, from: number, to: number): void {
-  sourceEl.focus();
-  sourceEl.setSelectionRange(from, to);
-  const ok = document.execCommand("insertText", false, text);
-  if (!ok) {
-    sourceEl.setRangeText(text, from, to, "end");
-    markDirtyFromView();
-  }
-}
-
-// Tab / Shift+Tab indent in the raw Markdown view (textarea has no default).
-sourceEl.addEventListener("keydown", (e) => {
-  if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
-  e.preventDefault();
-  const unit = "\t";
-  const { selectionStart: a, selectionEnd: b, value } = sourceEl;
-  if (a === b && !e.shiftKey) {
-    sourceEdit(unit, a, b);
-  } else {
-    const lineStart = value.lastIndexOf("\n", a - 1) + 1;
-    const block = value.slice(lineStart, b);
-    const changed = e.shiftKey
-      ? block.replace(/^(\t| {1,2})/gm, "")
-      : block.replace(/^/gm, unit);
-    sourceEdit(changed, lineStart, b);
-    sourceEl.setSelectionRange(lineStart, lineStart + changed.length);
-  }
-});
+settingsPanel.onClose = () => (codeViewVisible ? codeEditor : editor).focus();
 
 // --- file operations -------------------------------------------------------
 
@@ -563,11 +627,13 @@ async function openPath(path: string): Promise<void> {
     cur.content = text;
     cur.dirty = false;
     editor.setDocPath(path);
+    setViewVisibility(cur);
     writeView(text);
     adoptNormalized(cur);
     tabBar.render();
     editor.setSpellcheck(settings.spellcheck);
-    (sourceMode ? sourceEl : editor).focus();
+    updateSourceButton();
+    (codeViewVisible ? codeEditor : editor).focus();
     updateTitle();
   } else {
     tabBar.add(path, text); // triggers onActivate -> editor.setContent
@@ -580,13 +646,12 @@ async function openDialog(): Promise<void> {
   const picked = await open({
     multiple: false,
     directory: false,
-    filters: [{ name: "Markdown", extensions: ["md", "markdown", "mdx", "txt"] }],
+    filters: [
+      { name: "Documents / Code", extensions: knownExtensions() },
+      { name: "All files", extensions: ["*"] },
+    ],
   });
   if (typeof picked === "string") await openPath(picked);
-}
-
-function isSupportedDroppedFile(path: string): boolean {
-  return /\.(?:md|markdown|mdx|txt)$/i.test(path);
 }
 
 async function wireFileDrop(): Promise<void> {
@@ -600,7 +665,7 @@ async function wireFileDrop(): Promise<void> {
     document.body.classList.remove("mdmeow-file-drag");
     if (payload.type !== "drop") return;
 
-    const paths = payload.paths.filter(isSupportedDroppedFile);
+    const paths = payload.paths;
     if (paths.length === 0) return;
     void (async () => {
       for (const path of paths) await openPath(path);
@@ -631,8 +696,8 @@ async function saveDoc(): Promise<boolean> {
     await message(String(e), { title: "MDmeow", kind: "error" });
     return false;
   }
-  if (sourceMode) {
-    // The textarea shows raw Markdown, so reflect the beautified tables back.
+  if (codeViewVisible) {
+    // Code mode shows raw text, so reflect backend formatting back when needed.
     if (written !== md) writeView(written, viewScrollTop());
     tab.saved = written;
     tab.content = written;
@@ -658,15 +723,29 @@ async function saveAs(): Promise<boolean> {
 
   const dest = await save({
     defaultPath: tab.path ?? `${stem(tab.path)}.md`,
-    filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
+    filters: [{ name: "Documents / Code", extensions: knownExtensions() }],
   });
   if (!dest) return false;
 
+  const content = readView();
+  const scrollTop = viewScrollTop();
+  const wasCodeView = codeViewVisible;
   tab.path = dest;
   editor.setDocPath(dest);
+  setViewVisibility(tab);
+  if (wasCodeView !== codeViewVisible) {
+    if (codeViewVisible) {
+      await codeEditor.setDocument(content, dest, scrollTop);
+    } else {
+      writeView(content, scrollTop);
+    }
+  } else if (codeViewVisible) {
+    void codeEditor.setLanguageForPath(dest);
+  }
   const ok = await saveDoc();
   if (ok) {
     tabBar.render();
+    updateSourceButton();
     updateTitle();
     persistSoon();
   }
@@ -730,12 +809,21 @@ const ICON_TO_WYSIWYG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
 
 function updateSourceButton(): void {
-  const btn = document.getElementById("btn-source");
+  const btn = document.getElementById("btn-source") as HTMLButtonElement | null;
   if (!btn) return;
-  btn.innerHTML = sourceMode ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
-  const label = sourceMode ? t("toolbar.sourceBack.title") : t("toolbar.source.title");
+  const markdown = isMarkdownPath(tabBar.active?.path ?? null);
+  btn.disabled = !markdown;
+  btn.innerHTML = markdown && sourceMode ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
+  const label = markdown
+    ? sourceMode
+      ? t("toolbar.sourceBack.title")
+      : t("toolbar.source.title")
+    : t("toolbar.source.codeMode");
   const shortcut = settings?.shortcuts?.toggle_source;
-  btn.setAttribute("title", shortcut ? `${label} (${formatShortcut(shortcut)})` : label);
+  btn.setAttribute(
+    "title",
+    markdown && shortcut ? `${label} (${formatShortcut(shortcut)})` : label,
+  );
 }
 
 function updateShortcutTitles(): void {
@@ -769,7 +857,7 @@ function updateShortcutTitles(): void {
 
 function toggleSource(): void {
   const tab = tabBar.active;
-  if (!tab) return;
+  if (!tab || !isMarkdownPath(tab.path)) return;
 
   findBar.close();
   const md = readView();
@@ -777,8 +865,7 @@ function toggleSource(): void {
   const frac = viewScrollFraction(); // reading position in the outgoing view
 
   sourceMode = !sourceMode;
-  editorHost.hidden = sourceMode;
-  sourceShell.hidden = !sourceMode;
+  setViewVisibility(tab);
 
   writeView(md);
   adoptNormalized(tab);
@@ -786,17 +873,11 @@ function toggleSource(): void {
   tabBar.refreshDirty();
   updateSourceButton();
   updateTitle();
-  (sourceMode ? sourceEl : editor).focus();
-  // Last: focusing the textarea scrolls its caret (end of the freshly set
-  // value) into view, so the reading position must be restored after it.
+  (codeViewVisible ? codeEditor : editor).focus();
   applyScrollFraction(frac);
 }
 
 // --- find / replace -----------------------------------------------------
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 const editorFindTarget: FindTarget = {
   selectionText: () => editor.selectionText(),
@@ -808,97 +889,18 @@ const editorFindTarget: FindTarget = {
   focusView: () => editor.focus(),
 };
 
-function makeSourceFindTarget(): FindTarget {
-  let query = "";
-  let caseSensitive = false;
-  let positions: number[] = [];
-  let active = 0;
-
-  const recompute = () => {
-    positions = [];
-    if (!query) return;
-    const hay = caseSensitive ? sourceEl.value : sourceEl.value.toLowerCase();
-    const needle = caseSensitive ? query : query.toLowerCase();
-    const stride = Math.max(1, needle.length);
-    let i = hay.indexOf(needle);
-    while (i !== -1) {
-      positions.push(i);
-      i = hay.indexOf(needle, i + stride);
-    }
-    if (active >= positions.length) active = 0;
-  };
-
-  const selectActive = () => {
-    if (!positions.length) return;
-    if (active >= positions.length) active = 0;
-    const start = positions[active];
-    sourceEl.focus();
-    sourceEl.setSelectionRange(start, start + query.length);
-    const row = sourceEl.value.slice(0, start).split("\n").length - 1;
-    const lineHeight = Number.parseFloat(getComputedStyle(sourceEl).lineHeight) || 24;
-    sourceEl.scrollTop = Math.max(
-      0,
-      row * lineHeight - sourceEl.clientHeight / 2 + lineHeight,
-    );
-    syncSourceGutter();
-  };
-
-  const status = (): FindStatus => ({
-    count: positions.length,
-    index: positions.length ? active + 1 : 0,
-  });
-
-  return {
-    selectionText: () =>
-      sourceEl.value.slice(sourceEl.selectionStart, sourceEl.selectionEnd),
-    setQuery(q, cs) {
-      query = q;
-      caseSensitive = cs;
-      active = 0;
-      recompute();
-      selectActive();
-      return status();
-    },
-    step(dir) {
-      if (!positions.length) return status();
-      active = (active + dir + positions.length) % positions.length;
-      selectActive();
-      return status();
-    },
-    replace(replacement) {
-      if (!positions.length || !query) return status();
-      if (active >= positions.length) active = 0;
-      const start = positions[active];
-      const current = sourceEl.value.slice(start, start + query.length);
-      const hit = caseSensitive
-        ? current === query
-        : current.toLowerCase() === query.toLowerCase();
-      if (hit) sourceEdit(replacement, start, start + query.length);
-      recompute();
-      selectActive();
-      return status();
-    },
-    replaceAll(replacement) {
-      if (!query) return status();
-      const re = new RegExp(escapeRegExp(query), caseSensitive ? "g" : "gi");
-      const next = sourceEl.value.replace(re, () => replacement);
-      if (next !== sourceEl.value) sourceEdit(next, 0, sourceEl.value.length);
-      active = 0;
-      recompute();
-      return status();
-    },
-    clear() {
-      query = "";
-      positions = [];
-    },
-    focusView: () => sourceEl.focus(),
-  };
-}
-
-const sourceFindTarget = makeSourceFindTarget();
+const sourceFindTarget: FindTarget = {
+  selectionText: () => codeEditor.selectionText(),
+  setQuery: (q, cs) => codeEditor.findSet(q, cs),
+  step: (dir) => codeEditor.findStep(dir),
+  replace: (r) => codeEditor.findReplace(r),
+  replaceAll: (r) => codeEditor.findReplaceAll(r),
+  clear: () => codeEditor.findClear(),
+  focusView: () => codeEditor.focus(),
+};
 
 function openFind(withReplace: boolean): void {
-  findBar.bind(() => (sourceMode ? sourceFindTarget : editorFindTarget));
+  findBar.bind(() => (codeViewVisible ? sourceFindTarget : editorFindTarget));
   findBar.open(withReplace);
 }
 
@@ -1406,7 +1408,7 @@ function wireShortcuts(): void {
         openFind(true);
       } else if (matchesShortcut(e, settings.shortcuts.emoji)) {
         e.preventDefault();
-        emojiPicker.open(sourceMode ? null : editor.caretRect());
+        emojiPicker.open(codeViewVisible ? null : editor.caretRect());
       } else if (matchesShortcut(e, settings.shortcuts.settings)) {
         e.preventDefault();
         if (settingsPanel.isOpen) settingsPanel.close();
@@ -1417,7 +1419,7 @@ function wireShortcuts(): void {
         e.key >= "0" && e.key <= "7" && e.key.length === 1
       ) {
         // Ctrl+0..7 → block type, mirroring the ⠿ menu (WYSIWYG only).
-        if (sourceMode) return;
+        if (codeViewVisible) return;
         e.preventDefault();
         const ids: BlockActionId[] = [
           "text", "h1", "h2", "h3", "bullet", "ordered", "quote", "code",
@@ -1443,7 +1445,7 @@ function wireButtons(): void {
     } else if (e.key === "Escape") {
       e.preventDefault();
       cancelTitleRename();
-      (sourceMode ? sourceEl : editor).focus();
+      (codeViewVisible ? codeEditor : editor).focus();
     }
   });
   titleInput.addEventListener("blur", () => {
@@ -1466,11 +1468,16 @@ async function flushSettings(): Promise<void> {
   }
 }
 
-let scale = 1;
+const WINDOW_GEOMETRY_VERSION = 2;
+const GEOMETRY_CAPTURE_DELAY_MS = 180;
+let geometryCaptureTimer: number | undefined;
 
-/** Snapshot the current geometry into `settings.window`. Uses outerPosition so
- *  it round-trips exactly with setPosition (which positions the outer frame). */
+/** Snapshot the current geometry.
+ *
+ * Position uses physical outer-frame pixels to avoid mixed-DPI drift between
+ * monitors. Size stays logical so its perceived size remains stable. */
 async function captureGeometry(): Promise<void> {
+  if (!settings.remember_window_position) return;
   let minimized = false;
   try {
     minimized = await win.isMinimized();
@@ -1483,16 +1490,27 @@ async function captureGeometry(): Promise<void> {
   settings.window.maximized = maximized;
   if (maximized) return; // keep the last un-maximized size/pos to restore to
 
-  const pos = await win.outerPosition();
-  const size = await win.innerSize();
-  const x = Math.round(pos.x / scale);
-  const y = Math.round(pos.y / scale);
-  if (onScreenish(x, y)) {
-    settings.window.x = x;
-    settings.window.y = y;
+  const [pos, size, scaleFactor] = await Promise.all([
+    win.outerPosition(),
+    win.innerSize(),
+    win.scaleFactor(),
+  ]);
+  const logicalSize = size.toLogical(scaleFactor || 1);
+  if (onScreenish(pos.x, pos.y)) {
+    settings.window.x = Math.round(pos.x);
+    settings.window.y = Math.round(pos.y);
+    settings.window.geometry_version = WINDOW_GEOMETRY_VERSION;
   }
-  settings.window.width = Math.round(size.width / scale);
-  settings.window.height = Math.round(size.height / scale);
+  settings.window.width = Math.round(logicalSize.width);
+  settings.window.height = Math.round(logicalSize.height);
+}
+
+function scheduleGeometryCapture(): void {
+  if (!settings.remember_window_position) return;
+  window.clearTimeout(geometryCaptureTimer);
+  geometryCaptureTimer = window.setTimeout(() => {
+    void captureGeometry().then(() => persistSoon());
+  }, GEOMETRY_CAPTURE_DELAY_MS);
 }
 
 let closing = false;
@@ -1511,22 +1529,15 @@ async function quitApp(): Promise<void> {
       return;
     }
   }
+  window.clearTimeout(geometryCaptureTimer);
   await captureGeometry();
   await flushSettings();
   await win.destroy();
 }
 
 async function wireWindowState(): Promise<void> {
-  scale = await win.scaleFactor();
-
-  await win.onResized(async () => {
-    await captureGeometry();
-    persistSoon();
-  });
-  await win.onMoved(async () => {
-    await captureGeometry();
-    persistSoon();
-  });
+  await win.onResized(() => scheduleGeometryCapture());
+  await win.onMoved(() => scheduleGeometryCapture());
 
   await win.onCloseRequested(async (event) => {
     event.preventDefault();
@@ -1534,22 +1545,181 @@ async function wireWindowState(): Promise<void> {
   });
 }
 
-/** Reject positions that are clearly off every reasonable monitor layout
- *  (covers the ~-32000 sentinel Windows reports for a minimized window). */
+/** Reject Windows sentinel / corrupt values while still allowing large and
+ * negative multi-monitor desktop coordinates. */
 function onScreenish(x: number, y: number): boolean {
-  return x > -16000 && x < 16000 && y > -16000 && y < 16000;
+  return (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    Math.abs(x) < 1_000_000 &&
+    Math.abs(y) < 1_000_000
+  );
+}
+
+function originIsSafeForMonitor(
+  x: number,
+  y: number,
+  monitor: NonNullable<Awaited<ReturnType<typeof primaryMonitor>>>,
+): boolean {
+  const area = monitor.workArea;
+  const left = area.position.x;
+  const top = area.position.y;
+  const right = left + area.size.width;
+  const bottom = top + area.size.height;
+
+  // The title bar must remain safely reachable. If not, the saved position is
+  // considered invalid and we fall back to the primary-screen center.
+  return x >= left && y >= top && x <= right - 120 && y <= bottom - 48;
+}
+
+async function monitorForSavedWindow(w: WindowState) {
+  if (
+    w.geometry_version !== WINDOW_GEOMETRY_VERSION ||
+    w.x === null ||
+    w.y === null ||
+    !onScreenish(w.x, w.y)
+  ) {
+    return null;
+  }
+  try {
+    const monitors = await availableMonitors();
+    return (
+      monitors.find((monitor) => originIsSafeForMonitor(w.x!, w.y!, monitor)) ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function fitLogicalSizeToMonitor(
+  width: number,
+  height: number,
+  monitor: NonNullable<Awaited<ReturnType<typeof primaryMonitor>>>,
+): { width: number; height: number } {
+  const sf = monitor.scaleFactor || 1;
+  const maxWidth = Math.max(480, Math.floor((monitor.workArea.size.width - 40) / sf));
+  const maxHeight = Math.max(360, Math.floor((monitor.workArea.size.height - 40) / sf));
+  return {
+    width: Math.min(Math.max(480, width), maxWidth),
+    height: Math.min(Math.max(360, height), maxHeight),
+  };
+}
+
+async function ensureTitleBarVisible(): Promise<void> {
+  try {
+    const [pos, monitors] = await Promise.all([
+      win.outerPosition(),
+      availableMonitors(),
+    ]);
+    if (monitors.some((monitor) => originIsSafeForMonitor(pos.x, pos.y, monitor))) {
+      return;
+    }
+
+    const [size, sf] = await Promise.all([win.innerSize(), win.scaleFactor()]);
+    const logical = size.toLogical(sf || 1);
+    await centerOnPrimary(logical.width, logical.height);
+  } catch {
+    await centerOnPrimary(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
+  }
+}
+
+async function centerActualWindowOnPrimary(): Promise<void> {
+  try {
+    const monitor = await primaryMonitor();
+    if (!monitor) {
+      await win.center();
+      return;
+    }
+
+    const outer = await win.outerSize();
+    const area = monitor.workArea;
+    const x =
+      area.position.x + Math.max(0, Math.round((area.size.width - outer.width) / 2));
+    const y =
+      area.position.y + Math.max(0, Math.round((area.size.height - outer.height) / 2));
+    await win.setPosition(new PhysicalPosition(x, y));
+  } catch {
+    try {
+      await win.center();
+    } catch {
+      /* centering is cosmetic; keeping the window visible is preferable */
+    }
+  }
+}
+
+async function centerOnPrimary(width: number, height: number): Promise<void> {
+  try {
+    const monitor = await primaryMonitor();
+    if (monitor) {
+      const fitted = fitLogicalSizeToMonitor(width, height, monitor);
+      const [oldOuter, oldInner] = await Promise.all([
+        win.outerSize(),
+        win.innerSize(),
+      ]);
+      const sf = monitor.scaleFactor || 1;
+      const frameWidth = Math.max(0, oldOuter.width - oldInner.width);
+      const frameHeight = Math.max(0, oldOuter.height - oldInner.height);
+      const targetOuterWidth = Math.round(fitted.width * sf) + frameWidth;
+      const targetOuterHeight = Math.round(fitted.height * sf) + frameHeight;
+      const area = monitor.workArea;
+      const x =
+        area.position.x + Math.max(0, Math.round((area.size.width - targetOuterWidth) / 2));
+      const y =
+        area.position.y + Math.max(0, Math.round((area.size.height - targetOuterHeight) / 2));
+
+      await win.setSize(new LogicalSize(fitted.width, fitted.height));
+      await win.setPosition(new PhysicalPosition(x, y));
+      return;
+    }
+  } catch {
+    /* fall through to Tauri's native centering */
+  }
+  try {
+    await win.center();
+  } catch {
+    /* centering is cosmetic; showing the window is still preferable */
+  }
 }
 
 async function restoreWindow(): Promise<void> {
   const w = settings.window;
-  if (w.width > 200 && w.height > 150) {
-    await win.setSize(new LogicalSize(w.width, w.height));
+  await win.unmaximize();
+
+  if (settings.remember_window_position) {
+    const width = w.width > 200 ? w.width : DEFAULT_WINDOW_WIDTH;
+    const height = w.height > 150 ? w.height : DEFAULT_WINDOW_HEIGHT;
+    const monitor = await monitorForSavedWindow(w);
+
+    if (monitor) {
+      const fitted = fitLogicalSizeToMonitor(width, height, monitor);
+      await win.setSize(new LogicalSize(fitted.width, fitted.height));
+      await win.setPosition(
+        new PhysicalPosition(Math.round(w.x!), Math.round(w.y!)),
+      );
+
+      const actual = await win.outerPosition();
+      if (!originIsSafeForMonitor(actual.x, actual.y, monitor)) {
+        await centerOnPrimary(fitted.width, fitted.height);
+      }
+    } else {
+      await centerOnPrimary(width, height);
+    }
+    if (w.maximized) await win.maximize();
+  } else {
+    await centerOnPrimary(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
   }
-  if (w.x !== null && w.y !== null && onScreenish(w.x, w.y)) {
-    await win.setPosition(new LogicalPosition(w.x, w.y));
-  }
-  if (w.maximized) await win.maximize();
   await win.show();
+  if (!(await win.isMaximized())) {
+    if (settings.remember_window_position) {
+      await ensureTitleBarVisible();
+    } else {
+      // On Windows/WebView2, a hidden resize can settle after setSize()
+      // resolves. Recenter once more after show using the real outer frame so
+      // mixed-DPI systems never calculate the center from a stale size.
+      await centerActualWindowOnPrimary();
+    }
+  }
   try {
     await win.setFocus();
   } catch {
@@ -1593,6 +1763,7 @@ async function bootstrap(): Promise<void> {
   setLang(settings.language ?? "system");
   applyStaticI18n();
   settingsPanel.setPath(payload.location);
+  settingsPanel.setVersion(payload.version);
   settingsPanel.refresh();
   applyAppearance();
   installMikuCreamRendering();
@@ -1614,6 +1785,10 @@ async function bootstrap(): Promise<void> {
     settings.editor_font_size = ext.editor_font_size;
     settings.source_font = ext.source_font;
     settings.source_font_size = ext.source_font_size;
+    settings.code_alternate_rows = ext.code_alternate_rows;
+    settings.code_alternate_row_color = ext.code_alternate_row_color;
+    settings.remember_window_position = ext.remember_window_position;
+    settings.file_associations = ext.file_associations;
     settings.accent = ext.accent;
     settings.proxy_enabled = ext.proxy_enabled;
     settings.proxy_url = ext.proxy_url;
@@ -1623,6 +1798,7 @@ async function bootstrap(): Promise<void> {
     settings.open_with_prompt_dismissed = ext.open_with_prompt_dismissed;
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
+    codeEditor.setAlternateRows(settings.code_alternate_rows);
     applyProxySettings(true);
     updateShortcutTitles();
     editor.setSpellcheck(settings.spellcheck);
@@ -1632,7 +1808,7 @@ async function bootstrap(): Promise<void> {
     if (isListMarker(ext.list_marker) && ext.list_marker !== settings.list_marker) {
       settings.list_marker = ext.list_marker;
       editor.setListMarker(ext.list_marker);
-      if (!sourceMode) {
+      if (!codeViewVisible) {
         switching = true;
         void editor.reload().then(() => {
           editor.setSpellcheck(settings.spellcheck);

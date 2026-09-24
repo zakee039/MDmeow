@@ -59,13 +59,52 @@ pub fn register_open_with() -> Result<OpenWithStatus, String> {
 }
 
 #[tauri::command]
+pub fn register_file_associations(extensions: Vec<String>) -> Result<OpenWithStatus, String> {
+    windows_integration::register_file_associations(extensions).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn unregister_open_with() -> Result<OpenWithStatus, String> {
     windows_integration::unregister_open_with().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn read_document(path: String) -> Result<String, String> {
-    std::fs::read_to_string(&path).map_err(|e| format!("Cannot read {path}: {e}"))
+    let bytes = std::fs::read(&path).map_err(|e| format!("Cannot read {path}: {e}"))?;
+    let sample = &bytes[..bytes.len().min(8192)];
+    if looks_like_binary(sample) {
+        return Err(format!("Cannot open {path}: the file appears to be binary."));
+    }
+    String::from_utf8(bytes)
+        .map_err(|_| format!("Cannot open {path}: the file is not valid UTF-8 text."))
+}
+
+fn looks_like_binary(sample: &[u8]) -> bool {
+    let suspicious_controls = sample
+        .iter()
+        .filter(|&&b| b < 0x20 && !matches!(b, b'\t' | b'\n' | b'\r' | 0x0C))
+        .count();
+    sample.contains(&0) || (!sample.is_empty() && suspicious_controls * 50 > sample.len())
+}
+
+#[cfg(test)]
+mod document_tests {
+    use super::looks_like_binary;
+
+    #[test]
+    fn ordinary_utf8_text_is_not_binary() {
+        assert!(!looks_like_binary("hello\n世界\t42".as_bytes()));
+    }
+
+    #[test]
+    fn nul_bytes_are_binary() {
+        assert!(looks_like_binary(b"hello\0world"));
+    }
+
+    #[test]
+    fn dense_control_bytes_are_binary() {
+        assert!(looks_like_binary(&[1, 2, 3, 4, b'a', b'b', b'c']));
+    }
 }
 
 /// Write `contents` to `path`, pretty-printing any GFM tables first.
@@ -76,7 +115,7 @@ pub fn write_document(path: String, contents: String) -> Result<String, String> 
         std::path::Path::new(&path)
             .extension()
             .and_then(|e| e.to_str()),
-        Some("md") | Some("markdown") | Some("mdx") | Some("txt") | None
+        Some("md") | Some("markdown") | Some("mdx") | None
     );
     let formatted = if is_markdown {
         mdfmt::format_tables(&contents)

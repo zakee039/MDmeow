@@ -2,278 +2,193 @@
 
 # MDmeow
 
-> **Markdown öffnen. Sofort loslegen.**
+> **Öffnen und sofort arbeiten.**
 >
-> **Ein leichter WYSIWYG-Markdown-Editor für das KI-Zeitalter.**
+> **Ein leichtes, elegantes und auf Review ausgerichtetes Werkzeug für Markdown- und Code-Dokumente im KI-Zeitalter.**
 
 [🌐 Online-Demo](https://mdmeow.zakee.fun)
 
-Je häufiger wir mit KI-Agenten arbeiten, desto mehr wird **Markdown zu einem der wichtigsten Dokumentformate zwischen Mensch und KI**.
+Im KI-Zeitalter beginnen immer mehr Dokumente nicht auf einer leeren Seite. Agents, LLMs, Skripte und Automatisierungen erzeugen zuerst Inhalte, die anschließend von Menschen geprüft werden.
 
-Anforderungen, Entwicklungsnotizen, KI-Ausgaben, Forschungsnotizen, README-Dateien – immer mehr tägliche Arbeit landet am Ende in einer `.md`-Datei.
+README-Dateien, Konzepte, Forschungsnotizen, JSON, YAML, Codeausschnitte und Logs folgen dadurch immer häufiger demselben Ablauf:
 
-Dafür braucht es nicht immer eine große Schreib- oder Wissensplattform. Oft reicht ein Markdown-Editor, der **schnell startet, direkt in der formatierten Ansicht bearbeitet und nicht im Weg steht**.
+**öffnen → lesen → prüfen → kurz ändern → speichern.**
 
-Dafür gibt es **MDmeow**.
+MDmeow ist für genau diesen Ablauf gedacht.
 
-Das Ziel ist einfach:
+Es ist weder eine IDE noch eine schwere Wissensdatenbank. Es soll sich so direkt wie ein einfacher Texteditor anfühlen, so angenehm wie eine formatierte Dokumentansicht lesen lassen und gleichzeitig Markdown, Konfigurationen und Code verstehen können.
 
-**Markdown so schnell öffnen wie eine Textdatei und so selbstverständlich bearbeiten wie ein normales Dokument.**
+**Datei öffnen, sofort lesen, bei Bedarf direkt ändern.**
 
-Leicht, schnell und unaufdringlich. Ob KI-generiertes Dokument, README oder kurze Notiz: Datei öffnen und direkt weiterarbeiten.
+Das ist die Idee hinter MDmeow: **öffnen und sofort arbeiten.**
 
-## Leichtgewichtig ist Teil des Konzepts
+## Review zuerst, Bearbeitung wenn nötig
 
-![MDmeow Beispiel für geringe Ressourcennutzung](docs/assets/screenshots/lightweight.png)
+Markdown öffnet als formatierte Dokumentansicht. JSON, YAML, Python, Rust, JavaScript, Konfigurationsdateien und normaler Text öffnen direkt im leichten Code-Modus.
 
-> Die Abbildung zeigt ein leeres Dokument auf einem Windows-System. Der tatsächliche Ressourcenverbrauch hängt unter anderem vom Dokumentinhalt, WebView2 und der Systemumgebung ab.
+Farben, Zeilennummern, alternierende Zeilen und Typografie dienen der Lesbarkeit.
 
-MDmeow basiert auf **Tauri + Milkdown/Crepe**. Es soll keine schwere Wissensmanagement-Suite sein, sondern ein praktischer Desktop-Editor für den täglichen Umgang mit Markdown.
+- AI-/Agent-Markdown prüfen
+- README-Dateien, Konzepte, Forschungsnotizen und Deliverables reviewen
+- JSON, YAML, TOML, INI und ENV ansehen und leicht korrigieren
+- Skripte, Quellcode, Logs und Text lesen
+- schnell zwischen Markdown-Darstellung und Quelle wechseln
 
-## Warum MDmeow
+## Zwei Modi reichen
 
-### WYSIWYG, ohne Markdown aufzugeben
+### Markdown-Render-Modus
 
-Du arbeitest in einer formatierten Dokumentansicht, während die Datei auf der Festplatte normales, portables Markdown bleibt.
+- WYSIWYG-Ansicht für Überschriften, Listen, Zitate, Tabellen, Links und Aufgaben
+- Bilder, Formeln und Codeblöcke direkt im Dokument
+- Codeblöcke mit Syntaxfarben, Zeilennummern, Kopierfeedback und subtilen Wechselzeilen
+- Ctrl/Cmd + / schaltet zur Markdown-Quelle
+- gespeichert wird weiterhin normales Markdown
 
-- Überschriften, Listen, Zitate, Aufgabenlisten, Tabellen, Links, Fußnoten und weitere gängige Markdown-Elemente direkt bearbeiten
-- Jederzeit in eine eigene **Quellansicht** wechseln
-- Keine Bindung an ein proprietäres Dokumentformat
-- Standard-Markdown-Bilder und gängige rohe HTML-`<img>`-Blöcke
-- Inhalte wie `<!--more-->` im Quelltext behalten, ohne die WYSIWYG-Ansicht zu stören
+### Code-Modus
 
-MDmeow soll sich in deinen Workflow einfügen, nicht ihn übernehmen.
+Nicht-Markdown-Textdateien öffnen im Code-Modus.
 
-### Bilder sollen genauso einfach zu bearbeiten sein
+CodeMirror-Spracherkennung und die Miku-Cream-Farbpalette helfen beim schnellen Erfassen der Struktur.
 
-Ein Klick auf ein Bild öffnet eine kompakte Bild-Werkzeugleiste:
+Typische Formate:
 
-- Bildtitel bearbeiten
-- Links / zentriert / rechts ausrichten
-- Von 25% bis 200% skalieren
-- Bild löschen
-- Einheitliche Bedienung für Markdown- und HTML-Bilder
+- Konfiguration / Daten: JSON, YAML, XML, TOML, INI, CONF, ENV, JSONL, CSV
+- Web: HTML, CSS, SCSS, LESS, JavaScript, TypeScript, JSX, TSX, Vue
+- Code: Python, Rust, C/C++, Java, Go, PHP, SQL, Shell, PowerShell, Ruby, Swift, Kotlin, C#
+- Text: TXT, LOG
+- weitere UTF-8-Dateien als Plain Text
 
-Wenn Skalierung oder Ausrichtung gespeichert werden müssen, verwendet MDmeow HTML, das weitgehend mit Typedown kompatibel ist:
+Mit Zeilennummern, Syntaxfarben, Suchen/Ersetzen, Speichern und konfigurierbarer alternierender Zeilenfarbe.
 
-```html
-<img title="diagram" src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
-```
+**Gut zum Lesen, ausreichend zum Ändern, kein Ersatz für VS Code.**
 
-Relative Bildpfade werden weiterhin ausgehend von der aktuellen Markdown-Datei aufgelöst.
+## Miku Cream für angenehmes Lesen
 
-### Code und Formeln im selben Editor
+- helle, ruhige Oberfläche
+- Standard-Akzent #39C5BB
+- gemeinsame semantische Codefarben für Markdown-Codeblöcke und Code-Modus
+- Code-Hintergrund entspricht dem Dokumenthintergrund
+- alternierende Zeilen standardmäßig #FAFFFF, frei konfigurierbar
+- getrennte Schriftarten und Größen für Dokument- und Quellansicht
 
-MDmeow bringt den Dokumentstil **Miku Cream** mit:
+## Bilder, Mathematik und Code im Dokument
 
-- Helle Codeblöcke
-- Syntaxhervorhebung
-- Eigene Zeilennummern für Code
-- Kopier-Schaltfläche mit Erfolgsfeedback
-- Klar erkennbare Inline-Code-Darstellung
-- KaTeX für Inline- und Blockformeln
-- Formeln bleiben standardmäßig in der Vorschau und öffnen den Quelltext erst beim Bearbeiten
+Bilder unterstützen Titel, Ausrichtung, Skalierung von 25% bis 200% und Löschen. Markdown-Bilder und HTML img verwenden dieselbe Bedienung.
 
-Beispiel:
+KaTeX rendert Formeln:
 
-```text
+~~~text
 $E = mc^2$
 
 $$
 \int_a^b f(x)\,dx
 $$
-```
+~~~
 
-### Dateien öffnen, ohne nachzudenken
+Codeblöcke besitzen Syntaxhervorhebung, eigene Zeilennummern, Kopierfeedback und dieselbe Miku-Cream-Palette wie der Code-Modus.
 
-- `.md`, `.markdown`, `.mdx` und `.txt` per Drag & Drop öffnen
-- MDmeow unter Windows als „Öffnen mit“-Ziel für Markdown registrieren
-- Eine vorhandene Installation verwaltet Dateizuordnungen bevorzugt
-- Ohne gültige Installation kann die portable Version als Fallback übernehmen
-- Dateinamen direkt über die Titelleiste umbenennen
-- Mehrere Tabs
-- Letzte Sitzung wiederherstellen
+## Dateien natürlich öffnen
 
-### HTML / PDF direkt ausgeben
+- Drag & Drop
+- mehrere Tabs
+- optional vollständiger Pfad
+- optionale Sitzungswiederherstellung
+- Fensterposition und -größe können gespeichert werden
+- ohne Positionsspeicherung startet MDmeow in sinnvoller Größe mittig auf dem Hauptbildschirm
+- Windows-Dateizuordnungen nach Erweiterung auswählbar
+- Markdown-, Konfigurations-, Web-, Code- und Textformate registrierbar
+- „Als Standard“ registriert zuerst und öffnet danach die Windows-Standard-Apps
 
-Die Export-Schaltfläche bietet zwei klare Ziele:
+## Export, Proxy und Updates
 
-- **HTML exportieren**: eigenständig öffnungsfähige Seite erzeugen
-- **PDF exportieren**: PDF über den Systemdruckdialog ausgeben
+Markdown kann als HTML oder über den Systemdruckdialog als PDF ausgegeben werden.
 
-Kein zusätzlicher Editor nur für die Übergabe eines Dokuments.
+HTTP/HTTPS sowie SOCKS5/SOCKS5H werden unterstützt. Dieselbe Proxy-Konfiguration kann für entfernte Bilder und GitHub-Updates verwendet werden.
 
-### Proxy für entfernte Inhalte
+Windows:
 
-Wenn Markdown auf GitHub Raw, einen Bilderhost oder andere entfernte Ressourcen verweist, kann MDmeow einen Proxy verwenden:
-
-- HTTP / HTTPS
-- SOCKS5 / SOCKS5H
-- Eingebauter Verbindungstest
-- Adresse bleibt auch bei deaktiviertem Proxy erhalten und editierbar
-- Dieselbe Proxy-Konfiguration wird für entfernte Bilder und Updates verwendet
-
-Beispiele:
-
-```text
-http://127.0.0.1:7897
-socks5://127.0.0.1:7893
-```
-
-### Updates direkt über GitHub
-
-MDmeow kann GitHub Releases auf neue Versionen prüfen und heruntergeladene Update-Artefakte per Signatur verifizieren.
-
-Unter Windows:
-
-- **Installierte Version**: neue MSI herunterladen und Update starten
-- **Portable Version**: neue EXE neben der aktuell laufenden Version speichern
-- Die laufende portable EXE wird nicht heimlich überschrieben
-- Manuelle Update-Prüfung jederzeit möglich
-- Automatische Prüfung standardmäßig höchstens einmal alle 24 Stunden
-- Fehlgeschlagene automatische Prüfungen stören die Bearbeitung nicht
-
-GitHub Releases dienen direkt als Update-Quelle; ein zusätzlicher Update-Server ist nicht nötig.
-
-## Weitere Funktionen für den Alltag
-
-- **Vier UI-Sprachen**: 简体中文, English, 日本語, Deutsch
-- **Frei belegbare Tastenkürzel**
-- **Separate Schriftarten und Größen für Editor und Quellansicht**
-- **Konfigurierbare Akzentfarbe**, standardmäßig `#39C5BB`
-- **Rechtschreibprüfung**
-- Optionen wie vollständige Pfade oder dauerhaft sichtbare Tableiste
-- **Portable EXE und MSI-Installer** mit passendem Verhalten für beide Modi
-
-## Download
-
-Neueste Version:
-
-**https://github.com/zakee039/MDmeow/releases/latest**
-
-### Windows
-
-Je nach Arbeitsweise:
-
-```text
+~~~text
 MDmeow-<version>.exe
-```
-
-Portable Einzeldatei. Einfach in einen Werkzeugordner, auf einen USB-Stick oder an einen anderen Ort legen und ohne Installation starten.
-
-```text
 MDmeow_<version>_x64.msi
-```
+~~~
 
-Standard-MSI für die dauerhafte Installation und Windows-Dateizuordnungen.
+Linux- und macOS-Builds werden ebenfalls unterstützt.
 
-Das Repository enthält weiterhin Build-Abläufe für Linux und macOS. Falls auf der Release-Seite kein passendes Paket vorhanden ist, kann MDmeow aus dem Quellcode gebaut werden.
+## Leichtgewichtig aus Absicht
+
+![MDmeow Beispiel für geringe Ressourcennutzung](docs/assets/screenshots/lightweight.png)
+
+MDmeow basiert auf **Tauri + Milkdown/Crepe + CodeMirror**.
+
+Es versucht nicht gleichzeitig IDE, Wissensdatenbank und komplette Schreibplattform zu sein. Gerade diese Begrenzung macht es zu einem Werkzeug, das man ohne Nachdenken immer wieder öffnen kann.
 
 ## Tastenkürzel
 
 | Aktion | Standard |
 | --- | --- |
-| Neuer Tab | `Ctrl/Cmd+N` |
-| Öffnen | `Ctrl/Cmd+O` |
-| Speichern | `Ctrl/Cmd+S` |
-| Speichern unter | `Ctrl/Cmd+Shift+S` |
-| Tab schließen | `Ctrl/Cmd+W` |
-| HTML / PDF exportieren | `Ctrl/Cmd+E` |
-| Quellansicht umschalten | `Ctrl/Cmd+/` |
-| Suchen | `Ctrl/Cmd+F` |
-| Ersetzen | `Ctrl/Cmd+H` |
-| Emoji | `Ctrl/Cmd+.` |
-| Einstellungen | `Ctrl/Cmd+,` |
-| Blocktyp wechseln | `Ctrl/Cmd+0` – `7` |
-
-Alle App-Kurzbefehle lassen sich unter **Einstellungen → Tastenkürzel** neu belegen.
+| Neuer Tab | Ctrl/Cmd+N |
+| Öffnen | Ctrl/Cmd+O |
+| Speichern | Ctrl/Cmd+S |
+| Speichern unter | Ctrl/Cmd+Shift+S |
+| Tab schließen | Ctrl/Cmd+W |
+| HTML / PDF | Ctrl/Cmd+E |
+| Markdown Quelle / Rendern | Ctrl/Cmd+/ |
+| Suchen | Ctrl/Cmd+F |
+| Ersetzen | Ctrl/Cmd+H |
+| Einstellungen | Ctrl/Cmd+, |
 
 ## Konfiguration
 
-MDmeow speichert Einstellungen in `settings.toml` und unterstützt Hot Reload.
+Einstellungen werden sofort in settings.toml gespeichert.
 
-Häufige Optionen:
-
-```toml
+~~~toml
 language = "system"
 spellcheck = true
-quit_on_escape = false
 open_last_session = true
-always_show_tabbar = false
 show_path = false
 
-editor_font = ""
-editor_font_size = 16
-source_font = ""
-source_font_size = 15
+code_alternate_rows = true
+code_alternate_row_color = "#FAFFFF"
+remember_window_position = false
 
 accent = "#39C5BB"
-
-proxy_enabled = false
-proxy_url = ""
-auto_check_updates = true
-```
-
-`Mod` bedeutet Ctrl unter Windows/Linux und Cmd unter macOS.
+~~~
 
 ## Aus dem Quellcode bauen
 
-Voraussetzungen:
+Benötigt werden Node.js 20+, pnpm und Rust stable. Unter Windows zusätzlich Visual C++ Build Tools, Windows SDK und WebView2.
 
-- Node.js 20+
-- `pnpm`
-- Rust stable
-- Windows: Visual C++ Build Tools, Windows SDK, WebView2
-
-Entwicklung:
-
-```bash
+~~~bash
 pnpm install
 pnpm build
 pnpm tauri dev
-```
+~~~
 
-Release-Builds:
-
-```powershell
-# Windows
+~~~powershell
 pnpm release:windows
-```
+~~~
 
-```bash
-# Linux
+~~~bash
 pnpm release:linux
-
-# macOS
 pnpm release:macos
-```
-
-Nützliche Prüfungen:
-
-```bash
-pnpm exec tsc --noEmit
-cargo check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-```
+~~~
 
 ## Technik
 
 | Ebene | Technologie |
 | --- | --- |
 | Desktop | Tauri v2 / Rust |
-| WYSIWYG | Milkdown Crepe / ProseMirror |
-| Quelltext | CodeMirror |
+| Markdown Render/Edit | Milkdown Crepe / ProseMirror |
+| Code-Modus | CodeMirror |
 | Mathematik | KaTeX |
 | Markdown → HTML | comrak |
-| Syntaxhervorhebung beim Export | highlight.js |
+| Export-Syntaxhervorhebung | highlight.js |
 | Windows-Installer | WiX / MSI |
 
 ## Credits
 
 MDmeow basiert auf **Ali Naderi / Mowl** und bleibt unter der **MIT License** verfügbar.
 
-Danke an das Upstream-Projekt für einen klaren und eleganten Ausgangspunkt.
+MDmeow hat daraus eine eigene Richtung entwickelt: Markdown, Code und AI-generierte Dokumente **schneller zu öffnen, angenehmer zu lesen und bei Bedarf leicht zu korrigieren**.
 
-Darauf aufbauend wurde MDmeow für praktische Desktop-Workflows weiterentwickelt: WYSIWYG- und Quellansicht, Miku Cream, Bildbearbeitung, Code und Formeln, HTML/PDF-Export, Lokalisierung, frei belegbare Kurzbefehle, Windows-Dateizuordnungen, portable/installierte Modi, Proxy-Unterstützung und signierte GitHub-Updates.
-
-> **Markdown öffnen. Sofort loslegen.**
+> **Öffnen und sofort arbeiten.**

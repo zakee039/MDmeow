@@ -2,25 +2,128 @@
 
 # MDmeow
 
-> **打开 Markdown，然后马上开始工作。**
+> **打开即工作。**
 >
-> **AI 时代，一款轻快、所见即所得的 Markdown 编辑器。**
+> **AI 时代，一款轻快、精美、以审阅为主的 Markdown / 代码文档工具。**
 
 [🌐 在线演示](https://mdmeow.zakee.fun)
 
-AI 时代，我们和 Agent 打交道越来越频繁，而 **Markdown 正在成为人与 AI 之间最常用的文档语言之一**。
+AI 时代，越来越多内容不是从空白文档开始写出来的，而是由 Agent、LLM、脚本和自动化工具先生成，再交给人确认。
 
-需求说明、开发记录、AI 输出、研究笔记、README……越来越多内容最终都会落到一个 `.md` 文件里。
+README、方案、研究笔记、JSON / YAML、配置文件、代码片段、日志……我们真正高频做的事情，正在从“从头写”变成：
 
-但很多时候，我们需要的并不是一个庞大的写作平台，而只是一个能够 **点开就写、所见即所得、占用克制** 的 Markdown 编辑器。
+**打开 → 阅读 → 审阅 → 小改 → 保存。**
 
-于是，**MDmeow 诞生了。**
+MDmeow 就是为这个工作流设计的。
 
-它希望做一件很简单的事：
+它不是 IDE，也不想成为沉重的知识库。它希望像记事本一样直接，像排版工具一样舒服，又能在需要时看懂 Markdown、配置和代码。
 
-**像打开记事本一样快地打开 Markdown，像编辑普通文档一样直接修改它。**
+**文件双击打开，内容马上可读；需要修改时，直接改。**
 
-轻量、快速、安静，不打扰你的工作流。无论是一份 AI 生成的文档、一篇 README，还是随手记录的 Markdown 文件，双击即可开始阅读和编辑。
+这就是 MDmeow 的核心：**打开即工作。**
+
+## 审阅优先，编辑随手
+
+MDmeow 的重点不是堆满编辑功能，而是让你更快看懂一个文件。
+
+Markdown 默认以排版后的文档呈现；JSON、YAML、Python、Rust、JavaScript、配置文件和普通文本则直接进入轻量代码视图。颜色、行号、隔行着色与字体共同服务于阅读，而不是把界面变成另一个 IDE。
+
+适合这些场景：
+
+- 快速检查 AI / Agent 生成的 Markdown
+- 审阅 README、方案、研究记录和交付文档
+- 查看并小改 JSON、YAML、TOML、INI、ENV 等配置
+- 阅读脚本、源码、日志和文本文件
+- 在格式化文档和源码之间快速确认内容
+
+## 两种模式，足够了
+
+### Markdown 渲染模式
+
+Markdown 打开后默认进入所见即所得的文档视图。
+
+- 标题、列表、引用、任务列表、表格、链接、脚注直接阅读和编辑
+- 图片、公式、代码块在正文中直接渲染
+- 代码块带语法高亮、行号、复制反馈和轻量隔行着色
+- Ctrl/Cmd + / 随时切换到 Markdown 源码
+- 保存下来的仍然是普通 Markdown，不使用私有文档格式
+
+### 代码模式
+
+非 Markdown 文本默认进入 Code 模式。
+
+它本质上仍然是一款轻量文本编辑器，只是利用 CodeMirror 的语言解析和 MDmeow 现有的 Miku Cream 配色帮助你更快看懂内容。
+
+支持常见：
+
+- 配置 / 数据：JSON、YAML、XML、TOML、INI、CONF、ENV、JSONL、CSV
+- Web：HTML、CSS、SCSS、LESS、JavaScript、TypeScript、JSX、TSX、Vue
+- 程序代码：Python、Rust、C/C++、Java、Go、PHP、SQL、Shell、PowerShell、Ruby、Swift、Kotlin、C#
+- 文本：TXT、LOG
+- 其它可读取的 UTF-8 文本也可以按纯文本打开
+
+Code 模式提供行号、语法颜色、查找替换、保存，以及可关闭、可自定义颜色的隔行着色。
+
+它的定位很明确：**能看、能改，但不试图替代 VS Code。**
+
+## Miku Cream：让审阅更舒服
+
+- 浅色、低干扰的阅读界面
+- 默认强调色 #39C5BB
+- Markdown 代码块与 Code 模式共享语义配色
+- 代码普通行与文档背景一致
+- 默认使用 #FAFFFF 做轻量隔行区分，可在设置中自定义
+- 正文与源码字体、字号可独立设置
+- 行内代码、公式、表格和图片尽量保持清晰层级
+
+视觉目标不是“炫”，而是让长时间阅读更轻松。
+
+## 图片、公式和代码，都留在文档里看
+
+Markdown 审阅时不应该频繁跳到别的工具。
+
+图片支持标题、左 / 中 / 右对齐、25% ～ 200% 缩放和删除。Markdown 图片与 HTML img 使用统一交互。
+
+KaTeX 支持行内公式和块级公式：
+
+~~~text
+$E = mc^2$
+
+$$
+\int_a^b f(x)\,dx
+$$
+~~~
+
+代码块支持语法高亮、独立行号、复制反馈和统一的 Miku Cream 代码配色。
+
+## 文件打开，本来就应该自然
+
+- 拖拽文件直接打开
+- 多标签页
+- 标题栏可显示完整路径
+- 可恢复上一轮会话
+- 可选择是否记住窗口位置与大小
+- 不记住位置时，始终以合适尺寸在主屏居中打开
+- Windows 文件关联可在设置中按后缀选择
+- 支持 Markdown、配置、Web、代码、文本等多类文件
+- “设置为默认”会先完成注册，再交给 Windows 默认应用界面确认
+
+MDmeow 不会绕过 Windows 的默认应用安全机制。
+
+## 导出、代理与更新
+
+Markdown 可以直接导出 HTML，或通过系统打印流程输出 PDF。
+
+远程图片和 GitHub 更新可以使用 HTTP / HTTPS、SOCKS5 / SOCKS5H 代理，并带连接测试。
+
+Windows 提供：
+
+~~~text
+MDmeow-<版本>.exe
+MDmeow_<版本>_x64.msi
+~~~
+
+分别对应单文件便携版和 MSI 安装版。Linux 和 macOS 也保留自动构建流程。
 
 ## 轻快，不只是口号
 
@@ -28,178 +131,35 @@ AI 时代，我们和 Agent 打交道越来越频繁，而 **Markdown 正在成�
 
 > 上图是一台 Windows 设备上的空白文档运行示例。实际资源占用会随文档内容、WebView2 与系统环境变化。
 
-MDmeow 基于 **Tauri + Milkdown/Crepe** 构建，目标不是成为一个沉重的知识管理平台，而是做一款真正适合日常 Markdown 工作流的桌面编辑器。
+MDmeow 基于 **Tauri + Milkdown/Crepe + CodeMirror**。
 
-## 为什么是 MDmeow
-
-### 所见即所得，但仍然是 Markdown
-
-你看到的是排版后的文档，保存下来的仍然是可以被其它工具读取的 Markdown。
-
-- 标题、列表、引用、任务列表、表格、链接、脚注等常见语法直接编辑
-- 一键切换 **源码视图**
-- 尽量保持 Markdown 文件本身干净、可迁移
-- 支持标准 Markdown 图片，也兼容常见原始 HTML `<img>`
-- `<!--more-->` 等内容可以保留在源码中，而不干扰 WYSIWYG 阅读
-
-MDmeow 不希望把你的文档锁进某种私有格式。
-
-### 图片也应该像普通内容一样好编辑
-
-点击图片即可打开轻量工具栏：
-
-- 设置图片标题
-- 左对齐 / 居中 / 右对齐
-- 25% ～ 200% 多档缩放
-- 删除图片
-- 标准 Markdown 图片与 HTML 图片使用统一交互
-
-当图片需要记录缩放或对齐信息时，MDmeow 使用与 Typedown 高度兼容的 HTML 表达，例如：
-
-```html
-<img title="diagram" src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
-```
-
-相对路径仍然以当前 Markdown 文件为基准解析。
-
-### 代码和公式，不必切换到另一个工具
-
-MDmeow 内置 **Miku Cream** 文档渲染风格：
-
-- 浅色代码块
-- 语法高亮
-- 独立代码行号
-- 复制按钮与成功反馈
-- 清晰的行内代码层级
-- KaTeX 行内公式与块级公式
-- 公式默认以预览为主，需要修改时再进入源码编辑
-
-支持：
-
-```text
-$E = mc^2$
-
-$$
-\int_a^b f(x)\,dx
-$$
-```
-
-### 打开文件要快，打开方式也要自然
-
-- 支持直接拖拽 `.md` / `.markdown` / `.mdx` / `.txt`
-- Windows 可注册为 Markdown 的“打开方式”
-- 安装版优先管理文件关联
-- 没有安装版时，便携版可以接管自己的关联
-- 标题栏直接点击文件名即可重命名
-- 多标签页编辑
-- 可恢复上一次会话
-
-### HTML / PDF，写完直接交付
-
-工具栏中的导出按钮提供两种明确的出口：
-
-- **导出 HTML**：生成可独立打开的页面
-- **导出 PDF**：调用系统打印流程输出 PDF
-
-不需要为了交付文档再打开另一个编辑器。
-
-### 代理与远程图片
-
-如果你的 Markdown 引用了 GitHub Raw、图床或其它远程资源，可以在设置中配置代理：
-
-- HTTP / HTTPS
-- SOCKS5 / SOCKS5H
-- 代理地址可以独立测试
-- 关闭代理时仍可保留和编辑地址
-- 远程图片与版本更新统一复用同一套代理配置
-
-例如：
-
-```text
-http://127.0.0.1:7897
-socks5://127.0.0.1:7893
-```
-
-### GitHub 版本更新
-
-MDmeow 可以直接从 GitHub Release 检查新版本，并使用签名校验更新包。
-
-Windows 下：
-
-- **安装版**：下载新的 MSI 后进入安装更新流程
-- **便携版**：把新的 EXE 下载到当前程序目录，与旧版本并存
-- 便携版不会偷偷覆盖正在运行的程序
-- 可手动检查更新
-- 默认最多每 24 小时后台检查一次
-- 自动检查失败时不会打扰编辑
-
-更新服务不需要额外服务器，GitHub Release 就是 MDmeow 的更新源。
-
-## 其它体验
-
-- **四种界面语言**：简体中文、English、日本語、Deutsch
-- **可配置快捷键**：应用级快捷键可在设置中直接重新绑定
-- **字体设置**：正文与源码视图字体可独立配置
-- **主题强调色**：默认使用 `#39C5BB` 初音青
-- **拼写检查**
-- **显示完整路径 / 始终显示标签栏** 等行为选项
-- **便携版 / MSI 安装版** 使用各自合适的数据目录与系统集成方式
-
-## 下载
-
-最新版本：
-
-**https://github.com/zakee039/MDmeow/releases/latest**
-
-### Windows
-
-推荐按使用习惯选择：
-
-```text
-MDmeow-<版本>.exe
-```
-
-单文件便携版。放在哪里就在哪里使用，适合 U 盘、工具目录或不想安装软件的场景。
-
-```text
-MDmeow_<版本>_x64.msi
-```
-
-标准 MSI 安装版，适合长期使用，并负责 Windows 文件关联。
-
-仓库同时保留 Linux 和 macOS 的构建流程；如果 Release 中没有你需要的平台产物，也可以直接从源码构建。
+它不试图同时承担 IDE、知识库和完整写作平台的所有职责。少做一些，才能打开得更快，也更适合作为每天随手点开的审阅工具。
 
 ## 常用快捷键
 
 | 操作 | 默认快捷键 |
 | --- | --- |
-| 新建标签页 | `Ctrl/Cmd+N` |
-| 打开 | `Ctrl/Cmd+O` |
-| 保存 | `Ctrl/Cmd+S` |
-| 另存为 | `Ctrl/Cmd+Shift+S` |
-| 关闭标签页 | `Ctrl/Cmd+W` |
-| 导出 HTML / PDF | `Ctrl/Cmd+E` |
-| 切换源码视图 | `Ctrl/Cmd+/` |
-| 查找 | `Ctrl/Cmd+F` |
-| 替换 | `Ctrl/Cmd+H` |
-| Emoji | `Ctrl/Cmd+.` |
-| 设置 | `Ctrl/Cmd+,` |
-| 切换块类型 | `Ctrl/Cmd+0` – `7` |
+| 新建标签页 | Ctrl/Cmd+N |
+| 打开 | Ctrl/Cmd+O |
+| 保存 | Ctrl/Cmd+S |
+| 另存为 | Ctrl/Cmd+Shift+S |
+| 关闭标签页 | Ctrl/Cmd+W |
+| 导出 HTML / PDF | Ctrl/Cmd+E |
+| Markdown 源码 / 渲染切换 | Ctrl/Cmd+/ |
+| 查找 | Ctrl/Cmd+F |
+| 替换 | Ctrl/Cmd+H |
+| 设置 | Ctrl/Cmd+, |
 
-所有应用级快捷键都可以在 **设置 → 快捷键** 中重新绑定。
+应用级快捷键可以在 **设置 → 快捷键** 中重新绑定。
 
 ## 配置
 
-MDmeow 的设置保存在 `settings.toml` 中，并支持热加载。
+设置保存在 settings.toml 中，并支持即时保存。
 
-常见配置包括：
-
-```toml
+~~~toml
 language = "system"
 spellcheck = true
-quit_on_escape = false
 open_last_session = true
-always_show_tabbar = false
 show_path = false
 
 editor_font = ""
@@ -207,62 +167,50 @@ editor_font_size = 16
 source_font = ""
 source_font_size = 15
 
+code_alternate_rows = true
+code_alternate_row_color = "#FAFFFF"
+remember_window_position = false
+
 accent = "#39C5BB"
 
 proxy_enabled = false
 proxy_url = ""
 auto_check_updates = true
-```
-
-`Mod` 在 Windows/Linux 上表示 Ctrl，在 macOS 上表示 Cmd。
+~~~
 
 ## 从源码构建
 
-环境要求：
+环境：
 
 - Node.js 20+
-- `pnpm`
+- pnpm
 - Rust stable
 - Windows：Visual C++ Build Tools、Windows SDK、WebView2
 
-开发：
-
-```bash
+~~~bash
 pnpm install
 pnpm build
 pnpm tauri dev
-```
+~~~
 
 正式构建：
 
-```powershell
-# Windows
+~~~powershell
 pnpm release:windows
-```
+~~~
 
-```bash
-# Linux
+~~~bash
 pnpm release:linux
-
-# macOS
 pnpm release:macos
-```
-
-常用检查：
-
-```bash
-pnpm exec tsc --noEmit
-cargo check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-```
+~~~
 
 ## 技术栈
 
 | 层 | 技术 |
 | --- | --- |
 | 桌面壳 | Tauri v2 / Rust |
-| WYSIWYG 编辑器 | Milkdown Crepe / ProseMirror |
-| 源码编辑 | CodeMirror |
+| Markdown 渲染 / 编辑 | Milkdown Crepe / ProseMirror |
+| Code 模式 | CodeMirror |
 | 数学公式 | KaTeX |
 | Markdown → HTML | comrak |
 | 导出语法高亮 | highlight.js |
@@ -272,10 +220,8 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 MDmeow 基于 **Ali Naderi / Mowl** 二次开发，并继续以 **MIT License** 发布。
 
-感谢上游项目提供了一个优秀、简洁的起点。
+感谢上游项目提供了一个简洁、优雅的起点。
 
-在此基础上，MDmeow 重新打磨了面向实际桌面使用的工作流：WYSIWYG 与源码双视图、Miku Cream 文档渲染、图片编辑、代码与公式体验、HTML/PDF 导出、多语言、快捷键、Windows 文件关联、便携/安装版区分、代理以及 GitHub 签名更新等。
+在此基础上，MDmeow 逐渐形成了自己的方向：不是做更多，而是让 Markdown、代码和 AI 生成文档 **更快打开、更好阅读、更容易确认和轻量修改**。
 
-MDmeow 仍然想保持最开始的目标：
-
-> **打开 Markdown，然后马上开始工作。**
+> **打开即工作。**

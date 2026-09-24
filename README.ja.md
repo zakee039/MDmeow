@@ -2,278 +2,194 @@
 
 # MDmeow
 
-> **Markdown を開く。すぐ作業を始める。**
+> **開いたら、すぐ仕事。**
 >
-> **AI 時代のための、軽快な WYSIWYG Markdown エディター。**
+> **AI 時代のための、軽快で美しく、レビューを中心にした Markdown / コード文書ツール。**
 
 [🌐 オンラインデモ](https://mdmeow.zakee.fun)
 
-AI エージェントとやり取りする機会が増えるにつれて、**Markdown は人と AI のあいだで最もよく使われる文書形式のひとつ**になりつつあります。
+AI 時代では、文書の多くが空白ページから始まるとは限りません。Agent、LLM、スクリプト、自動化ツールが先に内容を生成し、人が最後に確認する場面が増えています。
 
-要件定義、開発メモ、AI の出力、研究ノート、README……日々の作業の多くが、最終的にはひとつの `.md` ファイルにまとまります。
+README、設計案、研究ノート、JSON、YAML、コード断片、ログ。人が実際によく行う流れは：
 
-でも、いつも大きな執筆プラットフォームが必要なわけではありません。必要なのは、**すぐ開けて、見たまま編集できて、作業の邪魔をしない** Markdown エディターです。
+**開く → 読む → レビューする → 少し直す → 保存する。**
 
-そこで **MDmeow** が生まれました。
+MDmeow は、この流れのために作られています。
 
-目標はとてもシンプルです。
+IDE でも、大規模なナレッジベースでもありません。メモ帳のようにすぐ開き、整形文書のように読みやすく、必要なときには Markdown・設定ファイル・コードの構造も理解できるツールを目指しています。
 
-**テキストファイルのように素早く Markdown を開き、普通の文書のようにそのまま編集すること。**
+**ファイルを開けば、すぐ読める。必要なところだけ、その場で直せる。**
 
-軽く、速く、静かに。AI が生成した文書でも、README でも、ちょっとしたメモでも、開いたらすぐ作業を始められます。
+これが MDmeow の中心です。**開いたら、すぐ仕事。**
 
-## 軽快さは機能のひとつ
+## レビューを優先、編集は必要な分だけ
 
-![MDmeow 軽量動作例](docs/assets/screenshots/lightweight.png)
+Markdown は整形された文書として開きます。JSON、YAML、Python、Rust、JavaScript、設定ファイル、テキストは軽量な Code モードで開きます。
 
-> 上の画像は、ある Windows 環境で空の文書を開いたときの一例です。実際のリソース使用量は、文書内容、WebView2、システム環境によって変わります。
+色、行番号、交互行背景、フォントはすべて読みやすさのためにあります。
 
-MDmeow は **Tauri + Milkdown/Crepe** で構築されています。大規模なナレッジ管理ツールを目指すのではなく、日常の Markdown 作業にちょうどよいデスクトップエディターを目指しています。
+- AI / Agent が生成した Markdown の確認
+- README、設計案、研究記録、納品文書のレビュー
+- JSON、YAML、TOML、INI、ENV の確認と軽い修正
+- スクリプト、ソースコード、ログ、テキストの閲覧
+- Markdown の整形表示とソースを行き来して確認
 
-## なぜ MDmeow なのか
+## 2 つのモードだけ
 
-### WYSIWYG でも、ファイルは Markdown のまま
+### Markdown レンダリングモード
 
-画面では整形された文書を編集しながら、保存されるファイルは他のツールでも読める Markdown のままです。
+- 見出し、リスト、引用、タスク、表、リンク、脚注をそのまま閲覧・編集
+- 画像、数式、コードブロックを文書内で直接表示
+- コードブロックにシンタックスハイライト、行番号、コピー、軽い交互行表示
+- Ctrl/Cmd + / で Markdown ソースへ切り替え
+- 保存されるのは通常の Markdown のまま
 
-- 見出し、リスト、引用、タスクリスト、表、リンク、脚注などをそのまま編集
-- いつでも専用の **ソース表示** に切り替え
-- 独自形式に閉じ込めず、Markdown の可搬性を維持
-- 標準 Markdown 画像と一般的な HTML `<img>` の両方に対応
-- `<!--more-->` などはソースに保持しつつ、WYSIWYG 表示では邪魔をしない
+### Code モード
 
-MDmeow はあなたのワークフローに溶け込みます。文書を囲い込むためのツールではありません。
+Markdown 以外のテキストファイルは Code モードで開きます。
 
-### 画像も普通の内容と同じように編集
+CodeMirror の言語解析と Miku Cream の配色で、構造を読み取りやすくしています。
 
-画像をクリックすると、コンパクトな画像ツールバーが開きます。
+主な形式：
 
-- 画像タイトルの編集
-- 左寄せ / 中央 / 右寄せ
-- 25% ～ 200% の拡大縮小
-- 画像の削除
-- Markdown 画像と HTML 画像を同じ操作で編集
+- 設定 / データ：JSON、YAML、XML、TOML、INI、CONF、ENV、JSONL、CSV
+- Web：HTML、CSS、SCSS、LESS、JavaScript、TypeScript、JSX、TSX、Vue
+- コード：Python、Rust、C/C++、Java、Go、PHP、SQL、Shell、PowerShell、Ruby、Swift、Kotlin、C#
+- テキスト：TXT、LOG
+- その他の UTF-8 テキストもプレーンテキストとして開けます
 
-拡大率や配置情報が必要な場合、MDmeow は Typedown と高い互換性を持つ HTML を使います。
+行番号、シンタックスカラー、検索 / 置換、保存、カスタマイズ可能な交互行背景を備えています。
 
-```html
-<img title="diagram" src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
-```
+**読みやすく、少し直せる。でも VS Code の代わりにはならない。**
 
-相対パスは引き続き現在の Markdown ファイルを基準に解決されます。
+## Miku Cream：レビューを心地よく
 
-### コードも数式も、同じエディターで
+- 明るく低ノイズな画面
+- 既定アクセント #39C5BB
+- Markdown コードブロックと Code モードで同じ意味色を共有
+- コード背景は文書背景と統一
+- 交互行の既定色は #FAFFFF、設定で変更可能
+- 文書とソースのフォント / サイズを個別設定
+- インラインコード、数式、表、画像の階層を明確に表示
 
-MDmeow には **Miku Cream** のドキュメントスタイルが組み込まれています。
+## 画像・数式・コードをそのまま確認
 
-- 明るいコードブロック
-- シンタックスハイライト
-- 独立したコード行番号
-- コピー成功のフィードバック
-- 見分けやすいインラインコード
-- KaTeX のインライン数式 / ブロック数式
-- 数式は通常プレビュー表示し、編集したいときだけソースを開く
+画像はタイトル、左右 / 中央配置、25%～200% の拡大縮小、削除に対応し、Markdown 画像と HTML img を同じ操作で扱えます。
 
-例：
+KaTeX で数式を表示します。
 
-```text
+~~~text
 $E = mc^2$
 
 $$
 \int_a^b f(x)\,dx
 $$
-```
+~~~
 
-### ファイルを開く操作も自然に
+コードブロックにはシンタックスハイライト、独立行番号、コピー通知、Miku Cream の共通コード配色があります。
 
-- `.md` / `.markdown` / `.mdx` / `.txt` をドラッグ＆ドロップ
-- Windows の Markdown「プログラムから開く」に登録可能
-- インストール版がある場合は、そちらがファイル関連付けを優先
-- 有効なインストール版がない場合は、ポータブル版がフォールバック
-- タイトルバーのファイル名をクリックして、その場で名前変更
+## ファイルは自然に開く
+
+- ドラッグ＆ドロップ
 - 複数タブ
-- 前回セッションの復元
+- 完全パス表示を選択可能
+- 前回セッションを復元可能
+- ウィンドウ位置とサイズを記憶するか選択可能
+- 記憶しない場合は主画面中央に適切なサイズで起動
+- Windows のファイル関連付けを拡張子ごとに選択
+- Markdown、設定、Web、コード、テキストを登録可能
+- 「既定に設定」は登録後、Windows の既定アプリ画面へ移動
 
-### HTML / PDF へ、そのまま出力
+## エクスポート・プロキシ・更新
 
-エクスポートボタンには 2 つの明確な出口があります。
+Markdown は HTML または PDF に出力できます。
 
-- **HTML をエクスポート**：単独で開けるページを生成
-- **PDF をエクスポート**：システム印刷フローから PDF を出力
+HTTP / HTTPS / SOCKS5 / SOCKS5H プロキシに対応し、リモート画像と GitHub 更新で共有できます。
 
-文書を書き終えたあと、別のエディターに持ち替える必要はありません。
+Windows：
 
-### リモート画像向けのプロキシ
-
-Markdown が GitHub Raw、画像ホスティング、その他のリモートリソースを参照する場合、MDmeow ではプロキシを設定できます。
-
-- HTTP / HTTPS
-- SOCKS5 / SOCKS5H
-- 接続テスト
-- 無効時でもアドレスは保持・編集可能
-- リモート画像と更新確認で同じプロキシ設定を利用
-
-例：
-
-```text
-http://127.0.0.1:7897
-socks5://127.0.0.1:7893
-```
-
-### GitHub から直接アップデート
-
-MDmeow は GitHub Releases から新しいバージョンを確認し、ダウンロードした更新ファイルを署名で検証します。
-
-Windows では：
-
-- **インストール版**：新しい MSI をダウンロードして更新処理を開始
-- **ポータブル版**：新しい EXE を現在のプログラムと同じフォルダーに保存
-- 実行中の EXE を勝手に上書きしない
-- 手動でいつでも更新確認
-- 自動確認は既定で最大 24 時間に 1 回
-- 自動確認に失敗しても編集を邪魔しない
-
-追加の更新サーバーは不要です。GitHub Release がそのまま更新元になります。
-
-## 日常作業のための機能
-
-- **4 言語 UI**：简体中文 / English / 日本語 / Deutsch
-- **ショートカットの再設定**
-- **本文とソース表示のフォントを個別設定**
-- **アクセント色の変更**（既定は `#39C5BB`）
-- **スペルチェック**
-- フルパス表示、タブバー常時表示などの動作設定
-- **ポータブル EXE / MSI インストール版** を用途に合わせて選択可能
-
-## ダウンロード
-
-最新リリース：
-
-**https://github.com/zakee039/MDmeow/releases/latest**
-
-### Windows
-
-用途に合わせて選べます。
-
-```text
+~~~text
 MDmeow-<version>.exe
-```
-
-単一ファイルのポータブル版です。ツールフォルダーや USB ドライブなど、インストールせずに使いたい場所へ置けます。
-
-```text
 MDmeow_<version>_x64.msi
-```
+~~~
 
-長期利用や Windows のファイル関連付けに向いた標準 MSI インストール版です。
+Linux / macOS の自動ビルドも用意されています。
 
-リポジトリには Linux / macOS 向けのビルドフローも残されています。Release に必要なパッケージがない場合は、ソースからビルドできます。
+## 軽量であることも機能
 
-## ショートカット
+![MDmeow 軽量動作例](docs/assets/screenshots/lightweight.png)
+
+MDmeow は **Tauri + Milkdown/Crepe + CodeMirror** で構築されています。
+
+IDE、ナレッジベース、巨大な執筆環境を全部まとめようとはしません。役割を絞ることで、日常的に気軽に開けるレビュー道具であり続けます。
+
+## 主なショートカット
 
 | 操作 | 既定 |
 | --- | --- |
-| 新しいタブ | `Ctrl/Cmd+N` |
-| 開く | `Ctrl/Cmd+O` |
-| 保存 | `Ctrl/Cmd+S` |
-| 名前を付けて保存 | `Ctrl/Cmd+Shift+S` |
-| タブを閉じる | `Ctrl/Cmd+W` |
-| HTML / PDF エクスポート | `Ctrl/Cmd+E` |
-| ソース表示切替 | `Ctrl/Cmd+/` |
-| 検索 | `Ctrl/Cmd+F` |
-| 置換 | `Ctrl/Cmd+H` |
-| Emoji | `Ctrl/Cmd+.` |
-| 設定 | `Ctrl/Cmd+,` |
-| ブロック種別を切替 | `Ctrl/Cmd+0` – `7` |
-
-アプリのショートカットは **設定 → ショートカット** から変更できます。
+| 新しいタブ | Ctrl/Cmd+N |
+| 開く | Ctrl/Cmd+O |
+| 保存 | Ctrl/Cmd+S |
+| 名前を付けて保存 | Ctrl/Cmd+Shift+S |
+| タブを閉じる | Ctrl/Cmd+W |
+| HTML / PDF | Ctrl/Cmd+E |
+| Markdown ソース / 表示切替 | Ctrl/Cmd+/ |
+| 検索 | Ctrl/Cmd+F |
+| 置換 | Ctrl/Cmd+H |
+| 設定 | Ctrl/Cmd+, |
 
 ## 設定
 
-MDmeow の設定は `settings.toml` に保存され、ホットリロードに対応しています。
+settings.toml に即時保存されます。
 
-主な設定：
-
-```toml
+~~~toml
 language = "system"
 spellcheck = true
-quit_on_escape = false
 open_last_session = true
-always_show_tabbar = false
 show_path = false
 
-editor_font = ""
-editor_font_size = 16
-source_font = ""
-source_font_size = 15
+code_alternate_rows = true
+code_alternate_row_color = "#FAFFFF"
+remember_window_position = false
 
 accent = "#39C5BB"
-
-proxy_enabled = false
-proxy_url = ""
-auto_check_updates = true
-```
-
-`Mod` は Windows/Linux では Ctrl、macOS では Cmd を表します。
+~~~
 
 ## ソースからビルド
 
-必要環境：
+Node.js 20+、pnpm、Rust stable が必要です。Windows では Visual C++ Build Tools、Windows SDK、WebView2 も必要です。
 
-- Node.js 20+
-- `pnpm`
-- Rust stable
-- Windows：Visual C++ Build Tools、Windows SDK、WebView2
-
-開発：
-
-```bash
+~~~bash
 pnpm install
 pnpm build
 pnpm tauri dev
-```
+~~~
 
-正式ビルド：
-
-```powershell
-# Windows
+~~~powershell
 pnpm release:windows
-```
+~~~
 
-```bash
-# Linux
+~~~bash
 pnpm release:linux
-
-# macOS
 pnpm release:macos
-```
-
-主なチェック：
-
-```bash
-pnpm exec tsc --noEmit
-cargo check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-```
+~~~
 
 ## 技術スタック
 
 | レイヤー | 技術 |
 | --- | --- |
 | デスクトップ | Tauri v2 / Rust |
-| WYSIWYG | Milkdown Crepe / ProseMirror |
-| ソース編集 | CodeMirror |
+| Markdown 表示 / 編集 | Milkdown Crepe / ProseMirror |
+| Code モード | CodeMirror |
 | 数式 | KaTeX |
 | Markdown → HTML | comrak |
-| エクスポート時のシンタックスハイライト | highlight.js |
+| エクスポート時のハイライト | highlight.js |
 | Windows インストーラー | WiX / MSI |
 
 ## クレジット
 
-MDmeow は **Ali Naderi / Mowl** をベースにし、引き続き **MIT License** のもとで公開されています。
+MDmeow は **Ali Naderi / Mowl** をベースにし、引き続き **MIT License** で公開されています。
 
-シンプルで優れた出発点を提供してくれた上流プロジェクトに感謝します。
+MDmeow はそこから独自の方向へ進みました。Markdown・コード・AI 生成文書を **速く開き、気持ちよく読み、必要なところだけ軽く直せる** ことを重視しています。
 
-MDmeow はそこから、実際のデスクトップ作業を中心に再構成されました。WYSIWYG / ソースの二重表示、Miku Cream、画像編集、コードと数式、HTML/PDF 出力、多言語、ショートカット、Windows ファイル関連付け、ポータブル/インストール版、プロキシ、GitHub 署名付き更新などを追加しています。
-
-> **Markdown を開く。すぐ作業を始める。**
+> **開いたら、すぐ仕事。**
