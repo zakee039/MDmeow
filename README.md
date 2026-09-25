@@ -1,5 +1,7 @@
 **简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
+[个人主页](https://zakee.fun) · [Buy me a coffee](https://ifdian.net/a/zakee/plan)
+
 # MDmeow
 
 > **打开即工作。**
