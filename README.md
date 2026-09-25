@@ -1,10 +1,14 @@
-**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
-
-[个人主页](https://zakee.fun) · [Buy me a coffee](https://ifdian.net/a/zakee/plan)
-
 # MDmeow
 
-> **打开即工作。**
+一个轻量、快速、精美的 WYSIWYG Markdown 编辑器。**打开即工作。**
+
+<a href="https://zakee.fun" target="_blank"><img height="28" src="https://img.shields.io/badge/Homepage-zakee.fun-39C5BB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="zakee.fun" /></a>
+
+![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
+![License](https://img.shields.io/github/license/zakee039/MDmeow?style=flat-square&color=green)
+![Version](https://img.shields.io/github/v/release/zakee039/MDmeow?style=flat-square&label=Version&color=blue)
+
+**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 MDmeow 是一款轻量、快速、精美的 WYSIWYG Markdown 编辑器，基于 **Tauri + Milkdown/Crepe** 构建。它尽量保持 Markdown 文件本身的纯净与可迁移性，同时提供自然、直接的即时排版体验。
 
@@ -223,6 +227,12 @@ pnpm release:macos
 | Markdown → HTML | comrak |
 | 导出语法高亮 | highlight.js |
 | Windows 安装器 | WiX / MSI |
+
+## 支持
+
+如果 MDmeow 为你节省了时间，欢迎通过爱发电支持它的持续开发。☕
+
+<a href="https://ifdian.net/a/zakee/plan" target="_blank"><img height="36" style="border:0;height:36px;" src="https://img.shields.io/badge/Buy_me_a_coffee-Afdian-946CE6?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Buy me a coffee on Afdian" /></a>
 
 ## 致谢与许可
 

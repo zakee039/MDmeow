@@ -1,10 +1,14 @@
-[简体中文](README.md) · **English** · [日本語](README.ja.md) · [Deutsch](README.de.md)
-
-[Homepage](https://zakee.fun) · [Buy me a coffee](https://ifdian.net/a/zakee/plan)
-
 # MDmeow
 
-> **Open it. Get to work.**
+A lightweight, fast and polished WYSIWYG Markdown editor. **Open it. Get to work.**
+
+<a href="https://zakee.fun" target="_blank"><img height="28" src="https://img.shields.io/badge/Homepage-zakee.fun-39C5BB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="zakee.fun" /></a>
+
+![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
+![License](https://img.shields.io/github/license/zakee039/MDmeow?style=flat-square&color=green)
+![Version](https://img.shields.io/github/v/release/zakee039/MDmeow?style=flat-square&label=Version&color=blue)
+
+[简体中文](README.md) · **English** · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 MDmeow is a lightweight, fast and polished WYSIWYG Markdown editor built with **Tauri + Milkdown/Crepe**. It keeps Markdown files clean and portable while providing a direct, comfortable editing experience.
 
@@ -192,6 +196,12 @@ Pushing a `vX.Y.Z` tag triggers GitHub Actions to build Windows, Linux x64, Linu
 | Markdown → HTML | comrak |
 | Export syntax highlighting | highlight.js |
 | Windows installer | WiX / MSI |
+
+## Support
+
+If MDmeow saves you time, you can support its continued development on Afdian. ☕
+
+<a href="https://ifdian.net/a/zakee/plan" target="_blank"><img height="36" style="border:0;height:36px;" src="https://img.shields.io/badge/Buy_me_a_coffee-Afdian-946CE6?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Buy me a coffee on Afdian" /></a>
 
 ## Credits
 

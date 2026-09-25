@@ -1,10 +1,14 @@
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **Deutsch**
-
-[Persönliche Website](https://zakee.fun) · [Buy me a coffee](https://ifdian.net/a/zakee/plan)
-
 # MDmeow
 
-> **Öffnen und sofort arbeiten.**
+Ein leichter, schneller und angenehm gestalteter WYSIWYG-Markdown-Editor. **Öffnen und sofort arbeiten.**
+
+<a href="https://zakee.fun" target="_blank"><img height="28" src="https://img.shields.io/badge/Homepage-zakee.fun-39C5BB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="zakee.fun" /></a>
+
+![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
+![License](https://img.shields.io/github/license/zakee039/MDmeow?style=flat-square&color=green)
+![Version](https://img.shields.io/github/v/release/zakee039/MDmeow?style=flat-square&label=Version&color=blue)
+
+[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **Deutsch**
 
 MDmeow ist ein leichter, schneller und angenehm gestalteter WYSIWYG-Markdown-Editor auf Basis von **Tauri + Milkdown/Crepe**. Markdown-Dateien bleiben sauber und portabel, während die Bearbeitung direkt und natürlich bleibt.
 
@@ -128,6 +132,12 @@ pnpm release:macos
 ```
 
 Ein `vX.Y.Z`-Tag startet GitHub Actions für Windows, Linux x64 / ARM64 und macOS; anschließend wird ein gemeinsames Release veröffentlicht.
+
+## Support
+
+Wenn MDmeow dir Zeit spart, kannst du die weitere Entwicklung über Afdian unterstützen. ☕
+
+<a href="https://ifdian.net/a/zakee/plan" target="_blank"><img height="36" style="border:0;height:36px;" src="https://img.shields.io/badge/Buy_me_a_coffee-Afdian-946CE6?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Buy me a coffee on Afdian" /></a>
 
 ## Credits
 

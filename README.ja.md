@@ -1,10 +1,14 @@
-[简体中文](README.md) · [English](README.en.md) · **日本語** · [Deutsch](README.de.md)
-
-[個人サイト](https://zakee.fun) · [Buy me a coffee](https://ifdian.net/a/zakee/plan)
-
 # MDmeow
 
-> **開いたら、すぐ仕事。**
+軽量・高速で、見た目にも心地よい WYSIWYG Markdown エディター。**開いたら、すぐ仕事。**
+
+<a href="https://zakee.fun" target="_blank"><img height="28" src="https://img.shields.io/badge/Homepage-zakee.fun-39C5BB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="zakee.fun" /></a>
+
+![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
+![License](https://img.shields.io/github/license/zakee039/MDmeow?style=flat-square&color=green)
+![Version](https://img.shields.io/github/v/release/zakee039/MDmeow?style=flat-square&label=Version&color=blue)
+
+[简体中文](README.md) · [English](README.en.md) · **日本語** · [Deutsch](README.de.md)
 
 MDmeow は **Tauri + Milkdown/Crepe** で構築された、軽量・高速・見た目にも心地よい WYSIWYG Markdown エディターです。Markdown 自体の純粋さと移植性を保ちながら、自然で直接的な編集体験を提供します。
 
@@ -128,6 +132,12 @@ pnpm release:macos
 ```
 
 `vX.Y.Z` タグを push すると、GitHub Actions が Windows、Linux x64 / ARM64、macOS を自動ビルドし、1 つの Release として公開します。
+
+## サポート
+
+MDmeow が役に立ったら、愛発電（Afdian）から開発を応援していただけます。☕
+
+<a href="https://ifdian.net/a/zakee/plan" target="_blank"><img height="36" style="border:0;height:36px;" src="https://img.shields.io/badge/Buy_me_a_coffee-Afdian-946CE6?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Buy me a coffee on Afdian" /></a>
 
 ## クレジット
 
