@@ -161,6 +161,33 @@ body {
 #tab-add:hover { background: var(--hover); color: var(--fg); }
 
 #editor { flex: 1; overflow: auto; min-height: 0; }
+
+#text-stats {
+  position: fixed;
+  right: 18px;
+  bottom: 14px;
+  z-index: 3;
+  min-width: 72px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--bar-fg);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+}
+#text-stats[data-selected="true"] {
+  color: #147a74;
+  border-color: color-mix(in srgb, var(--accent, #39c5bb) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent, #39c5bb) 7%, var(--bg));
+}
+#text-stats[hidden] { display: none !important; }
 #editor .milkdown {
   height: 100%;
   --crepe-base-font-size: var(--editor-font-size, 16px);

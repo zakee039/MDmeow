@@ -183,6 +183,8 @@ const EN = {
   "settings.shortcut.capture": "Press shortcut…",
   "settings.shortcut.conflict": "This shortcut is already in use.",
   "settings.shortcut.cancelHint": "Press Esc to cancel",
+  "stats.total": "Words {count}",
+  "stats.selected": "Selected {count}",
 };
 
 export type I18nKey = keyof typeof EN;
@@ -362,6 +364,8 @@ const DE: Record<I18nKey, string> = {
   "settings.shortcut.capture": "Tastenkürzel drücken…",
   "settings.shortcut.conflict": "Dieses Tastenkürzel wird bereits verwendet.",
   "settings.shortcut.cancelHint": "Esc zum Abbrechen drücken",
+  "stats.total": "Wörter {count}",
+  "stats.selected": "Auswahl {count}",
 };
 
 const ZH_CN: Record<I18nKey, string> = {
@@ -539,6 +543,8 @@ const ZH_CN: Record<I18nKey, string> = {
   "settings.shortcut.capture": "请按下快捷键…",
   "settings.shortcut.conflict": "该快捷键已被使用。",
   "settings.shortcut.cancelHint": "按 Esc 取消",
+  "stats.total": "字数 {count}",
+  "stats.selected": "已选 {count}",
 };
 
 const JA: Record<I18nKey, string> = {
@@ -715,6 +721,8 @@ const JA: Record<I18nKey, string> = {
   "settings.shortcut.capture": "ショートカットを入力…",
   "settings.shortcut.conflict": "このショートカットはすでに使用されています。",
   "settings.shortcut.cancelHint": "Esc でキャンセル",
+  "stats.total": "文字数 {count}",
+  "stats.selected": "選択 {count}",
 };
 
 const DICT: Record<Lang, Record<I18nKey, string>> = {

@@ -20,6 +20,7 @@ import { EmojiPicker } from "./emoji";
 import { SettingsPanel, type SettingKey } from "./settings-panel";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
 import type { BlockActionId } from "./block-menu";
+import { countTextUnits } from "./text-stats";
 import {
   formatShortcut,
   matchesShortcut,
@@ -125,6 +126,7 @@ const win = getCurrentWindow();
 const editorHost = document.getElementById("editor") as HTMLElement;
 const sourceShell = document.getElementById("source-shell") as HTMLElement;
 const sourceEl = document.getElementById("source") as HTMLElement;
+const textStatsEl = document.getElementById("text-stats") as HTMLElement;
 const titleEl = document.getElementById("doc-title") as HTMLElement;
 const titleInput = document.getElementById("doc-title-input") as HTMLInputElement;
 const editor = new Editor(editorHost);
@@ -165,14 +167,56 @@ function readView(): string {
   return codeViewVisible ? codeEditor.getText() : editor.getMarkdown();
 }
 
+let textStatsTotal = 0;
+let textStatsTotalDirty = true;
+let textStatsFrame: number | null = null;
+
+function statsDocumentText(): string {
+  return codeViewVisible ? codeEditor.getText() : editor.plainText();
+}
+
+function statsSelectionText(): string {
+  return codeViewVisible ? codeEditor.selectionText() : editor.selectionText();
+}
+
+function updateTextStats(): void {
+  textStatsFrame = null;
+  if (!tabBar.active) {
+    textStatsEl.hidden = true;
+    return;
+  }
+  textStatsEl.hidden = false;
+
+  if (textStatsTotalDirty) {
+    textStatsTotal = countTextUnits(statsDocumentText());
+    textStatsTotalDirty = false;
+  }
+
+  const selectedText = statsSelectionText();
+  const hasSelection = selectedText.length > 0;
+  const count = hasSelection ? countTextUnits(selectedText) : textStatsTotal;
+  textStatsEl.dataset.selected = String(hasSelection);
+  textStatsEl.textContent = t(hasSelection ? "stats.selected" : "stats.total", {
+    count: count.toLocaleString(),
+  });
+}
+
+function scheduleTextStats(recount = false): void {
+  if (recount) textStatsTotalDirty = true;
+  if (textStatsFrame !== null) return;
+  textStatsFrame = requestAnimationFrame(updateTextStats);
+}
+
 /** Load `md` into the active view (and restore a scroll offset). */
 function writeView(md: string, scrollTop = 0): void {
   if (codeViewVisible) {
     void codeEditor.setDocument(md, tabBar.active?.path ?? null, scrollTop);
+    scheduleTextStats(true);
     return;
   }
   switching = true;
   editor.setContent(md);
+  scheduleTextStats(true);
   requestAnimationFrame(() => {
     editorHost.scrollTop = scrollTop;
     switching = false;
@@ -243,6 +287,7 @@ onLangChange(() => {
   updateShortcutTitles();
   updateTitle();
   renderVersionInfo();
+  scheduleTextStats();
 });
 
 function stem(path: string | null): string {
@@ -471,6 +516,7 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
   codeEditor.setAlternateRows(settings.code_alternate_rows);
   updateTitle();
   updateSourceButton();
+  scheduleTextStats(true);
   (codeViewVisible ? codeEditor : editor).focus();
   persistSoon();
 };
@@ -490,11 +536,19 @@ tabBar.onCloseRequest = async (tab: Tab) => {
 editor.onChange = () => {
   if (switching || codeViewVisible) return;
   markDirtyFromView();
+  scheduleTextStats(true);
+};
+editor.onSelectionChange = () => {
+  if (!codeViewVisible) scheduleTextStats();
 };
 
 codeEditor.onChange = () => {
   if (!codeViewVisible) return;
   markDirtyFromView();
+  scheduleTextStats(true);
+};
+codeEditor.onSelectionChange = () => {
+  if (codeViewVisible) scheduleTextStats();
 };
 
 emojiPicker.onPick = (glyph) => {
@@ -873,6 +927,7 @@ function toggleSource(): void {
   tabBar.refreshDirty();
   updateSourceButton();
   updateTitle();
+  scheduleTextStats(true);
   (codeViewVisible ? codeEditor : editor).focus();
   applyScrollFraction(frac);
 }

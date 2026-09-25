@@ -130,6 +130,7 @@ const codeDocumentTheme = EditorView.theme({
 export class CodeEditor {
   readonly host: HTMLElement;
   onChange: () => void = () => {};
+  onSelectionChange: () => void = () => {};
 
   #view: EditorView | null = null;
   #language = new Compartment();
@@ -171,6 +172,7 @@ export class CodeEditor {
       EditorView.contentAttributes.of({ spellcheck: "false", autocapitalize: "off" }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && !this.#suppressChange) this.onChange();
+        if (update.selectionSet) this.onSelectionChange();
       }),
       alternateRowsEnabled.init(() => this.#alternateRows),
       alternateRowsPlugin,

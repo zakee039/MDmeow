@@ -2,7 +2,11 @@
 // Crepe's light frame stylesheet because it contains the editor component
 // structure; src/styles.css then owns the visual rendering.
 import frameLight from "@milkdown/crepe/theme/frame.css?inline";
-import { syntaxTree } from "@codemirror/language";
+import {
+  ensureSyntaxTree,
+  syntaxTree,
+  syntaxTreeAvailable,
+} from "@codemirror/language";
 import type { Range } from "@codemirror/state";
 import {
   Decoration,
@@ -133,20 +137,65 @@ function semanticTokenDecorations(view: EditorView): DecorationSet {
 
 const semanticTokenPlugin = ViewPlugin.fromClass(
   class {
+    readonly view: EditorView;
     tree;
     decorations: DecorationSet;
+    parseFrame: number | null = null;
 
     constructor(view: EditorView) {
+      this.view = view;
       this.tree = syntaxTree(view.state);
       this.decorations = semanticTokenDecorations(view);
+      this.ensureVisibleSyntax();
     }
 
     update(update: ViewUpdate): void {
       const nextTree = syntaxTree(update.state);
-      if (nextTree !== this.tree || update.viewportChanged) {
+      if (nextTree !== this.tree || update.viewportChanged || update.docChanged) {
         this.tree = nextTree;
         this.decorations = semanticTokenDecorations(update.view);
       }
+      this.ensureVisibleSyntax();
+    }
+
+    ensureVisibleSyntax(): void {
+      const tree = syntaxTree(this.view.state);
+      if (!tree.length) return; // Plain text / no language parser enabled.
+
+      const upto = this.view.visibleRanges.reduce(
+        (max, range) => Math.max(max, range.to),
+        0,
+      );
+      if (!upto || syntaxTreeAvailable(this.view.state, upto)) return;
+      if (this.parseFrame !== null) return;
+
+      // CodeMirror intentionally stops background parsing after a time/viewport
+      // budget. For large files that can leave a later viewport without a
+      // syntax tree, which made MDmeow appear to "stop highlighting" after a
+      // certain length. Advance the parser in small frame-sized chunks until
+      // the currently visible range is covered, without blocking a long scroll.
+      this.parseFrame = requestAnimationFrame(() => {
+        this.parseFrame = null;
+        const target = this.view.visibleRanges.reduce(
+          (max, range) => Math.max(max, range.to),
+          0,
+        );
+        if (!target || syntaxTreeAvailable(this.view.state, target)) return;
+        const parsed = ensureSyntaxTree(this.view.state, target, 40);
+        if (parsed && parsed !== syntaxTree(this.view.state)) {
+          // Equivalent to CodeMirror's forceParsing(), but kept local here to
+          // avoid coupling to a second @codemirror/view package version pulled
+          // in by language-data.
+          this.view.dispatch({});
+        }
+        if (!syntaxTreeAvailable(this.view.state, target)) {
+          this.ensureVisibleSyntax();
+        }
+      });
+    }
+
+    destroy(): void {
+      if (this.parseFrame !== null) cancelAnimationFrame(this.parseFrame);
     }
   },
   { decorations: (plugin) => plugin.decorations },

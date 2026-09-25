@@ -58,6 +58,8 @@ export class Editor {
 
   /** Fires on every content change. */
   onChange: () => void = () => {};
+  /** Fires whenever the ProseMirror selection changes. */
+  onSelectionChange: () => void = () => {};
 
   constructor(host: HTMLElement) {
     this.host = host;
@@ -318,6 +320,9 @@ export class Editor {
         this.scheduleExternalCodeLineNumbers();
         refreshSafeRawHtml(this.host);
       });
+      listener.selectionUpdated(() => {
+        this.onSelectionChange();
+      });
     });
     await crepe.create();
     this.crepe = crepe;
@@ -418,6 +423,13 @@ export class Editor {
     if (!view) return "";
     const { from, to } = view.state.selection;
     return from === to ? "" : view.state.doc.textBetween(from, to, " ");
+  }
+
+  /** Plain rendered text, excluding Markdown punctuation/markers. */
+  plainText(): string {
+    const view = this.view();
+    if (!view) return "";
+    return view.state.doc.textBetween(0, view.state.doc.content.size, "\n");
   }
 
   findSet(query: string, caseSensitive: boolean): FindStatus {
