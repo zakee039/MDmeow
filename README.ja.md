@@ -1,5 +1,3 @@
-![MDmeow](docs/logo.png)
-
 [简体中文](README.md) · [English](README.en.md) · **日本語** · [Deutsch](README.de.md)
 
 # MDmeow
