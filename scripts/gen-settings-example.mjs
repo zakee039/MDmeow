@@ -22,7 +22,6 @@ const CONTENT = `# MDmeow — example configuration
 
 language = "system"         # "system" (follow the OS) | "en" | "de" | "ja" | "zh-CN"
 spellcheck = true           # spell-check squiggles in the WYSIWYG editor
-quit_on_escape = false      # when true, pressing Esc quits the app
 list_marker = "*"           # bullet-list marker written on save: "*" | "-" | "+"
 show_path = false           # show the full file path in the header, not just the name
 open_last_session = true    # reopen the previous session's tabs on startup
@@ -39,17 +38,18 @@ source_font_size = 15       # source-view size in px
 accent = "#39C5BB"         # accent colour; reset/default is Miku teal
 
 # App shortcuts. "Mod" means Ctrl on Windows/Linux and Cmd on macOS.
+# Editing/clipboard bindings are reserved. Use "" to disable an action.
+# Invalid or duplicate bindings fall back to their defaults.
 [shortcuts]
 new_tab = "Mod+N"
 open = "Mod+O"
 save = "Mod+S"
 save_as = "Mod+Shift+S"
 close_tab = "Mod+W"
-export = "Mod+E"
 toggle_source = "Mod+/"
 find = "Mod+F"
 replace = "Mod+H"
-emoji = "Mod+."
+new_paragraph = "Mod+Enter"  # split at the cursor into a new plain paragraph
 settings = "Mod+,"
 
 # --- written and managed by MDmeow — no need to touch these ---

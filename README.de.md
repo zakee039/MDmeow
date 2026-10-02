@@ -98,11 +98,15 @@ $$
 | Speichern | `Ctrl/Cmd+S` |
 | Speichern unter | `Ctrl/Cmd+Shift+S` |
 | Tab schließen | `Ctrl/Cmd+W` |
-| HTML / PDF | `Ctrl/Cmd+E` |
 | Markdown Rendern / Quelle | `Ctrl/Cmd+/` |
 | Suchen | `Ctrl/Cmd+F` |
 | Ersetzen | `Ctrl/Cmd+H` |
+| Neuer unformatierter Absatz | `Ctrl/Cmd+Enter` |
 | Einstellungen | `Ctrl/Cmd+,` |
+
+Anwendungskürzel lassen sich unter **Einstellungen → Tastenkürzel** ändern. Der neue unformatierte Absatz trennt den Text am Cursor und verschiebt den Rest in einen neuen Absatz auf oberster Ebene, ohne Liste, Einrückung, Überschrift oder Formelblock zu übernehmen. Im Markdown-Quelltext steht dazwischen eine Leerzeile; der neue Absatz beginnt in Spalte eins.
+
+Feste Bearbeitungskürzel sind unter anderem `Ctrl/Cmd+B` (fett), `Ctrl/Cmd+I` (kursiv), `Ctrl/Cmd+E` (Inline-Code), `Ctrl/Cmd+K` (Link erstellen oder bearbeiten), `Ctrl/Cmd+Alt+X` (durchgestrichen), `Shift+Enter` (Zeilenumbruch im Absatz) und `Ctrl/Cmd+0`–`7` (Blocktyp ändern). Zwischenablage, Rückgängig und Cursorbewegungen können nicht durch Anwendungskürzel überschrieben werden. Die Export-Schaltfläche bleibt verfügbar; `:shortcode:` wird weiterhin automatisch in ein Emoji umgewandelt.
 
 ## Leichtgewichtig aus Absicht
 

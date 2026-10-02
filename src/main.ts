@@ -16,7 +16,6 @@ import { TabBar, baseName, type Tab } from "./tabs";
 import { isMarkdownPath, knownExtensions } from "./file-types";
 import { installMikuCreamRendering } from "./miku-cream";
 import { FindBar, type FindTarget } from "./find-bar";
-import { EmojiPicker } from "./emoji";
 import { SettingsPanel, type SettingKey } from "./settings-panel";
 import { isListMarker, type ListMarker } from "./markdown-serializer";
 import type { BlockActionId } from "./block-menu";
@@ -25,6 +24,7 @@ import {
   formatShortcut,
   matchesShortcut,
   withDefaultShortcuts,
+  type ShortcutAction,
   type ShortcutSettings,
 } from "./shortcuts";
 import {
@@ -51,7 +51,6 @@ interface Settings {
   /** UI language: "system" (OS locale) | "en" | "de" | "ja" | "zh-CN". */
   language: LangPref;
   spellcheck: boolean;
-  quit_on_escape: boolean;
   /** Bullet-list marker written on save: "*", "-" or "+". */
   list_marker: ListMarker;
   /** Show the full file path (not just the name) in the editor header. */
@@ -133,7 +132,6 @@ const editor = new Editor(editorHost);
 const codeEditor = new CodeEditor(sourceEl);
 const tabBar = new TabBar(document.getElementById("tabs") as HTMLElement);
 const findBar = new FindBar(editorHost);
-const emojiPicker = new EmojiPicker();
 const settingsPanel = new SettingsPanel(() => settings);
 
 let settings: Settings;
@@ -280,7 +278,6 @@ onLangChange(() => {
   applyStaticI18n();
   editor.retranslate();
   findBar.retranslate();
-  emojiPicker.retranslate();
   settingsPanel.retranslate();
   tabBar.render();
   updateSourceButton();
@@ -551,16 +548,6 @@ codeEditor.onSelectionChange = () => {
   if (codeViewVisible) scheduleTextStats();
 };
 
-emojiPicker.onPick = (glyph) => {
-  if (codeViewVisible) {
-    codeEditor.insertText(glyph);
-  } else {
-    editor.insertText(glyph);
-    markDirtyFromView();
-  }
-};
-emojiPicker.onClose = () => (codeViewVisible ? codeEditor : editor).focus();
-
 function applyProxySettings(reloadEditor: boolean): void {
   editor.setProxyConfig(settings.proxy_enabled, settings.proxy_url);
   if (!reloadEditor || codeViewVisible) return;
@@ -616,7 +603,7 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "proxy_url":
       applyProxySettings(true);
       break;
-    // quit_on_escape / open_last_session: no immediate effect
+    // open_last_session: no immediate effect
   }
   persistSoon();
 };
@@ -898,7 +885,7 @@ function updateShortcutTitles(): void {
   }
   const exportBtn = document.getElementById("btn-export");
   if (exportBtn) {
-    exportBtn.title = `${t("toolbar.export.aria")} (${formatShortcut(settings.shortcuts.export)})`;
+    exportBtn.title = t("toolbar.export.title");
   }
   const settingsBtn = document.getElementById("btn-settings");
   if (settingsBtn) {
@@ -1375,115 +1362,96 @@ function wireExportMenu(): void {
 
 // --- wiring --------------------------------------------------------------
 
-function wireShortcuts(): void {
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      // Let the focused shortcut control capture the key before app shortcuts
-      // (this listener runs in capture phase on window).
-      if (settingsPanel.isCapturingShortcut) return;
+/** Formatting commands belong to the document, never to a popup's text field. */
+function isDocumentEditingTarget(target: EventTarget | null): boolean {
+  if (
+    !(target instanceof Element) || switching || settingsPanel.isOpen ||
+    !aboutEl.hidden || !mikuEasterEl.hidden
+  ) return false;
+  const host = codeViewVisible ? sourceEl : editorHost;
+  if (!host.contains(target) || target.closest("input, textarea, select, button")) return false;
+  const surface = codeViewVisible ? ".cm-content" : ".ProseMirror";
+  // Crepe's inline formula popup contains a separate nested editor.
+  const root = host.querySelector(surface);
+  return root !== null && target.closest(surface) === root;
+}
 
-      if (e.key === "Escape" && (!openMenuEl.hidden || !exportMenuEl.hidden)) {
+function wireShortcuts(): void {
+  const handlers: Record<ShortcutAction, () => void> = {
+    new_tab: newTab,
+    open: () => void openDialog(),
+    save: () => void saveDoc(),
+    save_as: () => void saveAs(),
+    close_tab: () => void closeActiveTab(),
+    toggle_source: toggleSource,
+    find: () => openFind(false),
+    replace: () => openFind(true),
+    settings: () => settingsPanel.isOpen ? settingsPanel.close() : settingsPanel.open(),
+    new_paragraph: () => {
+      if (codeViewVisible) codeEditor.insertPlainParagraph();
+      else editor.insertPlainParagraph();
+    },
+  };
+
+  window.addEventListener("keydown", (e) => {
+    if (
+      e.defaultPrevented || e.isComposing || e.key === "Process" ||
+      e.getModifierState("AltGraph") || settingsPanel.isCapturingShortcut
+    ) return;
+
+    if (e.key === "Escape" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      // These controls handle Escape themselves, before document-level popups.
+      if (
+        e.target === titleInput ||
+        (e.target instanceof Element && e.target.closest(
+          ".mdmeow-image-title-popover, .milkdown-latex-inline-edit",
+        ))
+      ) return;
+      if (!openMenuEl.hidden || !exportMenuEl.hidden) {
         e.preventDefault();
         e.stopPropagation();
         closeOpenMenu();
         closeExportMenu();
         return;
       }
+      const dismiss = settingsPanel.isOpen ? () => settingsPanel.close()
+        : !mikuEasterEl.hidden ? closeMikuEaster
+        : !aboutEl.hidden ? closeAbout
+        : findBar.isOpen ? () => findBar.close()
+        : null;
+      if (dismiss) {
+        e.preventDefault();
+        dismiss();
+        return;
+      }
+    }
 
-      // Esc-to-quit (opt-in). Runs after the block menu's own Esc handler,
-      // which stops propagation while it is open.
+    for (const action of Object.keys(handlers) as ShortcutAction[]) {
+      if (!matchesShortcut(e, settings.shortcuts[action])) continue;
       if (
-        e.key === "Escape" &&
-        !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
-      ) {
-        if (settingsPanel.isOpen) {
-          e.preventDefault();
-          settingsPanel.close();
-          return;
-        }
-        if (emojiPicker.isOpen) {
-          e.preventDefault();
-          emojiPicker.close();
-          return;
-        }
-        if (!openMenuEl.hidden) {
-          e.preventDefault();
-          closeOpenMenu();
-          return;
-        }
-        if (!mikuEasterEl.hidden) {
-          e.preventDefault();
-          closeMikuEaster();
-          return;
-        }
-        if (!aboutEl.hidden) {
-          e.preventDefault();
-          closeAbout();
-          return;
-        }
-        if (findBar.isOpen) {
-          e.preventDefault();
-          findBar.close();
-          return;
-        }
-        if (settings.quit_on_escape) {
-          e.preventDefault();
-          void quitApp();
-          return;
-        }
-      }
+        action === "new_paragraph" &&
+        (!isDocumentEditingTarget(e.target) || !isMarkdownPath(tabBar.active?.path))
+      ) return;
+      e.preventDefault();
+      // CodeMirror's node view also handles Enter. The document command owns
+      // this key press so it cannot perform a second insertion afterwards.
+      if (action === "new_paragraph") e.stopImmediatePropagation();
+      if (!e.repeat) handlers[action]();
+      return;
+    }
 
-      if (matchesShortcut(e, settings.shortcuts.save)) {
-        e.preventDefault();
-        void saveDoc();
-      } else if (matchesShortcut(e, settings.shortcuts.save_as)) {
-        e.preventDefault();
-        void saveAs();
-      } else if (matchesShortcut(e, settings.shortcuts.open)) {
-        e.preventDefault();
-        void openDialog();
-      } else if (matchesShortcut(e, settings.shortcuts.new_tab)) {
-        e.preventDefault();
-        newTab();
-      } else if (matchesShortcut(e, settings.shortcuts.close_tab)) {
-        e.preventDefault();
-        void closeActiveTab();
-      } else if (matchesShortcut(e, settings.shortcuts.export)) {
-        e.preventDefault();
-        toggleExportMenu();
-      } else if (matchesShortcut(e, settings.shortcuts.toggle_source)) {
-        e.preventDefault();
-        toggleSource();
-      } else if (matchesShortcut(e, settings.shortcuts.find)) {
-        e.preventDefault();
-        openFind(false);
-      } else if (matchesShortcut(e, settings.shortcuts.replace)) {
-        e.preventDefault();
-        openFind(true);
-      } else if (matchesShortcut(e, settings.shortcuts.emoji)) {
-        e.preventDefault();
-        emojiPicker.open(codeViewVisible ? null : editor.caretRect());
-      } else if (matchesShortcut(e, settings.shortcuts.settings)) {
-        e.preventDefault();
-        if (settingsPanel.isOpen) settingsPanel.close();
-        else settingsPanel.open();
-      } else if (
-        (e.ctrlKey || e.metaKey) &&
-        !e.shiftKey && !e.altKey &&
-        e.key >= "0" && e.key <= "7" && e.key.length === 1
-      ) {
-        // Ctrl+0..7 → block type, mirroring the ⠿ menu (WYSIWYG only).
-        if (codeViewVisible) return;
-        e.preventDefault();
-        const ids: BlockActionId[] = [
-          "text", "h1", "h2", "h3", "bullet", "ordered", "quote", "code",
-        ];
-        editor.runBlockAction(ids[Number(e.key)]);
-      }
-    },
-    { capture: true },
-  );
+    if (
+      !codeViewVisible && isDocumentEditingTarget(e.target) &&
+      /^[0-7]$/.test(e.key) && matchesShortcut(e, `Mod+${e.key}`)
+    ) {
+      e.preventDefault();
+      if (e.repeat) return;
+      const ids: BlockActionId[] = [
+        "text", "h1", "h2", "h3", "bullet", "ordered", "quote", "code",
+      ];
+      editor.runBlockAction(ids[Number(e.key)]);
+    }
+  }, { capture: true });
 }
 
 function wireButtons(): void {
@@ -1831,7 +1799,6 @@ async function bootstrap(): Promise<void> {
     const ext = e.payload;
     settings.language = ext.language ?? "system";
     settings.spellcheck = ext.spellcheck;
-    settings.quit_on_escape = ext.quit_on_escape;
     settings.show_path = ext.show_path;
     settings.open_last_session = ext.open_last_session;
     settings.always_show_tabbar = ext.always_show_tabbar;

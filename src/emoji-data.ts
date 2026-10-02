@@ -1,4 +1,4 @@
-// A small, hand-curated set of common emoji for the picker (Ctrl/Cmd+.) and the
+// A small, hand-curated set of common emoji for the picker component and the
 // `:shortcode:` input rule. Native Unicode only — no images, no CDN, no runtime
 // dependency. Keep it compact: this is "the ones people actually type", not a
 // full Unicode set.

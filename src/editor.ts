@@ -4,10 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { Crepe } from "@milkdown/crepe";
 import "@milkdown/crepe/theme/common/style.css";
 import { replaceAll } from "@milkdown/kit/utils";
-import { editorViewCtx } from "@milkdown/kit/core";
+import { editorViewCtx, keymapCtx } from "@milkdown/kit/core";
 import type { EditorView } from "@milkdown/kit/prose/view";
+import { Prec } from "@codemirror/state";
+import { keymap as codeMirrorKeymap } from "@codemirror/view";
 
 import { linkFromClipboard } from "./link-clipboard";
+import { configurePlainParagraph, insertPlainParagraph } from "./plain-paragraph";
 import {
   installBlockMenu,
   runBlockAction,
@@ -298,6 +301,13 @@ export class Editor {
       featureConfigs: {
         [Crepe.Feature.CodeMirror]: {
           theme: mikuCreamCodeMirrorTheme,
+          // The configurable app command owns this key. Suppress Crepe's
+          // fixed exitCode binding even when the user reassigns that command.
+          extensions: [
+            Prec.highest(
+              codeMirrorKeymap.of([{ key: "Mod-Enter", run: () => true }]),
+            ),
+          ],
           // Preview-capable blocks (currently LaTeX) render as their result by
           // default. Ordinary code blocks have no preview and stay editable.
           previewOnlyByDefault: true,
@@ -309,6 +319,15 @@ export class Editor {
     const marker = this.listMarker;
     crepe.editor
       .config((ctx) => configureMarkdownSerializer(ctx, marker))
+      .config(configurePlainParagraph)
+      .config((ctx) => {
+        // ProseMirror's base keymap also supplies the old fixed exitCode key.
+        ctx.get(keymapCtx).add({
+          key: "Mod-Enter",
+          priority: 1000,
+          onRun: () => () => true,
+        });
+      })
       .use(linkFromClipboard)
       .use(findPlugin)
       .use(imageToolbarPlugin)
@@ -379,6 +398,12 @@ export class Editor {
     if (!view) return;
     view.dispatch(view.state.tr.insertText(text));
     view.focus();
+  }
+
+  /** Start a top-level, unformatted paragraph at the cursor. */
+  insertPlainParagraph(): boolean {
+    const view = this.view();
+    return view ? insertPlainParagraph(view) : false;
   }
 
   /** Viewport rectangle of the caret, for anchoring popups. */

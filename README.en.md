@@ -129,12 +129,15 @@ $$
 | Save | `Ctrl/Cmd+S` |
 | Save As | `Ctrl/Cmd+Shift+S` |
 | Close tab | `Ctrl/Cmd+W` |
-| Export HTML / PDF | `Ctrl/Cmd+E` |
 | Markdown render / source | `Ctrl/Cmd+/` |
 | Find | `Ctrl/Cmd+F` |
 | Replace | `Ctrl/Cmd+H` |
-| Emoji | `Ctrl/Cmd+.` |
+| New plain paragraph | `Ctrl/Cmd+Enter` |
 | Settings | `Ctrl/Cmd+,` |
+
+Application shortcuts can be changed in **Settings → Shortcuts**. New plain paragraph splits at the cursor and moves the remaining text into a new top-level paragraph, without inheriting a list, indentation, heading or math block. In Markdown source, a blank line separates the paragraphs and the new paragraph starts at column one.
+
+Fixed editing shortcuts include `Ctrl/Cmd+B` (bold), `Ctrl/Cmd+I` (italic), `Ctrl/Cmd+E` (inline code), `Ctrl/Cmd+K` (create or edit a link), `Ctrl/Cmd+Alt+X` (strikethrough), `Shift+Enter` (hard line break), and `Ctrl/Cmd+0`–`7` (block conversion). Clipboard, undo and cursor commands are protected from application shortcut overrides. The export button remains available; typing `:shortcode:` still converts the text into an emoji.
 
 ## Configuration
 

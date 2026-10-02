@@ -9,6 +9,7 @@ import {
   Compartment,
   EditorSelection,
   EditorState,
+  Prec,
   StateEffect,
   StateField,
   type Extension,
@@ -27,6 +28,8 @@ import {
 
 import { mikuCreamCodeMirrorTheme } from "./miku-cream";
 import type { FindStatus } from "./find-bar";
+import { plainParagraphTransaction } from "./plain-paragraph-source";
+import { isMarkdownPath } from "./file-types";
 
 const setAlternateRows = StateEffect.define<boolean>();
 
@@ -137,6 +140,7 @@ export class CodeEditor {
   #languageLoadToken = 0;
   #alternateRows = true;
   #suppressChange = false;
+  #markdownDocument = true;
 
   #query = "";
   #caseSensitive = false;
@@ -165,6 +169,8 @@ export class CodeEditor {
       lineNumbers(),
       highlightActiveLineGutter(),
       history(),
+      // The application owns the configurable Markdown action, including when it is disabled.
+      Prec.highest(keymap.of([{ key: "Mod-Enter", run: () => this.#markdownDocument }])),
       keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       bracketMatching(),
       highlightActiveLine(),
@@ -190,6 +196,7 @@ export class CodeEditor {
   ): Promise<void> {
     if (!this.#view) this.init();
     if (!this.#view) return;
+    this.#markdownDocument = isMarkdownPath(path);
     this.#clearFindState();
     this.#suppressChange = true;
     this.#view.setState(this.#createState(text));
@@ -218,6 +225,7 @@ export class CodeEditor {
   }
 
   async setLanguageForPath(path: string | null): Promise<void> {
+    this.#markdownDocument = isMarkdownPath(path);
     const view = this.#view;
     if (!view) return;
     const token = ++this.#languageLoadToken;
@@ -277,6 +285,14 @@ export class CodeEditor {
       selection: EditorSelection.cursor(range.from + text.length),
     });
     view.focus();
+  }
+
+  insertPlainParagraph(): boolean {
+    const view = this.#view;
+    if (!view || view.state.readOnly) return false;
+    view.dispatch(plainParagraphTransaction(view.state));
+    view.focus();
+    return true;
   }
 
   #replaceRange(text: string, from: number, to: number): void {

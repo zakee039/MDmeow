@@ -52,11 +52,10 @@ pub struct ShortcutSettings {
     pub save: String,
     pub save_as: String,
     pub close_tab: String,
-    pub export: String,
     pub toggle_source: String,
     pub find: String,
     pub replace: String,
-    pub emoji: String,
+    pub new_paragraph: String,
     pub settings: String,
 }
 
@@ -68,11 +67,10 @@ impl Default for ShortcutSettings {
             save: "Mod+S".to_string(),
             save_as: "Mod+Shift+S".to_string(),
             close_tab: "Mod+W".to_string(),
-            export: "Mod+E".to_string(),
             toggle_source: "Mod+/".to_string(),
             find: "Mod+F".to_string(),
             replace: "Mod+H".to_string(),
-            emoji: "Mod+.".to_string(),
+            new_paragraph: "Mod+Enter".to_string(),
             settings: "Mod+,".to_string(),
         }
     }
@@ -85,8 +83,6 @@ pub struct Settings {
     /// UI language: "system" (OS locale) | "en" | "de" | "ja" | "zh-CN"
     pub language: String,
     pub spellcheck: bool,
-    /// When true, pressing Esc quits the app.
-    pub quit_on_escape: bool,
     /// Bullet-list marker written on save: "*", "-" or "+".
     pub list_marker: String,
     /// Show the full file path (not just the file name) in the editor header.
@@ -138,7 +134,6 @@ impl Default for Settings {
         Self {
             language: "system".to_string(),
             spellcheck: true,
-            quit_on_escape: false,
             list_marker: "*".to_string(),
             show_path: false,
             open_last_session: true,
@@ -285,5 +280,51 @@ pub fn watch(path: PathBuf, last_write: LastWrite, app: AppHandle) {
                 let _ = app.emit(SETTINGS_CHANGED_EVENT, settings);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Settings;
+
+    #[test]
+    fn legacy_shortcut_settings_load_and_removed_fields_are_not_written() {
+        let settings: Settings = toml::from_str(
+            r#"
+language = "zh-CN"
+quit_on_escape = true
+[shortcuts]
+save = "Mod+Alt+S"
+export = "Mod+E"
+emoji = "Mod+."
+"#,
+        )
+        .expect("old settings should stay readable");
+
+        assert_eq!(settings.language, "zh-CN");
+        assert_eq!(settings.shortcuts.save, "Mod+Alt+S");
+        assert_eq!(settings.shortcuts.new_paragraph, "Mod+Enter");
+        assert_eq!(settings.shortcuts.toggle_source, "Mod+/");
+        let saved = toml::to_string_pretty(&settings).expect("settings should serialize");
+        let saved: toml::Value = toml::from_str(&saved).unwrap();
+        assert!(saved.get("quit_on_escape").is_none());
+        let shortcuts = saved.get("shortcuts").unwrap();
+        assert!(shortcuts.get("export").is_none());
+        assert!(shortcuts.get("emoji").is_none());
+        assert_eq!(
+            shortcuts.get("new_paragraph").unwrap().as_str(),
+            Some("Mod+Enter")
+        );
+    }
+
+    #[test]
+    fn plain_paragraph_default_works_without_shortcuts_and_can_be_overridden() {
+        let missing: Settings = toml::from_str("spellcheck = false").unwrap();
+        assert!(!missing.spellcheck);
+        assert_eq!(missing.shortcuts.new_paragraph, "Mod+Enter");
+        let custom: Settings =
+            toml::from_str("[shortcuts]\nnew_paragraph = \"Mod+Shift+Enter\"\n").unwrap();
+        assert_eq!(custom.shortcuts.new_paragraph, "Mod+Shift+Enter");
+        assert_eq!(custom.shortcuts.save, "Mod+S");
     }
 }

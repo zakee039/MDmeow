@@ -797,7 +797,7 @@ class BlockMenu {
   #onKey = (e: KeyboardEvent): void => {
     if (e.key === "Escape" && this.#open) {
       e.preventDefault();
-      e.stopImmediatePropagation(); // don't let this Esc trigger quit-on-escape
+      e.stopImmediatePropagation(); // only dismiss this menu on the current Escape
       this.hide();
     }
   };

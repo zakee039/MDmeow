@@ -47,7 +47,7 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/miku-cream.ts` | Installs Crepe's structural frame CSS; `styles.css` owns the single built-in Miku Cream document rendering. |
 | `src/link-clipboard.ts` | ProseMirror `$prose` plugin: paste a URL over a selection / `Ctrl+K` → link it. |
 | `src/block-menu.ts` | The `⠿` block menu (turn‑into, insert table / image / divider / blank line, duplicate, delete). Raw ProseMirror commands. Exports `runBlockAction(crepe, id)` — the turn‑into entries reachable by `Ctrl/Cmd+0`–`7` from `main.ts`, built from the live selection via `targetFromSelection`. |
-| `src/emoji.ts` | `:shortcode:` input rule (`$prose`, same class as `find.ts`) + `EmojiPicker` popup (`#emoji-picker`, `Ctrl/Cmd+.`), backend‑agnostic like `find-bar.ts`. |
+| `src/emoji.ts` | `:shortcode:` input rule (`$prose`, same class as `find.ts`) remains active. The backend-agnostic `EmojiPicker` component is retained but not wired into the application. |
 | `src/emoji-data.ts` | Hand‑curated ~230 common emoji (glyph + shortcode + keywords) and alias map. Native Unicode only, no dependency. |
 | `src/i18n.ts` | Tiny in‑app i18n. `DICT` (en + de), `t(key, vars)`, `setLang`/`onLangChange`, `applyStaticI18n()` (walks `data-i18n*` attrs). Leaf module — no app imports. Covers MDmeow's chrome + the editor placeholder; Crepe's own micro‑UI stays English. |
 | `src/settings-panel.ts` | The settings GUI (`#settings-panel`, `Ctrl/Cmd+,` or the gear button). Full‑screen overlay that flips in over the editor; one control per hand‑editable `settings.toml` key. "Dumb" — reports each change via `onChange`; `main.ts` owns the object, the apply‑functions and the debounced save. |
@@ -57,14 +57,14 @@ portable native shell using the OS WebView instead of bundling Chromium.
 | `src/styles.css` | App shell + toolbar + tab strip + source textarea + block menu + emoji picker + the Miku Cream rendering for headings, code, math, tables, quotes, lists and images. |
 | `src-tauri/src/lib.rs` | Tauri builder: plugins (single‑instance first), `AppState`, command registry, `.setup()` spawns the `settings.toml` watcher. `file_arg()` picks a Markdown path out of argv. |
 | `src-tauri/src/commands.rs` | All `#[tauri::command]`s: `get_settings`, `save_settings`, `read_document`, `write_document`, `render_html`, `read_image_data_url` (+ a local base64 encoder — no crate). `get_settings`'s payload also carries `version` (`CARGO_PKG_VERSION`) for the About panel. |
-| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (language, spellcheck, fonts, accent, shortcuts, quit_on_escape, list_marker, show_path, open_last_session, always_show_tabbar) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
+| `src-tauri/src/settings.rs` | `settings.toml` — **the one settings file**: hand‑editable prefs (language, spellcheck, fonts, accent, shortcuts, list_marker, show_path, open_last_session, always_show_tabbar) + app‑managed state (window, open tabs). Plus the 1 Hz file watcher + write‑signature tracking. |
 | `src-tauri/src/portable.rs` | Resolves the portable data dir (next to exe; on macOS next to the `.app`); writability check + OS‑config fallback. |
 | `src-tauri/src/export.rs` | `render_html`: Markdown → GFM HTML (comrak) wrapped in a self‑contained page. |
 | `src-tauri/src/mdfmt.rs` | `format_tables`: pretty‑prints GFM tables in a Markdown string. |
 | `src-tauri/assets/export/` | Bundled (offline) KaTeX + highlight.js + Miku Cream export CSS/template, `include_str!`‑ed by `export.rs`. |
 | `src-tauri/tauri.conf.json` | Window config, bundle config, CSP. |
 | `src-tauri/capabilities/default.json` | Tauri permission allow‑list. **Add a permission here whenever you call a new `window.*` / plugin API.** |
-| `.github/workflows/release.yml` | CI: 5‑target matrix (win x64/arm64, mac universal, linux x64/arm64), `tauri-action`, draft release + checksums. |
+| `.github/workflows/release.yml` | CI: Windows x64, macOS universal, Linux x64/ARM64; signed Windows updates, full artifact checks, SHA256 checksums, and a published release. |
 | `scripts/gen-settings-example.mjs` | Writes a fully‑commented `settings.example.toml` next to the built exe. Runs from `build.beforeBuildCommand` (every `tauri dev` / `tauri build`). Keep its key list in sync with `Settings`. |
 
 ---
@@ -76,7 +76,7 @@ folder is read‑only, they fall back to the OS config dir and the app shows a
 hint bar.
 
 - **`settings.toml`** — the only settings file. Top half is hand‑editable
-  (language, spellcheck, fonts, sizes, accent, shortcuts, `quit_on_escape`,
+  (language, spellcheck, fonts, sizes, accent, shortcuts,
   `list_marker`, `show_path`, `open_last_session`); bottom
   half is app‑managed (window geometry, open tabs). The app writes it
   debounced (800 ms) and on quit; a 1 Hz watcher (`settings::watch`) picks up
@@ -158,7 +158,7 @@ for PDF, loads it into a hidden `<iframe>` and calls `print()`.
 wired in `wireAbout()`. Version + settings path come from the `get_settings`
 payload (`payload.version`, `payload.location`); the GitHub link opens externally
 via `openUrl` (`@tauri-apps/plugin-opener`, covered by `opener:default`). Esc is
-handled in `wireShortcuts()` ahead of find-bar / quit-on-escape.
+handled in `wireShortcuts()` ahead of the find bar.
 
 ### A block‑menu (⠿) entry
 `src/block-menu.ts` → add an item to the right group in `GROUPS`. Give it an
@@ -185,7 +185,7 @@ handled in `wireShortcuts()` ahead of find-bar / quit-on-escape.
    - **Appearance pref** (font/colour): apply it in `applyAppearance()` as a CSS
      var, and add it to the `settings-changed` merge list so external edits take
      effect live.
-   - **Behaviour pref** (like `quit_on_escape`): read `settings.x` where needed;
+   - **Behaviour pref** (like `open_last_session`): read `settings.x` where needed;
      add it to the `settings-changed` merge too.
    - **App‑managed value**: call `persistSoon()` after you change it. Do *not*
      persist on every keystroke.
@@ -228,9 +228,15 @@ Keep everything inlined so exports stay offline.
   `mdmeow.exe <path>`. `tauri-plugin-single-instance` keeps it to one process and
   routes later opens into the running window. Association is registered by the
   **installer**, so the portable `.exe` alone won't show up as a default app.
-- **`quit_on_escape`** (off by default). The block menu's Esc handler calls
-  `stopImmediatePropagation()` so dismissing it never quits; other Crepe popups
-  aren't guarded — revisit if it bites.
+- **Escape dismisses UI.** It closes panels/popups or cancels their current action.
+  Application exit uses the window close action.
+- **Shortcut ownership.** `src/shortcuts.ts` validates settings and captured keys
+  through the same parser, normalizes platform aliases, rejects duplicate keys,
+  and protects CodeMirror, Milkdown and native editing bindings. The application
+  owns `Mod+/` (source toggle) and `Mod+Enter` (new plain paragraph); export and
+  Emoji have no application shortcuts. Invalid or duplicate settings fall back
+  to defaults; an empty string disables an action. Removed legacy settings are
+  ignored by Serde and omitted on the next save.
 - **Minimized‑window position.** Windows reports ~`-32000` for a minimized
   window; `main.ts` filters bogus positions in `onMoved` and validates saved
   coordinates in `restoreWindow` (which also runs early + `setFocus`).
@@ -258,7 +264,7 @@ Keep everything inlined so exports stay offline.
 pnpm install
 pnpm tauri dev            # run with HMR (frontend) + auto-rebuild (Rust)
 pnpm tauri build          # release bundles for the host OS
-pnpm tauri build --bundles nsis      # Windows: just the installer (+ portable exe at target/release/mdmeow.exe)
+pnpm release:windows     # signed Windows MSI + portable EXE + updater metadata
 cargo test --manifest-path src-tauri/Cargo.toml      # Rust unit tests
 pnpm exec tsc --noEmit    # frontend typecheck
 ```
@@ -267,9 +273,13 @@ Toolchain: Rust stable (MSVC on Windows) + VS Build Tools + Windows SDK; Node 20
 `pnpm`. WebView2 ships with Windows 10/11. See
 <https://tauri.app/start/prerequisites/>.
 
-**Release via CI:** push a `v*` tag → `.github/workflows/release.yml` builds all
-five targets and opens a draft GitHub release. Bump `version` in **both**
-`package.json` and `src-tauri/tauri.conf.json` first.
+**Release via CI:** push an annotated `vX.Y.Z` tag →
+`.github/workflows/release.yml` builds Windows x64, macOS universal, and Linux
+x64/ARM64, verifies the complete artifact set, and publishes a GitHub release
+with SHA256 checksums. Keep `version` synchronized in `package.json`,
+`src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and the `mdmeow` package
+entry in `src-tauri/Cargo.lock`. Windows requires the repository secret
+`TAURI_SIGNING_PRIVATE_KEY` (and its password secret when encrypted).
 
 `pnpm` note: build scripts (esbuild) are gated — `pnpm-workspace.yaml` has the
 `allowBuilds` / `onlyBuiltDependencies` entries that permit it.

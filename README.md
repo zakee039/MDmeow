@@ -139,14 +139,17 @@ MDmeow 默认使用 **Miku Cream** 视觉体系：
 | 保存 | `Ctrl/Cmd+S` |
 | 另存为 | `Ctrl/Cmd+Shift+S` |
 | 关闭标签页 | `Ctrl/Cmd+W` |
-| 导出 HTML / PDF | `Ctrl/Cmd+E` |
 | Markdown 渲染 / 源码 | `Ctrl/Cmd+/` |
 | 查找 | `Ctrl/Cmd+F` |
 | 替换 | `Ctrl/Cmd+H` |
-| Emoji | `Ctrl/Cmd+.` |
+| 新建普通段落 | `Ctrl/Cmd+Enter` |
 | 设置 | `Ctrl/Cmd+,` |
 
 应用级快捷键可以在 **设置 → 快捷键** 中重新绑定。
+
+“新建普通段落”在光标处拆开当前内容，将后半段放入新的顶层普通段落，不继承列表、缩进、标题或公式块；Markdown 源码中以空行分隔，新段落顶格开始。
+
+固定编辑快捷键包括 `Ctrl/Cmd+B` 加粗、`Ctrl/Cmd+I` 斜体、`Ctrl/Cmd+E` 行内代码、`Ctrl/Cmd+K` 创建或编辑链接、`Ctrl/Cmd+Alt+X` 删除线、`Shift+Enter` 段内换行，以及 `Ctrl/Cmd+0`–`7` 块转换。复制、粘贴、撤销、光标移动等编辑按键受到保护，不能被应用快捷键覆盖。导出按钮保留，Emoji 仍可输入 `:shortcode:` 自动转换。
 
 ## 配置
 

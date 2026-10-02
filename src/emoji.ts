@@ -1,7 +1,7 @@
 // Emoji support: a `:shortcode:` input rule for the WYSIWYG editor and a small
-// searchable picker popup (Ctrl/Cmd+.). Native Unicode glyphs only — the data
-// lives in emoji-data.ts. The picker is backend-agnostic DOM, like FindBar:
-// main.ts inserts the chosen glyph into whichever view is active.
+// searchable picker component. Native Unicode glyphs only — the data lives
+// in emoji-data.ts. The input rule remains available without a global picker
+// shortcut.
 
 import { $prose } from "@milkdown/kit/utils";
 import { InputRule, inputRules } from "@milkdown/kit/prose/inputrules";

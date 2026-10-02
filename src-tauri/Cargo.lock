@@ -2372,7 +2372,7 @@ dependencies = [
 
 [[package]]
 name = "mdmeow"
-version = "1.8.2"
+version = "1.8.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",

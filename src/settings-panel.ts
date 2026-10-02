@@ -7,7 +7,9 @@
 import { t, type I18nKey } from "./i18n";
 import {
   formatShortcut,
+  isAssignableShortcut,
   shortcutFromEvent,
+  shortcutsConflict,
   type ShortcutAction,
   type ShortcutSettings,
 } from "./shortcuts";
@@ -22,7 +24,6 @@ import {
 export interface PanelSettings {
   language: string;
   spellcheck: boolean;
-  quit_on_escape: boolean;
   always_show_tabbar: boolean;
   open_last_session: boolean;
   show_path: boolean;
@@ -104,7 +105,6 @@ const SECTIONS: Section[] = [
     tab: "general",
     title: "settings.section.behavior",
     fields: [
-      { key: "quit_on_escape", kind: "checkbox", label: "settings.quitOnEscape" },
       {
         key: "always_show_tabbar",
         kind: "checkbox",
@@ -161,7 +161,6 @@ const SECTIONS: Section[] = [
       { action: "save", kind: "shortcut", label: "settings.shortcut.save" },
       { action: "save_as", kind: "shortcut", label: "settings.shortcut.saveAs" },
       { action: "close_tab", kind: "shortcut", label: "settings.shortcut.closeTab" },
-      { action: "export", kind: "shortcut", label: "settings.shortcut.export" },
       {
         action: "toggle_source",
         kind: "shortcut",
@@ -169,7 +168,7 @@ const SECTIONS: Section[] = [
       },
       { action: "find", kind: "shortcut", label: "settings.shortcut.find" },
       { action: "replace", kind: "shortcut", label: "settings.shortcut.replace" },
-      { action: "emoji", kind: "shortcut", label: "settings.shortcut.emoji" },
+      { action: "new_paragraph", kind: "shortcut", label: "settings.shortcut.newParagraph" },
       { action: "settings", kind: "shortcut", label: "settings.shortcut.settings" },
     ],
   },
@@ -225,6 +224,7 @@ export class SettingsPanel {
   #get: () => PanelSettings;
   #path = "";
   #capturingShortcut: ShortcutAction | null = null;
+  #shortcutCaptureVersion = 0;
   #openWithAvailable = false;
   #openWithRegistered = false;
   #openWithManagedByMsi = false;
@@ -259,6 +259,7 @@ export class SettingsPanel {
     this.#el.hidden = true;
     document.body.appendChild(this.#el);
     this.#build();
+    window.addEventListener("blur", () => this.#cancelShortcutCapture());
   }
 
   /** The settings.toml path shown in the footer (known after get_settings). */
@@ -338,7 +339,7 @@ export class SettingsPanel {
 
   close(): void {
     if (!this.#open) return;
-    this.#capturingShortcut = null;
+    this.#cancelShortcutCapture();
     this.#open = false;
     this.#el.classList.remove("open");
     document.getElementById("app")?.classList.remove("settings-open");
@@ -407,7 +408,6 @@ export class SettingsPanel {
 
   /** Re-label everything after a language change. */
   retranslate(): void {
-    this.#capturingShortcut = null;
     this.#build();
     this.refresh();
   }
@@ -483,7 +483,21 @@ export class SettingsPanel {
     return wrap;
   }
 
+  #cancelShortcutCapture(): void {
+    const action = this.#capturingShortcut;
+    this.#capturingShortcut = null;
+    this.#shortcutCaptureVersion++;
+    if (!action) return;
+    const btn = this.#el.querySelector<HTMLButtonElement>(`[data-shortcut="${action}"]`);
+    if (btn) {
+      btn.classList.remove("listening", "conflict");
+      btn.textContent = formatShortcut(this.#get().shortcuts[action]);
+      btn.title = "";
+    }
+  }
+
   #build(): void {
+    this.#cancelShortcutCapture();
     this.#el.replaceChildren();
 
     const card = document.createElement("div");
@@ -530,6 +544,7 @@ export class SettingsPanel {
   }
 
   #renderActiveTab(): void {
+    this.#cancelShortcutCapture();
     const content = this.#el.querySelector<HTMLElement>(".settings-content");
     if (!content) return;
     content.replaceChildren();
@@ -923,6 +938,7 @@ export class SettingsPanel {
       // `refresh()` fills the real binding once bootstrap has the payload.
       btn.textContent = "—";
       btn.addEventListener("click", () => {
+        this.#cancelShortcutCapture();
         this.#capturingShortcut = f.action;
         this.#el.querySelectorAll<HTMLButtonElement>(".settings-shortcut").forEach((other) => {
           if (other !== btn) {
@@ -938,34 +954,38 @@ export class SettingsPanel {
         btn.title = t("settings.shortcut.cancelHint");
         btn.focus();
       });
+      btn.addEventListener("blur", () => {
+        if (this.#capturingShortcut === f.action) this.#cancelShortcutCapture();
+      });
       btn.addEventListener("keydown", (e) => {
         if (this.#capturingShortcut !== f.action) return;
         e.preventDefault();
         e.stopPropagation();
         if (e.key === "Escape" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-          this.#capturingShortcut = null;
-          btn.classList.remove("listening", "conflict");
-          btn.textContent = formatShortcut(this.#get().shortcuts[f.action]);
-          btn.title = "";
+          this.#cancelShortcutCapture();
           return;
         }
         const binding = shortcutFromEvent(e);
         if (!binding) return;
         const duplicate = Object.entries(this.#get().shortcuts).find(
-          ([action, value]) => action !== f.action && value === binding,
+          ([action, value]) => action !== f.action && shortcutsConflict(value, binding),
         );
-        if (duplicate) {
+        if (!isAssignableShortcut(binding) || duplicate) {
+          const message = t(duplicate ? "settings.shortcut.conflict" : "settings.shortcut.invalid");
           btn.classList.add("conflict");
-          btn.textContent = t("settings.shortcut.conflict");
+          btn.textContent = message;
+          btn.title = message;
+          const version = this.#shortcutCaptureVersion;
           window.setTimeout(() => {
-            if (this.#capturingShortcut === f.action) {
+            if (this.#capturingShortcut === f.action && this.#shortcutCaptureVersion === version) {
               btn.classList.remove("conflict");
               btn.textContent = t("settings.shortcut.capture");
+              btn.title = t("settings.shortcut.cancelHint");
             }
           }, 900);
           return;
         }
-        this.#capturingShortcut = null;
+        this.#cancelShortcutCapture();
         btn.classList.remove("listening", "conflict");
         btn.textContent = formatShortcut(binding);
         btn.title = "";
