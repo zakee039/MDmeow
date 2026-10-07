@@ -11,4 +11,3 @@ for(const mode of ['table','code','math','image']){await page.goto(origin+'/capt
 if(mode==='image'){await page.locator('#editor img[src="assets/document-image.png"]').click();await page.getByRole('button',{name:'Scale image',exact:true}).click();}
 await page.screenshot({path:root+'/assets/'+(mode==='image'?'image-toolbar':mode)+'.png',...(mode==='image'?{clip:{x:0,y:30,width:520,height:660}}:{})});}
 }finally{await browser.close();server.close();}
-

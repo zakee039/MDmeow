@@ -10,4 +10,3 @@ if(data.scroll>width||data.head.some(a=>a.right>width))errors.push(`Overflow: ${
 await page.locator('.language-switch a').filter({hasText:file==='index.html'?'English':'中文'}).click();await page.waitForURL('**/'+(file==='index.html'?'en.html':'index.html')+'#8');}
 await page.close();}}finally{await browser.close();server.close()}
 fs.writeFileSync(here+'/qa/site-validation.json',JSON.stringify({errors,report},null,2));if(errors.length)throw Error(errors.join('\n'));console.log('Both languages: eight sections, desktop/mobile, images and language navigation passed.');
-

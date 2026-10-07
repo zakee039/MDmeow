@@ -81,4 +81,3 @@ const report = { video, bytes: fileSize, duration, decodedFrames, fps: actualFps
 fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));
 if (failed.length) process.exitCode = 1;
-
