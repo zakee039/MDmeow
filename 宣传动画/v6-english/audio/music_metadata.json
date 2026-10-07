@@ -1,0 +1,14 @@
+{
+  "title": "MDmeow — Soft Focus",
+  "original": true,
+  "duration_seconds": 62.3,
+  "sample_rate": 48000,
+  "channels": 2,
+  "bpm": 96,
+  "key": "A minor / C major",
+  "bars": 24,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -21.46,
+  "license_note": "Original procedural composition, no external samples or recordings.",
+  "regenerate": "python make_music.py"
+}

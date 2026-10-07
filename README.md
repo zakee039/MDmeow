@@ -1,5 +1,7 @@
 # MDmeow
 
+**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
+
 **官网：[mdmeow.zakee.fun](https://mdmeow.zakee.fun)**
 
 一个轻量、快速、精美的 WYSIWYG Markdown 编辑器。**打开即工作。**
@@ -9,8 +11,6 @@
 ![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
 ![License](https://img.shields.io/github/license/zakee039/MDmeow?style=flat-square&color=green)
 ![Version](https://img.shields.io/github/v/release/zakee039/MDmeow?style=flat-square&label=Version&color=blue)
-
-**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 MDmeow 是一款轻量、快速、精美的 WYSIWYG Markdown 编辑器，基于 **Tauri + Milkdown/Crepe** 构建。它尽量保持 Markdown 文件本身的纯净与可迁移性，同时提供自然、直接的即时排版体验。
 

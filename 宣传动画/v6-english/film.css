@@ -1,0 +1,51 @@
+/* One 54px caption lane, with no duplicate player subtitle track. */
+.scene{transition:none;transform-origin:960px 130px}
+.scene *{animation:none!important;transition:none!important;caret-color:transparent!important}
+#caption{position:absolute;z-index:40;bottom:38px;left:70px;right:70px;min-height:80px;display:flex;align-items:center;justify-content:center;text-align:center;color:#203f3b;font-size:54px;font-weight:700;line-height:1.35;letter-spacing:1px;background:#fbf9f2f5;border-radius:18px;padding:8px 24px;white-space:nowrap}
+#caption:empty{visibility:hidden}
+#film-progress{position:absolute;bottom:0;left:0;height:5px;background:#39c5bb;z-index:50}
+.opening-copy{top:210px}
+.opening-copy h1{font-size:98px}
+.opening-copy>p{display:none}
+.opening-answer{margin-top:42px;font-size:36px}
+.opening-copy:after{content:'Write documents · Review code · Edit configs';display:block;margin-top:52px;color:#3d9386;font-size:34px;letter-spacing:4px}
+.opening-tools{top:185px}
+.tiny-note{bottom:155px}
+.hero-miku{top:740px;width:175px;left:1500px}
+.hero-hand{top:815px}
+.render-nav button:last-child{display:none}
+.render-miku{top:625px}
+.render-sign{top:665px}
+.document-window{height:780px}
+#document-scroll{height:694px}
+.website{display:inline-block;color:#239c93;font:600 35px 'Segoe UI',sans-serif;text-decoration:none;margin-top:23px;letter-spacing:1px}
+.ending-copy{top:190px}
+.ending-copy p{margin:14px 0 20px}
+.ending-art{top:210px}
+.key-pills span:last-child{display:none}
+.settings-pair img{object-fit:cover;background:white}
+.settings-pair{top:180px}
+.copy{top:180px}
+.compact{top:190px}
+.ending-copy h2{font-size:120px}
+.ending-art{right:95px;width:570px;height:570px}
+.ending-miku{width:405px;left:78px}
+.code-types{font:600 24px Consolas,monospace;color:#239c93;margin:-6px 0 15px}
+#image-tools-demo{display:none;position:absolute;top:48px;bottom:38px;left:0;right:0;background:#fcfbfa;grid-template-columns:760px 1fr;gap:20px;padding:12px 24px}
+#image-tools-demo>img{width:100%;height:100%;min-height:0;object-fit:contain;object-position:center top}
+.show-image-tools #image-tools-demo{display:grid}
+.show-image-tools #document-scroll{visibility:hidden}
+.image-tool-notes{padding:28px 8px 0}
+.image-tool-notes .eyebrow{font-size:13px;letter-spacing:2px}
+.image-tool-notes h3{font-size:37px;line-height:1.4;margin:22px 0 35px}
+.image-tool-notes p{margin:0 0 30px;border-left:3px solid #39c5bb;padding-left:18px}
+.image-tool-notes b{font-size:24px;display:block;color:#239c93}
+.image-tool-notes p span{display:block;font-size:17px;color:#7a8983;margin-top:10px}
+.image-tool-notes small{font-size:14px;color:#7a8983}
+
+#caption{font-size:48px;letter-spacing:0}.opening-copy h1{font-size:108px}.opening-copy:after{font-size:27px;letter-spacing:0}.opening-answer{font-size:32px}.opening-tools h2{font-size:48px}.opening-tools article p{font-size:24px}.tool-detail{font-size:18px}.copy h2,.render-copy h2{font-size:78px}.ending-copy h2{font-size:102px}.image-tool-notes h3{font-size:34px}#image-tools-demo{grid-template-columns:610px 1fr}.render-nav button{font-size:20px}.render-sign span{font-size:18px}
+
+.memory-labels{display:grid;grid-template-columns:65% 14% 21%;font:24px Segoe UI,sans-serif;padding:18px;background:#e3f2ff}.memory-labels span:not(:first-child){text-align:right}.memory-rows{position:relative;aspect-ratio:765/126;overflow:hidden}.memory-card .memory-rows img{position:absolute;top:-111.11%;width:100%;max-width:none;margin:0}
+.render-copy h2{font-size:62px;line-height:1.16}.render-copy>p{font-size:25px}.render-miku,.render-sign{display:none}.render-nav{margin-top:28px}
+.hero-copy h1{font-size:80px;line-height:1.15}.hero-hand{left:1070px;top:800px}
+.settings-pair img{object-fit:contain;object-position:center top}

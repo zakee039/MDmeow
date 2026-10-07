@@ -1,16 +1,18 @@
 # MDmeow
 
-**Website：[mdmeow.zakee.fun](https://mdmeow.zakee.fun)**
+[简体中文](README.md) · **English** · [日本語](README.ja.md) · [Deutsch](README.de.md)
+
+**Website：[mdmeow.zakee.fun](https://mdmeow.zakee.fun/en.html)**
 
 A lightweight, fast and polished WYSIWYG Markdown editor. **Open it. Get to work.**
+
+[Watch the English introduction](https://mdmeow.zakee.fun/media/english.html) · [Download the cover](docs/media/MDmeow-English-cover-4K.jpg)
 
 <a href="https://zakee.fun" target="_blank"><img height="28" src="https://img.shields.io/badge/Homepage-zakee.fun-39C5BB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="zakee.fun" /></a>
 
 ![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
 ![License](https://img.shields.io/github/license/zakee039/MDmeow?style=flat-square&color=green)
 ![Version](https://img.shields.io/github/v/release/zakee039/MDmeow?style=flat-square&label=Version&color=blue)
-
-[简体中文](README.md) · **English** · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
 MDmeow is a lightweight, fast and polished WYSIWYG Markdown editor built with **Tauri + Milkdown/Crepe**. It keeps Markdown files clean and portable while providing a direct, comfortable editing experience.
 

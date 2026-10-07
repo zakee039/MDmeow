@@ -1,5 +1,11 @@
 const scenes=[...document.querySelectorAll(".scene")];
-const showcase=[
+const english=document.documentElement.lang==='en';
+const showcase=english?[
+  {topic:'01 / Tables',title:'Beautiful tables.<br>Clear ideas.',description:'Organize complex information.<br>Make every detail easy to read.',caption:'Beautiful tables',src:'assets/screenshots/en/table.png',alt:'MDmeow English table rendering'},
+  {topic:'02 / Code',title:'Code in color.<br>Clarity in every line.',description:'Syntax highlighting and line numbers.<br>Review code with ease.',caption:'Syntax highlighting',src:'assets/screenshots/en/code.png',alt:'MDmeow English code example'},
+  {topic:'03 / Equations',title:'Complex math.<br>Clear results.',description:'From inline math to matrices,<br>see the final layout as you write.',caption:'Beautiful equations',src:'assets/screenshots/en/math.png',alt:'MDmeow equation rendering'},
+  {topic:'04 / Image tools',title:'Insert an image.<br>Make it yours.',description:'Caption, align and resize.<br>One toolbar. Instant control.',caption:'Image toolbar',src:'assets/screenshots/en/image-toolbar.png',alt:'MDmeow English image toolbar with scale menu'}
+]:[
   {topic:"01 / 表格渲染",title:"表格漂亮，<br>信息也清楚。",description:"复杂信息排得整整齐齐，<br>阅读不需要额外费力。",caption:"漂亮表格渲染",src:"assets/screenshots/table.png",alt:"MDmeow 表格渲染截图"},
   {topic:"02 / 代码高亮",title:"代码好看，<br>也更好读。",description:"语法高亮、代码块与行号，<br>该清楚的地方都清楚。",caption:"优雅代码显示",src:"assets/screenshots/code.png",alt:"MDmeow 代码高亮截图"},
   {topic:"03 / 数学公式",title:"公式复杂，<br>表达依然轻松。",description:"从行内公式到完整推导，<br>直接看见最终排版。",caption:"公式也轻松拿下",src:"assets/screenshots/formula.png",alt:"MDmeow 数学公式渲染截图"},
@@ -41,9 +47,10 @@ function go(next,updateHash=true){
     scene.setAttribute("aria-hidden",String(!active));
   });
   if(cut.scene===3)applyShowcase(cut.demo);
-  hint.textContent=current===cuts.length-1?"所见即所得，打开即工作。":"点击任意位置，继续了解 →";
+  hint.textContent=english?(current===cuts.length-1?'See it. Edit it. Get to work.':'Click anywhere to explore →'):(current===cuts.length-1?"所见即所得，打开即工作。":"点击任意位置，继续了解 →");
   progress.style.width=((current+1)/cuts.length*100)+"%";
   if(updateHash)history.replaceState(null,"","#"+(current+1));
+  document.querySelectorAll('.language-switch a').forEach(a=>{a.hash=String(current+1)});
   window.scrollTo({top:0,behavior:"instant"});
 }
 
@@ -67,19 +74,18 @@ addEventListener("click",event=>{
   }
   if(event.target.closest(".logo-secret")){event.preventDefault();event.stopPropagation();secretClick();return}
   secretCount=0;
-  if(event.target.closest(".download-link"))return;
+  if(event.target.closest(".download-link,.language-switch"))return;
   if(dragged||window.getSelection()?.toString())return;
   event.preventDefault();
   event.stopPropagation();
   go(current+1);
 },true);
 addEventListener("keydown",event=>{
-  if(egg.open||event.target.closest?.(".download-link,.logo-secret"))return;
+  if(egg.open||event.target.closest?.(".download-link,.logo-secret,.language-switch"))return;
   if(["ArrowRight","ArrowLeft"," "].includes(event.key)){
     event.preventDefault();
     go(current+(event.key==="ArrowLeft"?-1:1));
   }
 });
 addEventListener("hashchange",()=>go((parseInt(location.hash.slice(1),10)||1)-1,false));
-history.replaceState(null,"","#1");
-go(0,false);
+go((parseInt(location.hash.slice(1),10)||1)-1);

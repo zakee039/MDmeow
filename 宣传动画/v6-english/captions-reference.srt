@@ -1,0 +1,91 @@
+1
+00:00:00,200 --> 00:00:01,964
+In the AI era, work smarter.
+
+2
+00:00:01,994 --> 00:00:04,022
+A fast, visual Markdown editor.
+
+3
+00:00:04,052 --> 00:00:05,996
+A lightweight document and code reviewer.
+
+4
+00:00:06,026 --> 00:00:07,892
+Open almost any common code file.
+
+5
+00:00:07,922 --> 00:00:10,255
+Python, C, Java, and more.
+
+6
+00:00:10,285 --> 00:00:12,523
+One app. MDmeow.
+
+7
+00:00:12,933 --> 00:00:15,746
+A small footprint. Ready anytime.
+
+8
+00:00:15,776 --> 00:00:18,536
+Just 4.3 megabytes in this captured session.
+
+9
+00:00:18,566 --> 00:00:20,110
+More room for your ideas.
+
+10
+00:00:20,533 --> 00:00:22,973
+Your color. Your workspace.
+
+11
+00:00:23,003 --> 00:00:25,765
+Choose your language, accent, and session settings.
+
+12
+00:00:26,200 --> 00:00:28,986
+Customize shortcuts, fonts, and text size.
+
+13
+00:00:29,016 --> 00:00:30,260
+Find your writing rhythm.
+
+14
+00:00:30,700 --> 00:00:33,046
+Write it. See it take shape.
+
+15
+00:00:33,076 --> 00:00:35,672
+From headings to tables, keep every idea clear.
+
+16
+00:00:36,100 --> 00:00:38,378
+Syntax highlighting makes code easy to read.
+
+17
+00:00:38,408 --> 00:00:40,729
+Open code and config files for quick edits.
+
+18
+00:00:41,167 --> 00:00:43,818
+Complex math. Clear results.
+
+19
+00:00:43,848 --> 00:00:46,381
+Equations and matrices, beautifully arranged.
+
+20
+00:00:46,800 --> 00:00:48,706
+The image toolbar puts you in control.
+
+21
+00:00:48,736 --> 00:00:53,840
+Add a caption. Align. Resize. One click.
+
+22
+00:00:54,267 --> 00:00:59,261
+MDmeow. See it. Edit it. Get to work.
+
+23
+00:00:59,291 --> 00:01:01,489
+Visit our website and write your first line.

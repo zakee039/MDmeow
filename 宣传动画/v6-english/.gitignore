@@ -1,0 +1,10 @@
+/qa/
+/assets/renderer/
+/audio/*.wav
+/audio/music-preview.mp3
+/*.mp4
+/cover/MDmeow-cover-*.png
+/cover/MDmeow-cover-*.jpg
+/cover/MDmeow-cover-metadata.json
+/prepare-english.py
+/update-site.py
