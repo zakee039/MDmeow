@@ -32,6 +32,8 @@ coverage/
 
 # Local development scratch notes
 /HTML兼容性测试.md
+/ARCHITECTURE.md
+/CODE_MODE_REFACTOR_PLAN.md
 
 # Local git backups
 *.bundle
