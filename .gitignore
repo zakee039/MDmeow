@@ -16,6 +16,22 @@ dist-ssr
 coverage/
 *.local
 
+# Local test builds / generated reports
+/test-build*/
+/build/
+/out/
+/playwright-report/
+/test-results/
+*.tsbuildinfo
+
+# Promotional production sources are kept locally, not in the app repository.
+# The published site assets in docs/media/ must remain tracked.
+/宣传动画/
+/视频/
+
+# Local development scratch notes
+/HTML兼容性测试.md
+
 # Local git backups
 *.bundle
 
