@@ -25,7 +25,8 @@ coverage/
 *.tsbuildinfo
 
 # Promotional production sources are kept locally, not in the app repository.
-# The published site assets in docs/media/ must remain tracked.
+# Keep unpublished promo media locally without publishing via GitHub Pages.
+/docs/media/
 /宣传动画/
 /视频/
 

@@ -6,8 +6,6 @@
 
 A lightweight, fast and polished WYSIWYG Markdown editor. **Open it. Get to work.**
 
-[Watch the English introduction](https://mdmeow.zakee.fun/media/english.html) · [Download the cover](docs/media/MDmeow-English-cover-4K.jpg)
-
 <a href="https://zakee.fun" target="_blank"><img height="28" src="https://img.shields.io/badge/Homepage-zakee.fun-39C5BB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="zakee.fun" /></a>
 
 ![Markdown](https://img.shields.io/badge/Markdown-WYSIWYG-39C5BB?style=flat-square&logo=markdown&logoColor=white)
