@@ -12,7 +12,7 @@ import { $prose } from "@milkdown/kit/utils";
 import { Plugin } from "@milkdown/kit/prose/state";
 import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import type { Node as ProseNode } from "@milkdown/kit/prose/model";
-import { t } from "./i18n";
+import { restoreProtectedFragments } from "./partial-markdown";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -283,16 +283,15 @@ function parseSummary(value: string): string | null {
 function safeHtmlDom(value: string): [string, Record<string, string>, string] | null {
   const trimmed = value.trim();
   if (/^<mdmeow-parse-error data-raw="[A-Za-z0-9+/=]+"\s*\/>$/.test(trimmed)) {
-    const label = t("editor.parseFailed");
+    // This is only an internal lossless encoding. Show the user's original
+    // Markdown literally, without a warning badge or escaping it as HTML.
+    // Keep the encoded token in the model so saving restores its exact bytes.
     return ["span", {
       "data-type": "html",
       "data-value": value,
       "data-mdmeow-parse-error": "true",
       contenteditable: "false",
-      role: "note",
-      "aria-label": label,
-      title: label,
-    }, label];
+    }, restoreProtectedFragments(trimmed)];
   }
   if (DETAILS_OPEN.test(trimmed)) return safeMarkerDom(value, "details-open");
   if (DETAILS_CLOSE.test(trimmed)) return safeMarkerDom(value, "details-close");

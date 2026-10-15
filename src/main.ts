@@ -931,33 +931,56 @@ function updateShortcutTitles(): void {
   updateSourceButton();
 }
 
-function toggleSource(): void {
+let sourceSwitchBusy = false;
+
+async function toggleSource(): Promise<void> {
   const tab = tabBar.active;
-  if (!tab || !isMarkdownPath(tab.path)) return;
+  if (sourceSwitchBusy || !tab || !isMarkdownPath(tab.path)) return;
 
   findBar.close();
+  // Capture the outgoing caret before hiding the editor: coordinates and
+  // selection anchors cannot be recovered once its DOM is display:none.
+  const hint = codeViewVisible ? codeEditor.cursorAnchor() : editor.cursorAnchor();
+  const frac = viewScrollFraction();
   const md = !tab.dirty && !codeViewVisible ? tab.saved : readView();
   tab.content = md;
-  const frac = viewScrollFraction(); // reading position in the outgoing view
+  const toCode = !codeViewVisible;
 
-  if (codeViewVisible) {
-    // Retry WYSIWYG only on explicit user request. If the source still cannot
-    // round-trip safely, writeView restores the same unmodified source view.
-    sourceMode = false;
-    tab.previewUnsafe = false;
-  } else {
-    sourceMode = true;
+  sourceSwitchBusy = true;
+  try {
+    sourceMode = toCode;
+    if (!toCode) tab.previewUnsafe = false;
+    setViewVisibility(tab);
+
+    if (toCode) {
+      // CodeMirror's setDocument loads language support asynchronously, then
+      // schedules a frame that resets scrollTop. Await it before restoring.
+      switching = true;
+      try { await codeEditor.setDocument(md, tab.path, 0); }
+      finally { switching = false; }
+    } else {
+      writeView(md);
+    }
+    tab.dirty = tab.content !== tab.saved;
+    tabBar.refreshDirty();
+    updateSourceButton();
+    updateTitle();
+    scheduleTextStats(true);
+
+    // Let both CodeMirror and Crepe finish their layout/reset frame first.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    if (tab !== tabBar.active || codeViewVisible !== toCode) return;
+    (toCode ? codeEditor : editor).focus();
+
+    // First try to return to the same text/caret. For opaque Markdown blocks
+    // or text that changed during conversion, preserve the reading position.
+    const restored = hint && (toCode
+      ? codeEditor.restoreCursor(hint)
+      : editor.restoreCursor(hint));
+    if (!restored) applyScrollFraction(frac);
+  } finally {
+    sourceSwitchBusy = false;
   }
-  setViewVisibility(tab);
-
-  writeView(md);
-  tab.dirty = tab.content !== tab.saved;
-  tabBar.refreshDirty();
-  updateSourceButton();
-  updateTitle();
-  scheduleTextStats(true);
-  (codeViewVisible ? codeEditor : editor).focus();
-  applyScrollFraction(frac);
 }
 
 // --- find / replace -----------------------------------------------------

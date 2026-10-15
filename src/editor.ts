@@ -6,6 +6,9 @@ import "@milkdown/crepe/theme/common/style.css";
 import { replaceAll, $prose } from "@milkdown/kit/utils";
 import { editorViewCtx, keymapCtx, remarkCtx } from "@milkdown/kit/core";
 import type { EditorView } from "@milkdown/kit/prose/view";
+import type { Node as ProseNode } from "@milkdown/kit/prose/model";
+import { TextSelection } from "@milkdown/kit/prose/state";
+import { matchingPositions, type CursorAnchor } from "./cursor-position";
 import { Plugin } from "@milkdown/kit/prose/state";
 import { Prec } from "@codemirror/state";
 import { keymap as codeMirrorKeymap } from "@codemirror/view";
@@ -70,6 +73,33 @@ export class Editor {
   private protectedTokens = new Set<string>();
   private programmaticDocumentUpdate = false;
   private protectedCount = 0;
+  /** A UTF-8 BOM belongs to the original source, not the Markdown parser.
+   * Milkdown mishandles it in long documents and may corrupt unrelated bold
+   * spans; restore the BOM whenever the source is read or saved. */
+  private leadingBOM = "";
+  /** The last actual document state reported as an edit. Milkdown's
+   * markdownUpdated is debounced and may fire long after setContent(), even
+   * when no user-facing document transaction occurred. */
+  private lastNotifiedDoc: ProseNode | null = null;
+  private lastNotifiedMarkdown: string | null = null;
+
+  private notifyActualEdit(): void {
+    if (this.programmaticDocumentUpdate || !this.crepe) return;
+    const doc = this.crepe.editor.ctx.get(editorViewCtx).state.doc;
+    const markdown = this.getMarkdown();
+    if (this.lastNotifiedDoc?.eq(doc) && this.lastNotifiedMarkdown === markdown) {
+      return;
+    }
+    this.lastNotifiedDoc = doc;
+    this.lastNotifiedMarkdown = markdown;
+    this.onChange();
+  }
+
+  private captureDocumentBaseline(): void {
+    if (!this.crepe) return;
+    this.lastNotifiedDoc = this.crepe.editor.ctx.get(editorViewCtx).state.doc;
+    this.lastNotifiedMarkdown = this.getMarkdown();
+  }
 
   /** Fires on every content change. */
   onChange: () => void = () => {};
@@ -345,6 +375,14 @@ export class Editor {
       .use(imageToolbarPlugin)
       .use(safeHtmlPresentationPlugin)
       .use($prose(() => new Plugin({
+        view: () => ({
+          // Document transactions are observed immediately, not after
+          // Milkdown's delayed markdownUpdated notification. This also
+          // snapshots unsaved edits before a fast tab switch.
+          update: (view, previous) => {
+            if (!previous.doc.eq(view.state.doc)) this.notifyActualEdit();
+          },
+        }),
         filterTransaction: (tr) => {
           if (!tr.docChanged || this.programmaticDocumentUpdate ||
               this.protectedTokens.size === 0) return true;
@@ -360,7 +398,8 @@ export class Editor {
       .use(emojiInputRule);
     crepe.on((listener) => {
       listener.markdownUpdated(() => {
-        this.onChange();
+        // Also captures nested editors, without counting delayed initial loads.
+        this.notifyActualEdit();
         this.scheduleExternalCodeLineNumbers();
         refreshSafeRawHtml(this.host);
       });
@@ -374,7 +413,10 @@ export class Editor {
     patchHtmlMarkdown(crepe);
     this.blockMenu = installBlockMenu(crepe);
     if (markdown) this.setContent(markdown);
-    else this.scheduleExternalCodeLineNumbers();
+    else {
+      this.captureDocumentBaseline();
+      this.scheduleExternalCodeLineNumbers();
+    }
   }
 
   /** Rebuild the instance in place, keeping the current content. */
@@ -388,6 +430,11 @@ export class Editor {
    * restored verbatim whenever Markdown is read or saved. */
   setContent(markdown: string): void {
     if (!this.crepe) return;
+    // BOM is a file encoding marker, not Markdown syntax. Hide it during
+    // parsing so Crepe cannot alter unrelated bold text, but restore it
+    // when reading the Markdown for editing or saving.
+    this.leadingBOM = markdown.startsWith("\uFEFF") ? "\uFEFF" : "";
+    if (this.leadingBOM) markdown = markdown.slice(1);
     this.programmaticDocumentUpdate = true;
     try {
       const load = (content: string) => this.crepe!.editor.action(replaceAll(content, true));
@@ -428,6 +475,9 @@ export class Editor {
       this.protectedCount = protectionTokenCount(prepared);
       load(prepared);
     } finally {
+      // Loading the source is not a user edit. Capture its rendered ProseMirror
+      // state and Markdown now, before a debounced markdownUpdated fires.
+      this.captureDocumentBaseline();
       this.programmaticDocumentUpdate = false;
     }
     resolveRawHtmlImages(this.host, this.resolveImageSrc);
@@ -436,7 +486,7 @@ export class Editor {
   }
 
   getMarkdown(): string {
-    return restoreProtectedFragments(this.crepe?.getMarkdown() ?? "");
+    return this.leadingBOM + restoreProtectedFragments(this.crepe?.getMarkdown() ?? "");
   }
 
   get protectedFragmentCount(): number {
@@ -518,6 +568,61 @@ export class Editor {
     } catch {
       return null;
     }
+  }
+
+  /** Text near the visible caret, used as a stable anchor when switching
+   * between WYSIWYG and Markdown source (offsets differ around formatting). */
+  cursorAnchor(): CursorAnchor | null {
+    const view = this.view();
+    if (!view) return null;
+    const head = view.state.selection.head;
+    let coords: { top: number };
+    try { coords = view.coordsAtPos(head); } catch { return null; }
+    const rect = this.host.getBoundingClientRect();
+    if (rect.height < 1 || coords.top < rect.top || coords.top > rect.bottom) return null;
+    const $head = view.state.doc.resolve(head);
+    if (!$head.parent.isTextblock) return null;
+    const before = ($head.nodeBefore?.text ?? "").slice(-28);
+    const after = ($head.nodeAfter?.text ?? "").slice(0, 28);
+    if (!before && !after) return null;
+    return {
+      before, after,
+      fraction: head / Math.max(1, view.state.doc.content.size),
+      viewportY: Math.min(0.95, Math.max(0.05, (coords.top - rect.top) / rect.height)),
+    };
+  }
+
+  /** Find source text near the original caret and restore the rich caret.
+   * Protected HTML blocks cannot be edited in WYSIWYG and are intentionally
+   * left to the caller's scroll-position fallback. */
+  restoreCursor(anchor: CursorAnchor): boolean {
+    const view = this.view();
+    if (!view) return false;
+    let best: { pos: number; quality: number } | null = null;
+    const total = Math.max(1, view.state.doc.content.size);
+    view.state.doc.descendants((node, pos) => {
+      if (!node.isText || !node.text) return;
+      for (const candidate of matchingPositions(node.text, anchor)) {
+        const target = pos + candidate.offset;
+        const quality = candidate.score -
+          Math.abs(target / total - anchor.fraction) * 12;
+        if (!best || quality > best.quality) best = { pos: target, quality };
+      }
+    });
+    if (!best) return false;
+    const target = (best as { pos: number }).pos;
+    view.focus();
+    view.dispatch(view.state.tr.setSelection(
+      TextSelection.near(view.state.doc.resolve(target)),
+    ));
+    requestAnimationFrame(() => {
+      try {
+        const rect = this.host.getBoundingClientRect();
+        const coords = view.coordsAtPos(view.state.selection.head);
+        this.host.scrollTop += coords.top - rect.top - rect.height * anchor.viewportY;
+      } catch { /* layout can still be settling; selection is retained */ }
+    });
+    return true;
   }
 
   // --- find / replace ----------------------------------------------------

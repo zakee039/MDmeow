@@ -162,36 +162,21 @@ body {
 
 #editor { flex: 1; overflow: auto; min-height: 0; }
 
-/* An unparseable source region stays in the document as a lossless, atomic
-   inline placeholder. It can be moved with the surrounding paragraphs while
-   its original Markdown remains encoded inside the editor's node. */
+/* Keep unsupported fragments visible as *their original source*, never
+   an error banner. An atomic node preserves the bytes until edited in Code
+   mode. Newlines and Markdown punctuation remain visible. */
 #editor [data-mdmeow-parse-error="true"] {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 10px;
-  border: 1px solid #e9c991;
-  border-radius: 7px;
-  background: #fff7e9;
-  color: #9a631b;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.65;
-  cursor: default;
-  user-select: none;
-  vertical-align: middle;
-}
-#editor [data-mdmeow-parse-error="true"]::before {
-  content: "!";
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 15px;
-  height: 15px;
-  flex: none;
-  border: 1.6px solid currentColor;
-  border-radius: 50%;
-  font: 700 11px/1 system-ui, sans-serif;
+  display: inline-block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  padding: 1px 3px;
+  background: var(--code-alt-row-color, #faffff);
+  color: var(--fg);
+  font: 0.9em/1.6 var(--code-font, ui-monospace, Consolas, monospace);
+  vertical-align: baseline;
+  cursor: text;
+  user-select: text;
 }
 
 

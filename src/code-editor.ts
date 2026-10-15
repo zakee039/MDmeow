@@ -29,6 +29,7 @@ import {
 import { mikuCreamCodeMirrorTheme } from "./miku-cream";
 import type { FindStatus } from "./find-bar";
 import { plainParagraphTransaction } from "./plain-paragraph-source";
+import { bestCursorOffset, type CursorAnchor } from "./cursor-position";
 import { isMarkdownPath } from "./file-types";
 
 const setAlternateRows = StateEffect.define<boolean>();
@@ -174,9 +175,16 @@ export class CodeEditor {
       keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       bracketMatching(),
       highlightActiveLine(),
-      // Preserve Windows CRLF and old-Mac CR files when editing protected source.
-      // CodeMirror otherwise normalizes line endings to LF before the first edit.
-      EditorState.lineSeparator.of(text.includes("\r\n") ? "\r\n" : text.includes("\r") ? "\r" : "\n"),
+      // Preserve original line endings without collapsing mixed-EOL documents.
+      // A lone CRLF (e.g. at EOF) must not cause hundreds of LF-only lines
+      // to be displayed as a single giant CodeMirror line. When mixed with LF,
+      // use LF as the structural separator: retained CR characters are kept
+      // verbatim in the source and survive a save/reopen round-trip.
+      EditorState.lineSeparator.of(
+        /(^|[^\r])\n/.test(text) ? "\n" :
+        /\r(?!\n)/.test(text) ? "\r" :
+        text.includes("\r\n") ? "\r\n" : "\n",
+      ),
       EditorState.tabSize.of(2),
       EditorView.contentAttributes.of({ spellcheck: "false", autocapitalize: "off" }),
       EditorView.updateListener.of((update) => {
@@ -271,6 +279,50 @@ export class CodeEditor {
 
   get clientHeight(): number {
     return this.#view?.scrollDOM.clientHeight ?? 0;
+  }
+
+  /** Caret context in this editor's *visible* source line. If the caret is
+   * outside the viewport, let the main window preserve its scroll position. */
+  cursorAnchor(): CursorAnchor | null {
+    const view = this.#view;
+    if (!view) return null;
+    const pos = view.state.selection.main.head;
+    const coords = view.coordsAtPos(pos);
+    const rect = view.scrollDOM.getBoundingClientRect();
+    if (!coords || rect.height < 1 ||
+        coords.top < rect.top || coords.top > rect.bottom) return null;
+    const line = view.state.doc.lineAt(pos);
+    const prefix = line.text.match(/^\s*(?:#{1,6}\s+|>\s*|[-+*]\s+|\d+[.)]\s+)/)?.[0].length ?? 0;
+    const column = Math.max(0, pos - line.from - prefix);
+    const text = line.text.slice(prefix);
+    // Formatting delimiters are not visible as characters in WYSIWYG.
+    const before = text.slice(Math.max(0, column - 32), column).replace(/[*_`~]/g, "").slice(-28);
+    const after = text.slice(column, column + 32).replace(/[*_`~]/g, "").slice(0, 28);
+    if (!before && !after) return null;
+    return {
+      before, after,
+      fraction: pos / Math.max(1, view.state.doc.length),
+      viewportY: Math.min(0.95, Math.max(0.05, (coords.top - rect.top) / rect.height)),
+    };
+  }
+
+  restoreCursor(anchor: CursorAnchor): boolean {
+    const view = this.#view;
+    if (!view) return false;
+    const pos = bestCursorOffset(this.getText(), anchor);
+    if (pos === null || pos > view.state.doc.length) return false;
+    view.dispatch({
+      selection: EditorSelection.cursor(pos),
+      effects: EditorView.scrollIntoView(pos, { y: "center" }),
+    });
+    view.focus();
+    requestAnimationFrame(() => {
+      const coords = view.coordsAtPos(pos);
+      if (!coords) return;
+      const rect = view.scrollDOM.getBoundingClientRect();
+      view.scrollDOM.scrollTop += coords.top - rect.top - rect.height * anchor.viewportY;
+    });
+    return true;
   }
 
   selectionText(): string {
