@@ -105,19 +105,53 @@ mod document_tests {
     fn dense_control_bytes_are_binary() {
         assert!(looks_like_binary(&[1, 2, 3, 4, b'a', b'b', b'c']));
     }
+
+    #[test]
+    fn editing_regular_text_preserves_unsupported_markdown_when_saved() {
+        // Only unique temporary fixtures are written. Never touch user documents.
+        let base = std::env::temp_dir().join(format!(
+            "mdmeow_integrity_regression_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock before epoch")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&base).expect("create isolated fixtures");
+        let cases = [
+            ("frontmatter", "---\ntitle: KEEP_META_UNTOUCHED\n---\n\nNORMAL_BEFORE\n"),
+            ("orphan_ref", "# Heading\n\n[unused]: https://example.test/KEEP_ORPHAN_UNTOUCHED\n\nNORMAL_BEFORE\n"),
+            ("crlf", "---\r\ntitle: KEEP_CRLF_UNTOUCHED\r\n---\r\n\r\nNORMAL_BEFORE\r\n"),
+            ("mixed_eol", "---\r\ntitle: KEEP_MIXED_UNTOUCHED\n---\r\n\nNORMAL_BEFORE\r\n"),
+            ("old_mac", "[unused]: https://example.test/KEEP_CR_UNTOUCHED\rNORMAL_BEFORE\r"),
+        ];
+        for (name, original) in cases {
+            let path = base.join(format!("{name}.md"));
+            let path_str = path.to_string_lossy().to_string();
+            std::fs::write(&path, original).expect("write isolated fixture");
+            let read = super::read_document(path_str.clone()).expect("read fixture");
+            assert_eq!(read, original, "read changed the original {name}");
+            let edited = read.replace("NORMAL_BEFORE", "NORMAL_AFTER_USER_EDIT");
+            let written = super::write_document(path_str.clone(), edited.clone(), Some(true))
+                .expect("save isolated fixture in source mode");
+            assert_eq!(written, edited, "formatter altered source text for {name}");
+            let reopened = super::read_document(path_str).expect("reopen fixture");
+            assert_eq!(reopened, edited, "original unsupported region lost for {name}");
+        }
+    }
 }
 
 /// Write `contents` to `path`, pretty-printing any GFM tables first.
 /// Returns the text that was actually written so the UI can resync.
 #[tauri::command]
-pub fn write_document(path: String, contents: String) -> Result<String, String> {
+pub fn write_document(path: String, contents: String, preserve_source: Option<bool>) -> Result<String, String> {
     let is_markdown = matches!(
         std::path::Path::new(&path)
             .extension()
             .and_then(|e| e.to_str()),
         Some("md") | Some("markdown") | Some("mdx") | None
     );
-    let formatted = if is_markdown {
+    let formatted = if is_markdown && !preserve_source.unwrap_or(false) {
         mdfmt::format_tables(&contents)
     } else {
         contents

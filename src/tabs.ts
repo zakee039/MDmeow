@@ -12,6 +12,8 @@ export interface Tab {
   /** Current editor content for this tab. */
   content: string;
   dirty: boolean;
+  /** WYSIWYG cannot round-trip this tab's Markdown without changing it. */
+  previewUnsafe: boolean;
   scrollTop: number;
 }
 
@@ -73,6 +75,7 @@ export class TabBar {
       saved: content,
       content,
       dirty: false,
+      previewUnsafe: false,
       scrollTop: 0,
     };
     this.tabs.push(tab);

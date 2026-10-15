@@ -174,6 +174,9 @@ export class CodeEditor {
       keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       bracketMatching(),
       highlightActiveLine(),
+      // Preserve Windows CRLF and old-Mac CR files when editing protected source.
+      // CodeMirror otherwise normalizes line endings to LF before the first edit.
+      EditorState.lineSeparator.of(text.includes("\r\n") ? "\r\n" : text.includes("\r") ? "\r" : "\n"),
       EditorState.tabSize.of(2),
       EditorView.contentAttributes.of({ spellcheck: "false", autocapitalize: "off" }),
       EditorView.updateListener.of((update) => {
@@ -208,7 +211,8 @@ export class CodeEditor {
   }
 
   getText(): string {
-    return this.#view?.state.doc.toString() ?? "";
+    const state = this.#view?.state;
+    return state ? state.sliceDoc(0, state.doc.length) : "";
   }
 
   setText(text: string): void {
@@ -217,7 +221,7 @@ export class CodeEditor {
     if (current === text) return;
     this.#suppressChange = true;
     this.#view.dispatch({
-      changes: { from: 0, to: current.length, insert: text },
+      changes: { from: 0, to: this.#view.state.doc.length, insert: text },
       selection: EditorSelection.cursor(0),
     });
     this.#suppressChange = false;
@@ -307,7 +311,9 @@ export class CodeEditor {
   #recomputeMatches(): void {
     this.#matches = [];
     if (!this.#query) return;
-    const text = this.getText();
+    // Search offsets must use CodeMirror's logical document coordinates;
+    // getText() may use CRLF, which has different string offsets.
+    const text = this.#view?.state.doc.toString() ?? "";
     const haystack = this.#caseSensitive ? text : text.toLowerCase();
     const needle = this.#caseSensitive ? this.#query : this.#query.toLowerCase();
     const stride = Math.max(1, needle.length);
@@ -359,7 +365,7 @@ export class CodeEditor {
   findReplace(replacement: string): FindStatus {
     if (!this.#matches.length || !this.#query) return this.#findStatus();
     const from = this.#matches[this.#activeMatch] ?? this.#matches[0];
-    const current = this.getText().slice(from, from + this.#query.length);
+    const current = this.#view?.state.doc.toString().slice(from, from + this.#query.length) ?? "";
     const hit = this.#caseSensitive
       ? current === this.#query
       : current.toLowerCase() === this.#query.toLowerCase();
@@ -373,9 +379,9 @@ export class CodeEditor {
     if (!this.#query) return this.#findStatus();
     const escaped = this.#query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const re = new RegExp(escaped, this.#caseSensitive ? "g" : "gi");
-    const current = this.getText();
+    const current = this.#view?.state.doc.toString() ?? "";
     const next = current.replace(re, () => replacement);
-    if (next !== current) this.#replaceRange(next, 0, current.length);
+    if (next !== current) this.#replaceRange(next, 0, this.#view?.state.doc.length ?? 0);
     this.#activeMatch = 0;
     this.#recomputeMatches();
     return this.#findStatus();

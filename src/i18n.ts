@@ -102,7 +102,9 @@ const EN = {
   "dialog.openWithPrompt": "Register MDmeow in Windows ‘Open with’ for Markdown files? This will not change your default app.",
   "dialog.openWithError": "Could not update Windows Open with registration: {err}",
   "dialog.renameError": "Could not rename file: {err}",
+  "dialog.markdownSourceProtected": "Source protected: WYSIWYG would change this file's Markdown. The original text remains intact in source mode.",
 
+  "editor.parseFailed": "This part could not be parsed",
   "editor.placeholder": "Write here — “/” for blocks, the ⠿ button to change the current one",
 
   "settings.title": "Settings",
@@ -282,7 +284,9 @@ const DE: Record<I18nKey, string> = {
   "dialog.openWithPrompt": "MDmeow unter Windows für Markdown-Dateien unter „Öffnen mit“ registrieren? Die Standard-App wird dadurch nicht geändert.",
   "dialog.openWithError": "Windows-Registrierung für „Öffnen mit“ konnte nicht aktualisiert werden: {err}",
   "dialog.renameError": "Datei konnte nicht umbenannt werden: {err}",
+  "dialog.markdownSourceProtected": "Quelltext geschützt: Die Vorschau würde Markdown verändern. Der Originaltext bleibt im Quelltextmodus erhalten.",
 
+  "editor.parseFailed": "Dieser Abschnitt konnte nicht verarbeitet werden",
   "editor.placeholder": "Hier schreiben — „/“ für Blöcke, den ⠿-Knopf für den aktuellen Block",
 
   "settings.title": "Einstellungen",
@@ -460,7 +464,9 @@ const ZH_CN: Record<I18nKey, string> = {
   "dialog.openWithPrompt": "是否将 MDmeow 注册到 Windows 的 Markdown 打开方式？这不会更改你的默认应用。",
   "dialog.openWithError": "更新 Windows 打开方式注册失败：{err}",
   "dialog.renameError": "重命名文件失败：{err}",
+  "dialog.markdownSourceProtected": "源码已保护：所见即所得模式无法完整保留该文件，已切换至源码模式，原文未被修改。",
 
+  "editor.parseFailed": "该部分解析失败",
   "editor.placeholder": "在此输入 — 输入“/”插入内容块，点击 ⠿ 更改当前块类型",
 
   "settings.title": "设置",
@@ -637,7 +643,9 @@ const JA: Record<I18nKey, string> = {
   "dialog.openWithPrompt": "Markdown ファイルの Windows「プログラムから開く」に MDmeow を登録しますか？既定のアプリは変更されません。",
   "dialog.openWithError": "Windows の「プログラムから開く」登録を更新できませんでした: {err}",
   "dialog.renameError": "ファイル名を変更できませんでした: {err}",
+  "dialog.markdownSourceProtected": "ソースを保護しました。プレビューで原文を完全に保持できないため、ソースモードで開き、元の内容を維持します。",
 
+  "editor.parseFailed": "この部分の解析に失敗しました",
   "editor.placeholder": "ここに入力 — 「/」でブロックを挿入、⠿ ボタンで現在のブロック種類を変更",
 
   "settings.title": "設定",

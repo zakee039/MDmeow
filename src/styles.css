@@ -162,6 +162,49 @@ body {
 
 #editor { flex: 1; overflow: auto; min-height: 0; }
 
+/* An unparseable source region stays in the document as a lossless, atomic
+   inline placeholder. It can be moved with the surrounding paragraphs while
+   its original Markdown remains encoded inside the editor's node. */
+#editor [data-mdmeow-parse-error="true"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid #e9c991;
+  border-radius: 7px;
+  background: #fff7e9;
+  color: #9a631b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.65;
+  cursor: default;
+  user-select: none;
+  vertical-align: middle;
+}
+#editor [data-mdmeow-parse-error="true"]::before {
+  content: "!";
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 1.6px solid currentColor;
+  border-radius: 50%;
+  font: 700 11px/1 system-ui, sans-serif;
+}
+
+
+#integrity-warning {
+  flex: none;
+  padding: 6px 14px;
+  border-top: 1px solid var(--border);
+  background: #fff3cd;
+  color: #664d03;
+  font-size: 12px;
+}
+#integrity-warning[hidden] { display: none !important; }
+
 #text-stats {
   position: fixed;
   right: 18px;

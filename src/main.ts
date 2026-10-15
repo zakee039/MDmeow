@@ -151,7 +151,7 @@ let codeViewVisible = false;
 let persistTimer: number | undefined;
 
 function shouldUseCodeView(tab: Tab | undefined = tabBar.active): boolean {
-  return sourceMode || Boolean(tab && !isMarkdownPath(tab.path));
+  return sourceMode || Boolean(tab && (!isMarkdownPath(tab.path) || tab.previewUnsafe));
 }
 
 function setViewVisibility(tab: Tab | undefined = tabBar.active): void {
@@ -205,16 +205,38 @@ function scheduleTextStats(recount = false): void {
   textStatsFrame = requestAnimationFrame(updateTextStats);
 }
 
-/** Load `md` into the active view (and restore a scroll offset). */
+/** Load an existing document without ever adopting a lossy preview as source. */
 function writeView(md: string, scrollTop = 0): void {
+  const tab = tabBar.active;
   if (codeViewVisible) {
-    void codeEditor.setDocument(md, tabBar.active?.path ?? null, scrollTop);
+    void codeEditor.setDocument(md, tab?.path ?? null, scrollTop);
     scheduleTextStats(true);
+    updateIntegrityWarning();
     return;
   }
   switching = true;
-  editor.setContent(md);
+  let safe = false;
+  try {
+    editor.setContent(md);
+    // The renderer may normalize harmless formatting, but it must not
+    // change Markdown structure or discard unknown source content.
+    // Local parse failures are represented by lossless inline placeholders.
+    // The rest of the document remains in WYSIWYG mode.
+    safe = true;
+  } catch (error) {
+    console.warn("Markdown preview conversion failed; original source kept.", error);
+  }
+  if (!safe) {
+    if (tab) tab.previewUnsafe = true;
+    setViewVisibility(tab);
+    void codeEditor.setDocument(md, tab?.path ?? null, scrollTop);
+    scheduleTextStats(true);
+    switching = false;
+    updateIntegrityWarning();
+    return;
+  }
   scheduleTextStats(true);
+  updateIntegrityWarning();
   requestAnimationFrame(() => {
     editorHost.scrollTop = scrollTop;
     switching = false;
@@ -468,13 +490,13 @@ async function initializeOpenWithIntegration(): Promise<void> {
   }
 }
 
-/** Crepe may reformat Markdown on load; adopt that as the tab's baseline so a
- *  freshly loaded document does not show up as dirty. */
-function adoptNormalized(tab: Tab): void {
-  if (codeViewVisible) return; // Code mode keeps source text verbatim
-  const md = editor.getMarkdown();
-  tab.content = md;
-  if (!tab.dirty) tab.saved = md;
+/** A failed round-trip must never replace the bytes read from disk. */
+function updateIntegrityWarning(): void {
+  const banner = document.getElementById("integrity-warning");
+  if (!banner) return;
+  const blocked = Boolean(tabBar.active?.previewUnsafe);
+  banner.hidden = !blocked;
+  if (blocked) banner.textContent = t("dialog.markdownSourceProtected");
 }
 
 function markDirtyFromView(): void {
@@ -502,13 +524,12 @@ tabBar.onStructureChange = () => persistSoon();
 
 tabBar.onActivate = (next: Tab, prev: Tab | null) => {
   if (prev) {
-    prev.content = readView();
+    prev.content = prev.dirty ? readView() : prev.saved;
     prev.scrollTop = viewScrollTop();
   }
   editor.setDocPath(next.path);
   setViewVisibility(next);
   writeView(next.content, next.scrollTop);
-  adoptNormalized(next);
   editor.setSpellcheck(settings.spellcheck);
   codeEditor.setAlternateRows(settings.code_alternate_rows);
   updateTitle();
@@ -548,15 +569,32 @@ codeEditor.onSelectionChange = () => {
   if (codeViewVisible) scheduleTextStats();
 };
 
-function applyProxySettings(reloadEditor: boolean): void {
-  editor.setProxyConfig(settings.proxy_enabled, settings.proxy_url);
-  if (!reloadEditor || codeViewVisible) return;
+/** Rebuilding a preview for settings must not turn normalization into a user edit. */
+function reloadPreviewSafely(): void {
+  if (codeViewVisible) return;
+  const tab = tabBar.active;
+  const wasDirty = tab?.dirty ?? false;
   switching = true;
   void editor.reload().then(() => {
     editor.setSpellcheck(settings.spellcheck);
     switching = false;
-    markDirtyFromView();
+    if (tab !== tabBar.active) return;
+    if (wasDirty) markDirtyFromView();
+  }).catch((error) => {
+    switching = false;
+    console.warn("Preview reload failed; retaining original source.", error);
+    if (tab && tab === tabBar.active) {
+      tab.previewUnsafe = true;
+      setViewVisibility(tab);
+      writeView(tab.content);
+      updateSourceButton();
+    }
   });
+}
+
+function applyProxySettings(reloadEditor: boolean): void {
+  editor.setProxyConfig(settings.proxy_enabled, settings.proxy_url);
+  if (reloadEditor) reloadPreviewSafely();
 }
 
 // The settings GUI reports each change here; we own the object + the save.
@@ -578,14 +616,7 @@ settingsPanel.onChange = (key: SettingKey, value) => {
     case "list_marker":
       if (isListMarker(settings.list_marker)) {
         editor.setListMarker(settings.list_marker);
-        if (!codeViewVisible) {
-          switching = true;
-          void editor.reload().then(() => {
-            editor.setSpellcheck(settings.spellcheck);
-            switching = false;
-            markDirtyFromView();
-          });
-        }
+        reloadPreviewSafely();
       }
       break;
     case "editor_font":
@@ -670,7 +701,6 @@ async function openPath(path: string): Promise<void> {
     editor.setDocPath(path);
     setViewVisibility(cur);
     writeView(text);
-    adoptNormalized(cur);
     tabBar.render();
     editor.setSpellcheck(settings.spellcheck);
     updateSourceButton();
@@ -720,18 +750,23 @@ async function wireFileDrop(): Promise<void> {
   });
 }
 
-async function saveDoc(): Promise<boolean> {
+async function saveDoc(forceWrite = false): Promise<boolean> {
   const tab = tabBar.active;
   if (!tab) return false;
   if (!tab.path) return saveAs();
 
-  const md = readView();
+  // Preserve the exact source when the WYSIWYG document was never edited.
+  const md = !tab.dirty && !codeViewVisible ? tab.saved : readView();
+  // Ctrl+S on an untouched file must never rewrite its original bytes.
+  if (!forceWrite && !tab.dirty) return true;
   let written: string;
   try {
-    // The backend beautifies GFM tables and returns the text it wrote.
+    // Source mode is authoritative: never run the table formatter on raw text.
     written = await invoke<string>("write_document", {
       path: tab.path,
       contents: md,
+      // Never let backend table formatting touch opaque protected snippets.
+      preserveSource: codeViewVisible || editor.protectedFragmentCount > 0,
     });
   } catch (e) {
     await message(String(e), { title: "MDmeow", kind: "error" });
@@ -783,7 +818,7 @@ async function saveAs(): Promise<boolean> {
   } else if (codeViewVisible) {
     void codeEditor.setLanguageForPath(dest);
   }
-  const ok = await saveDoc();
+  const ok = await saveDoc(true);
   if (ok) {
     tabBar.render();
     updateSourceButton();
@@ -854,9 +889,9 @@ function updateSourceButton(): void {
   if (!btn) return;
   const markdown = isMarkdownPath(tabBar.active?.path ?? null);
   btn.disabled = !markdown;
-  btn.innerHTML = markdown && sourceMode ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
+  btn.innerHTML = markdown && codeViewVisible ? ICON_TO_WYSIWYG : ICON_TO_SOURCE;
   const label = markdown
-    ? sourceMode
+    ? codeViewVisible
       ? t("toolbar.sourceBack.title")
       : t("toolbar.source.title")
     : t("toolbar.source.codeMode");
@@ -901,15 +936,21 @@ function toggleSource(): void {
   if (!tab || !isMarkdownPath(tab.path)) return;
 
   findBar.close();
-  const md = readView();
+  const md = !tab.dirty && !codeViewVisible ? tab.saved : readView();
   tab.content = md;
   const frac = viewScrollFraction(); // reading position in the outgoing view
 
-  sourceMode = !sourceMode;
+  if (codeViewVisible) {
+    // Retry WYSIWYG only on explicit user request. If the source still cannot
+    // round-trip safely, writeView restores the same unmodified source view.
+    sourceMode = false;
+    tab.previewUnsafe = false;
+  } else {
+    sourceMode = true;
+  }
   setViewVisibility(tab);
 
   writeView(md);
-  adoptNormalized(tab);
   tab.dirty = tab.content !== tab.saved;
   tabBar.refreshDirty();
   updateSourceButton();
@@ -1830,14 +1871,7 @@ async function bootstrap(): Promise<void> {
     if (isListMarker(ext.list_marker) && ext.list_marker !== settings.list_marker) {
       settings.list_marker = ext.list_marker;
       editor.setListMarker(ext.list_marker);
-      if (!codeViewVisible) {
-        switching = true;
-        void editor.reload().then(() => {
-          editor.setSpellcheck(settings.spellcheck);
-          switching = false;
-          markDirtyFromView();
-        });
-      }
+      reloadPreviewSafely();
     }
   });
 

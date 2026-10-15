@@ -3,9 +3,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Crepe } from "@milkdown/crepe";
 import "@milkdown/crepe/theme/common/style.css";
-import { replaceAll } from "@milkdown/kit/utils";
-import { editorViewCtx, keymapCtx } from "@milkdown/kit/core";
+import { replaceAll, $prose } from "@milkdown/kit/utils";
+import { editorViewCtx, keymapCtx, remarkCtx } from "@milkdown/kit/core";
 import type { EditorView } from "@milkdown/kit/prose/view";
+import { Plugin } from "@milkdown/kit/prose/state";
 import { Prec } from "@codemirror/state";
 import { keymap as codeMirrorKeymap } from "@codemirror/view";
 
@@ -33,6 +34,14 @@ import {
 } from "./html-markdown";
 import { mikuCreamCodeMirrorTheme } from "./miku-cream";
 import {
+  candidateParagraphs,
+  findKnownUnsafeFragments,
+  makeProtectionToken,
+  maskFragments,
+  restoreProtectedFragments,
+  protectionTokenCount,
+} from "./partial-markdown";
+import {
   findKey,
   findPlugin,
   statusOf,
@@ -58,6 +67,9 @@ export class Editor {
   private proxyUrl = "";
   /** Resolved `data:` URLs, keyed by `docPath \0 src`. */
   private readonly imageCache = new Map<string, string>();
+  private protectedTokens = new Set<string>();
+  private programmaticDocumentUpdate = false;
+  private protectedCount = 0;
 
   /** Fires on every content change. */
   onChange: () => void = () => {};
@@ -332,6 +344,19 @@ export class Editor {
       .use(findPlugin)
       .use(imageToolbarPlugin)
       .use(safeHtmlPresentationPlugin)
+      .use($prose(() => new Plugin({
+        filterTransaction: (tr) => {
+          if (!tr.docChanged || this.programmaticDocumentUpdate ||
+              this.protectedTokens.size === 0) return true;
+          const present = new Set<string>();
+          tr.doc.descendants((node) => {
+            if (node.type.name === "html") present.add(String(node.attrs?.value ?? "").trim());
+          });
+          // A protected error placeholder cannot be accidentally deleted while
+          // typing/editing other paragraphs: deleting it would lose raw source.
+          return [...this.protectedTokens].every((token) => present.has(token));
+        },
+      })))
       .use(emojiInputRule);
     crepe.on((listener) => {
       listener.markdownUpdated(() => {
@@ -358,16 +383,93 @@ export class Editor {
     await this.init(this.getMarkdown());
   }
 
-  /** Replace the whole document without tearing the instance down. */
+  /** Load Markdown into WYSIWYG, hiding only the spans that cannot be
+   * safely parsed. Protected spans are encoded in atomic HTML nodes and
+   * restored verbatim whenever Markdown is read or saved. */
   setContent(markdown: string): void {
-    this.crepe?.editor.action(replaceAll(markdown, true));
+    if (!this.crepe) return;
+    this.programmaticDocumentUpdate = true;
+    try {
+      const load = (content: string) => this.crepe!.editor.action(replaceAll(content, true));
+      let prepared = maskFragments(markdown, findKnownUnsafeFragments(markdown));
+      const check = (content: string): boolean => {
+        try {
+          load(content);
+          return this.isSafeToRender(content);
+        } catch {
+          return false;
+        }
+      };
+
+      if (!check(prepared)) {
+        // Unknown syntax: probe independent paragraphs first, preserving the
+        // ones that Milkdown understands, rather than hiding the entire file.
+        const unsafe = [];
+        for (const section of candidateParagraphs(prepared).slice(0, 100)) {
+          const fragment = prepared.slice(section.start, section.end);
+          if (!check(fragment)) unsafe.push(section);
+        }
+        if (unsafe.length) prepared = maskFragments(prepared, unsafe);
+        if (!check(prepared)) {
+          const sections = candidateParagraphs(prepared).slice(0, 100);
+          for (let i = sections.length - 1; i >= 0; i--) {
+            const next = maskFragments(prepared, [sections[i]]);
+            if (check(next)) { prepared = next; break; }
+          }
+          // If there is an interaction the paragraph probes cannot localize,
+          // use a protected placeholder for it rather than losing any source.
+          if (!check(prepared)) prepared = makeProtectionToken(markdown);
+        }
+      }
+      this.protectedTokens = new Set(
+        [...prepared.matchAll(/<mdmeow-parse-error data-raw="[A-Za-z0-9+/=]+"\s*\/>/g)]
+          .map((match) => match[0]),
+      );
+      this.protectedCount = protectionTokenCount(prepared);
+      load(prepared);
+    } finally {
+      this.programmaticDocumentUpdate = false;
+    }
     resolveRawHtmlImages(this.host, this.resolveImageSrc);
     refreshSafeRawHtml(this.host);
     this.scheduleExternalCodeLineNumbers();
   }
 
   getMarkdown(): string {
-    return this.crepe?.getMarkdown() ?? "";
+    return restoreProtectedFragments(this.crepe?.getMarkdown() ?? "");
+  }
+
+  get protectedFragmentCount(): number {
+    return this.protectedCount;
+  }
+
+  /** Allow only semantic-preserving Markdown normalization in WYSIWYG.
+   * The original bytes remain the tab's saved baseline until an explicit edit.
+   * Unknown/lost nodes and front matter always fall back to source mode. */
+  isSafeToRender(source: string): boolean {
+    const serialized = this.crepe?.getMarkdown() ?? "";
+    if (serialized === source) return true;
+    // Front matter can look like thematic breaks to a GFM-only parser;
+    // the two ASTs may match even when the YAML header has been damaged.
+    if (/^\uFEFF?---[ \t]*\r?\n/.test(source)) return false;
+    if (!this.crepe) return false;
+    try {
+      const processor = this.crepe.editor.ctx.get(remarkCtx);
+      const normalize = (value: unknown): unknown => {
+        if (Array.isArray(value)) return value.map(normalize);
+        if (value && typeof value === "object") {
+          return Object.fromEntries(
+            Object.entries(value).filter(([key]) => key !== "position" && key !== "data")
+              .map(([key, item]) => [key, normalize(item)]),
+          );
+        }
+        return value;
+      };
+      return JSON.stringify(normalize(processor.parse(source))) ===
+        JSON.stringify(normalize(processor.parse(serialized)));
+    } catch {
+      return false;
+    }
   }
 
   setSpellcheck(on: boolean): void {
