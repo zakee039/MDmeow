@@ -64,6 +64,7 @@ interface Settings {
   source_font: string;
   source_font_size: number;
   code_alternate_rows: boolean;
+  code_line_wrap: boolean;
   code_alternate_row_color: string;
   remember_window_position: boolean;
   file_associations: string[];
@@ -532,6 +533,7 @@ tabBar.onActivate = (next: Tab, prev: Tab | null) => {
   writeView(next.content, next.scrollTop);
   editor.setSpellcheck(settings.spellcheck);
   codeEditor.setAlternateRows(settings.code_alternate_rows);
+  codeEditor.setLineWrap(settings.code_line_wrap);
   updateTitle();
   updateSourceButton();
   scheduleTextStats(true);
@@ -629,6 +631,9 @@ settingsPanel.onChange = (key: SettingKey, value) => {
       break;
     case "code_alternate_rows":
       codeEditor.setAlternateRows(settings.code_alternate_rows);
+      break;
+    case "code_line_wrap":
+      codeEditor.setLineWrap(settings.code_line_wrap);
       break;
     case "proxy_enabled":
     case "proxy_url":
@@ -1872,6 +1877,7 @@ async function bootstrap(): Promise<void> {
     settings.source_font = ext.source_font;
     settings.source_font_size = ext.source_font_size;
     settings.code_alternate_rows = ext.code_alternate_rows;
+    settings.code_line_wrap = ext.code_line_wrap;
     settings.code_alternate_row_color = ext.code_alternate_row_color;
     settings.remember_window_position = ext.remember_window_position;
     settings.file_associations = ext.file_associations;
@@ -1885,6 +1891,7 @@ async function bootstrap(): Promise<void> {
     applyLanguage(settings.language); // no-op if unchanged
     applyAppearance();
     codeEditor.setAlternateRows(settings.code_alternate_rows);
+    codeEditor.setLineWrap(settings.code_line_wrap);
     applyProxySettings(true);
     updateShortcutTitles();
     editor.setSpellcheck(settings.spellcheck);

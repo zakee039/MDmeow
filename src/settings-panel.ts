@@ -33,6 +33,7 @@ export interface PanelSettings {
   source_font: string;
   source_font_size: number;
   code_alternate_rows: boolean;
+  code_line_wrap: boolean;
   code_alternate_row_color: string;
   remember_window_position: boolean;
   file_associations: string[];
@@ -143,6 +144,7 @@ const SECTIONS: Section[] = [
         ],
       },
       { key: "show_path", kind: "checkbox", label: "settings.showPath" },
+      { key: "code_line_wrap", kind: "checkbox", label: "settings.codeLineWrap" },
       {
         key: "code_alternate_rows",
         colorKey: "code_alternate_row_color",

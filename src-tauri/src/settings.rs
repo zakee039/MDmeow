@@ -100,6 +100,8 @@ pub struct Settings {
     pub source_font_size: u16,
     /// Alternate row tint in Markdown source / Code mode.
     pub code_alternate_rows: bool,
+    /// Visually wrap long source lines without modifying file contents.
+    pub code_line_wrap: bool,
     /// Background colour used for alternating rows in Code mode.
     pub code_alternate_row_color: String,
     /// Restore the previous window position and size on startup.
@@ -143,6 +145,7 @@ impl Default for Settings {
             source_font: String::new(),
             source_font_size: 15,
             code_alternate_rows: true,
+            code_line_wrap: true,
             code_alternate_row_color: "#FAFFFF".to_string(),
             remember_window_position: false,
             file_associations: vec![

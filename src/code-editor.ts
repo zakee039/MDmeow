@@ -98,6 +98,10 @@ const codeDocumentTheme = EditorView.theme({
     padding: "10px 0 48px",
     caretColor: "#147a74",
   },
+  ".cm-content.cm-lineWrapping": {
+    // Soft wrapping must use the viewport width, not the longest source line.
+    minWidth: "0",
+  },
   ".cm-line": {
     minHeight: "1.6em",
     padding: "0 28px",
@@ -138,8 +142,10 @@ export class CodeEditor {
 
   #view: EditorView | null = null;
   #language = new Compartment();
+  #lineWrap = new Compartment();
   #languageLoadToken = 0;
   #alternateRows = true;
+  #lineWrapEnabled = true;
   #suppressChange = false;
   #markdownDocument = true;
 
@@ -195,6 +201,7 @@ export class CodeEditor {
       alternateRowsPlugin,
       ...mikuCreamCodeMirrorTheme,
       codeDocumentTheme,
+      this.#lineWrap.of(this.#lineWrapEnabled ? EditorView.lineWrapping : []),
       this.#language.of([]),
     ];
     return EditorState.create({ doc: text, extensions });
@@ -259,6 +266,14 @@ export class CodeEditor {
   setAlternateRows(enabled: boolean): void {
     this.#alternateRows = enabled;
     this.#view?.dispatch({ effects: setAlternateRows.of(enabled) });
+  }
+
+  setLineWrap(enabled: boolean): void {
+    if (this.#lineWrapEnabled === enabled) return;
+    this.#lineWrapEnabled = enabled;
+    this.#view?.dispatch({
+      effects: this.#lineWrap.reconfigure(enabled ? EditorView.lineWrapping : []),
+    });
   }
 
   focus(): void {
