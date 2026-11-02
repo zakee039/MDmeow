@@ -1,7 +1,7 @@
 {
   "name": "mdmeow",
   "private": true,
-  "version": "1.8.6",
+  "version": "1.8.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,7 +23,9 @@
     "@milkdown/kit": "7.22.1",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "mdast-util-to-markdown": "2.1.2",
+    "mermaid": "11.17.2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

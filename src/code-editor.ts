@@ -398,11 +398,12 @@ export class CodeEditor {
     if (this.#activeMatch >= this.#matches.length) this.#activeMatch = 0;
     const from = this.#matches[this.#activeMatch];
     const to = from + this.#query.length;
+    // Keep the find / replace field focused while typing a search query.
+    // Dispatching the source selection already scrolls to the active match.
     view.dispatch({
       selection: { anchor: from, head: to },
       effects: EditorView.scrollIntoView(from, { y: "center" }),
     });
-    view.focus();
   }
 
   #findStatus(): FindStatus {

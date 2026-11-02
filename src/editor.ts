@@ -2,6 +2,7 @@
 // swapped in place (tabbed editing keeps a single instance — see tabs.ts).
 import { invoke } from "@tauri-apps/api/core";
 import { Crepe } from "@milkdown/crepe";
+import { isMermaidLanguage, renderMermaid } from "./mermaid";
 import "@milkdown/crepe/theme/common/style.css";
 import { replaceAll, $prose } from "@milkdown/kit/utils";
 import { editorViewCtx, keymapCtx, remarkCtx } from "@milkdown/kit/core";
@@ -22,6 +23,7 @@ import {
   type BlockMenuHandle,
 } from "./block-menu";
 import { emojiInputRule } from "./emoji";
+import { listIndentKeymap } from "./list-indent";
 import { t } from "./i18n";
 import {
   configureMarkdownSerializer,
@@ -343,6 +345,12 @@ export class Editor {
       featureConfigs: {
         [Crepe.Feature.CodeMirror]: {
           theme: mikuCreamCodeMirrorTheme,
+          // Crepe chains its LaTeX renderer in front of this fallback.
+          renderPreview: (language, content, applyPreview) => {
+            if (!isMermaidLanguage(language) || !content.trim()) return null;
+            renderMermaid(content, applyPreview);
+            return undefined;
+          },
           // The configurable app command owns this key. Suppress Crepe's
           // fixed exitCode binding even when the user reassigns that command.
           extensions: [
@@ -395,7 +403,8 @@ export class Editor {
           return [...this.protectedTokens].every((token) => present.has(token));
         },
       })))
-      .use(emojiInputRule);
+      .use(emojiInputRule)
+      .use(listIndentKeymap);
     crepe.on((listener) => {
       listener.markdownUpdated(() => {
         // Also captures nested editors, without counting delayed initial loads.
