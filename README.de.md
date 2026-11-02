@@ -28,6 +28,7 @@ Das Standarddesign **Miku Cream** kombiniert einen hellen Dokumenthintergrund, d
 - HTML- / PDF-Export
 - Markdown-Bilder und gängige HTML-`<img>`-Formen
 - KaTeX-Formeln
+- Mermaid-Diagrammvorschau für Flussdiagramme und weitere Diagramme in `mermaid`-Codeblöcken, ohne den Markdown-Quelltext zu verändern
 - Codeblöcke mit Syntaxhervorhebung, Zeilennummern und Kopierfeedback
 - frei belegbare Tastenkürzel
 - Windows-Dateizuordnungen nach Erweiterung

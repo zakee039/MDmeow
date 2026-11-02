@@ -28,6 +28,7 @@ The default **Miku Cream** rendering system combines a bright document surface, 
 - **HTML / PDF export**.
 - **Image support** for standard Markdown and common HTML `<img>` forms.
 - **KaTeX math** for inline and block equations.
+- **Mermaid diagram previews** for flowcharts and other diagrams in `mermaid` code blocks, without changing the Markdown source.
 - **Code blocks** with syntax highlighting, independent line numbers and copy feedback.
 - **Rebindable shortcuts**.
 - **Windows file associations** selectable by extension.

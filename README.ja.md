@@ -28,6 +28,7 @@ MDmeow は **Tauri + Milkdown/Crepe** で構築された、軽量・高速・見
 - HTML / PDF エクスポート
 - Markdown 画像と HTML `<img>` をサポート
 - KaTeX 数式
+- `mermaid` コードブロックからフローチャートなどの図をプレビュー表示（Markdown ソースはそのまま保持）
 - コードブロックのシンタックスハイライト、行番号、コピー
 - ショートカットの再設定
 - Windows の拡張子別ファイル関連付け
