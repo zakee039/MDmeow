@@ -59,8 +59,22 @@ html, body { margin: 0; background: var(--bg); }
 }
 .markdown-body img {
   max-width: 100%;
+  height: auto;
   border-radius: 12px;
   box-shadow: 0 8px 28px rgba(20, 20, 19, .08);
+}
+.markdown-body img[data-align="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.markdown-body img[data-align="left"] {
+  display: block;
+  margin-right: auto;
+}
+.markdown-body img[data-align="right"] {
+  display: block;
+  margin-left: auto;
 }
 .markdown-body blockquote {
   position: relative;

@@ -68,15 +68,21 @@ pub fn unregister_open_with() -> Result<OpenWithStatus, String> {
     windows_integration::unregister_open_with().map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-pub fn read_document(path: String) -> Result<String, String> {
-    let bytes = std::fs::read(&path).map_err(|e| format!("Cannot read {path}: {e}"))?;
+fn read_document_sync(path: &str) -> Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("Cannot read {path}: {e}"))?;
     let sample = &bytes[..bytes.len().min(8192)];
     if looks_like_binary(sample) {
         return Err(format!("Cannot open {path}: the file appears to be binary."));
     }
     String::from_utf8(bytes)
         .map_err(|_| format!("Cannot open {path}: the file is not valid UTF-8 text."))
+}
+
+#[tauri::command]
+pub async fn read_document(path: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || read_document_sync(&path))
+        .await
+        .map_err(|e| format!("Failed to read document: {e}"))?
 }
 
 fn looks_like_binary(sample: &[u8]) -> bool {
@@ -129,13 +135,13 @@ mod document_tests {
             let path = base.join(format!("{name}.md"));
             let path_str = path.to_string_lossy().to_string();
             std::fs::write(&path, original).expect("write isolated fixture");
-            let read = super::read_document(path_str.clone()).expect("read fixture");
+            let read = super::read_document_sync(&path_str).expect("read fixture");
             assert_eq!(read, original, "read changed the original {name}");
             let edited = read.replace("NORMAL_BEFORE", "NORMAL_AFTER_USER_EDIT");
             let written = super::write_document(path_str.clone(), edited.clone(), Some(true))
                 .expect("save isolated fixture in source mode");
             assert_eq!(written, edited, "formatter altered source text for {name}");
-            let reopened = super::read_document(path_str).expect("reopen fixture");
+            let reopened = super::read_document_sync(&path_str).expect("reopen fixture");
             assert_eq!(reopened, edited, "original unsupported region lost for {name}");
         }
     }
@@ -201,8 +207,8 @@ pub fn rename_document(path: String, new_name: String) -> Result<String, String>
 /// file being exported) is the base for resolving relative image paths, which
 /// are inlined as `data:` URLs so the HTML / print output is self-contained.
 #[tauri::command]
-pub fn render_html(markdown: String, title: String, doc_path: Option<String>) -> String {
-    export::render_html(&markdown, &title, doc_path.as_deref())
+pub fn render_html(markdown: String, title: String, doc_path: Option<String>, for_print: Option<bool>) -> String {
+    export::render_html(&markdown, &title, doc_path.as_deref(), for_print.unwrap_or(false))
 }
 
 /// Read a local image referenced by a document and return it as a `data:` URL.

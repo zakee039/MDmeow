@@ -187,6 +187,8 @@ const EN = {
   "settings.shortcut.cancelHint": "Press Esc to cancel",
   "stats.total": "Words {count}",
   "stats.selected": "Selected {count}",
+  "loading.opening": "Opening {name}…",
+  "loading.rendering": "Rendering {name}…",
 };
 
 export type I18nKey = keyof typeof EN;
@@ -370,6 +372,8 @@ const DE: Record<I18nKey, string> = {
   "settings.shortcut.cancelHint": "Esc zum Abbrechen drücken",
   "stats.total": "Wörter {count}",
   "stats.selected": "Auswahl {count}",
+  "loading.opening": "{name} wird geöffnet…",
+  "loading.rendering": "{name} wird gerendert…",
 };
 
 const ZH_CN: Record<I18nKey, string> = {
@@ -551,6 +555,8 @@ const ZH_CN: Record<I18nKey, string> = {
   "settings.shortcut.cancelHint": "按 Esc 取消",
   "stats.total": "字数 {count}",
   "stats.selected": "已选 {count}",
+  "loading.opening": "正在打开 {name}…",
+  "loading.rendering": "正在渲染 {name}…",
 };
 
 const JA: Record<I18nKey, string> = {
@@ -731,6 +737,8 @@ const JA: Record<I18nKey, string> = {
   "settings.shortcut.cancelHint": "Esc でキャンセル",
   "stats.total": "文字数 {count}",
   "stats.selected": "選択 {count}",
+  "loading.opening": "{name} を開いています…",
+  "loading.rendering": "{name} をレンダリングしています…",
 };
 
 const DICT: Record<Lang, Record<I18nKey, string>> = {

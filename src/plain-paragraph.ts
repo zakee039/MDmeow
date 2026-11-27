@@ -7,6 +7,23 @@ import { NodeSelection, TextSelection } from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
 
 const PLAIN_PARAGRAPH_ATTR = "mdmeowPlainParagraph";
+let headlessLastChild: ProseNode | null = null;
+
+/** Let headless `serializer(doc)` treat `doc.lastChild` the same way Milkdown's
+ * live paragraph serializer treats `editorViewCtx.state.doc.lastChild`, so an
+ * empty document does not spuriously serialize as `<br />`. */
+export function withHeadlessDocLastChild<T>(
+  lastChild: ProseNode | null,
+  fn: () => T,
+): T {
+  const prev = headlessLastChild;
+  headlessLastChild = lastChild;
+  try {
+    return fn();
+  } finally {
+    headlessLastChild = prev;
+  }
+}
 
 /** Keep this command's empty paragraphs as Markdown whitespace, without
  * changing Crepe's treatment of ordinary Enter-created empty paragraphs. */
@@ -23,7 +40,10 @@ export function configurePlainParagraph(ctx: Ctx): void {
       toMarkdown: {
         ...spec.toMarkdown,
         runner: (state, node) => {
-          if (node.attrs[PLAIN_PARAGRAPH_ATTR] && !node.content.size) {
+          if (
+            !node.content.size &&
+            (node.attrs[PLAIN_PARAGRAPH_ATTR] || node === headlessLastChild)
+          ) {
             state.openNode("paragraph").closeNode();
           } else serialize(state, node);
         },

@@ -9,15 +9,17 @@
 import { schemaCtx } from "@milkdown/kit/core";
 import type { Crepe } from "@milkdown/crepe";
 import { $prose } from "@milkdown/kit/utils";
-import { Plugin } from "@milkdown/kit/prose/state";
+import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
 import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
+import type { EditorView } from "@milkdown/kit/prose/view";
 import type { Node as ProseNode } from "@milkdown/kit/prose/model";
-import { restoreProtectedFragments } from "./partial-markdown";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const MORE_COMMENT = /^<!--\s*more\s*-->$/i;
-const DETAILS_OPEN = /^<details\s*>$/i;
+const BR_TAG = /^<br\s*\/?>$/i;
+const DETAILS_OPEN = /^<details\b([^<>]*)>$/i;
+const DETAILS_HEADER = /^(<details\b[^<>]*>)\s*(<summary\b[\s\S]*<\/summary\s*>)$/i;
 const DETAILS_CLOSE = /^<\/details\s*>$/i;
 const DIV_CLOSE = /^<\/div\s*>$/i;
 const KBD_OPEN = /^<kbd\s*>$/i;
@@ -32,7 +34,7 @@ type SafeHtmlKind =
   | "kbd-open"
   | "kbd-close";
 
-function kbdDecorations(doc: ProseNode): DecorationSet {
+function kbdDecorations(doc: ProseNode): Decoration[] {
   const ranges: Array<{ from: number; to: number }> = [];
   const openByParent = new Map<ProseNode, number[]>();
 
@@ -51,30 +53,103 @@ function kbdDecorations(doc: ProseNode): DecorationSet {
     if (from !== undefined && from < pos) ranges.push({ from, to: pos });
   });
 
-  return DecorationSet.create(
-    doc,
-    ranges.map(({ from, to }) =>
-      Decoration.inline(from, to, { class: "mdmeow-kbd" }),
-    ),
-  );
+  return ranges.map(({ from, to }) => Decoration.inline(from, to, { class: "mdmeow-kbd" }));
 }
 
-export const safeHtmlPresentationPlugin = $prose(
-  () =>
-    new Plugin({
-      state: {
-        init: (_, state) => kbdDecorations(state.doc),
-        apply(tr, previous) {
-          return tr.docChanged ? kbdDecorations(tr.doc) : previous;
-        },
-      },
-      props: {
-        decorations(state) {
-          return this.getState(state) ?? DecorationSet.empty;
-        },
-      },
-    }),
-);
+const presentationKey = new PluginKey<{ toggled: Set<number>; decorations: DecorationSet }>("mdmeow-html");
+
+function structuralDecorations(doc: ProseNode, toggled: Set<number>): DecorationSet {
+  const decorations = kbdDecorations(doc);
+  const blocks: { pos: number; end: number }[] = [];
+  const folds: { start: number; summary: number; expanded: boolean }[] = [];
+  const aligns: { start: number; align: string }[] = [];
+  function decorateBlock(index: number, cls: string): void {
+    const { pos, end } = blocks[index];
+    decorations.push(Decoration.node(pos, end, { class: cls }));
+  }
+
+  doc.forEach((block, pos, index) => {
+    blocks.push({ pos, end: pos + block.nodeSize });
+    const atom = block.firstChild;
+    if (block.childCount !== 1 || atom?.type.name !== "html") return;
+    const raw = String(atom.attrs.value).trim();
+    const header = DETAILS_HEADER.exec(raw);
+    const open = DETAILS_OPEN.exec(header?.[1] ?? raw);
+    if (open) {
+      const template = document.createElement("template");
+      template.innerHTML = open[0];
+      folds.push({ start: index, summary: header ? index : -1,
+        expanded: template.content.firstElementChild?.hasAttribute("open") ?? false });
+      return;
+    }
+    const fold = folds[folds.length - 1];
+    if (fold && fold.summary < 0 && parseSummary(raw) !== null) fold.summary = index;
+    if (fold && DETAILS_CLOSE.test(raw)) {
+      folds.pop();
+      if (fold.summary < 0) return;
+      if (fold.start !== fold.summary) decorateBlock(fold.start, "mdmeow-html-marker-block");
+      decorateBlock(index, "mdmeow-html-marker-block");
+      const summary = blocks[fold.summary];
+      const atomPos = summary.pos + 1;
+      const expanded = fold.expanded !== toggled.has(atomPos);
+      decorations.push(Decoration.node(atomPos, summary.end - 1, {
+        class: expanded ? "mdmeow-details-summary mdmeow-details-expanded" : "mdmeow-details-summary",
+        "aria-expanded": String(expanded),
+        "data-mdmeow-fold": String(atomPos),
+      }));
+      if (!expanded) {
+        for (let i = fold.summary + 1; i < index; i++) decorateBlock(i, "mdmeow-details-collapsed");
+      }
+      return;
+    }
+    const align = parseDivAlign(raw);
+    if (align) aligns.push({ start: index, align });
+    if (DIV_CLOSE.test(raw)) {
+      const range = aligns.pop();
+      if (!range) return;
+      decorateBlock(range.start, "mdmeow-html-marker-block");
+      decorateBlock(index, "mdmeow-html-marker-block");
+      for (let i = range.start + 1; i < index; i++) decorateBlock(i, "mdmeow-html-align-" + range.align);
+    }
+  });
+  return DecorationSet.create(doc, decorations);
+}
+
+function toggleDetails(view: EditorView, event: Event): boolean {
+  const summary = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-mdmeow-fold]") : null;
+  if (!summary) return false;
+  event.preventDefault();
+  view.dispatch(view.state.tr.setMeta(presentationKey, Number(summary.dataset.mdmeowFold)));
+  return true;
+}
+
+export const safeHtmlPresentationPlugin = $prose(() => new Plugin({
+  key: presentationKey,
+  state: {
+    init: (_, state) => ({ toggled: new Set<number>(), decorations: structuralDecorations(state.doc, new Set()) }),
+    apply(tr, previous) {
+      const target: number | undefined = tr.getMeta(presentationKey);
+      if (!tr.docChanged && target === undefined) return previous;
+      const toggled = new Set<number>();
+      for (const pos of previous.toggled) {
+        const mapped = tr.mapping.mapResult(pos);
+        if (!mapped.deleted) toggled.add(mapped.pos);
+      }
+      if (target !== undefined) {
+        if (toggled.has(target)) toggled.delete(target);
+        else toggled.add(target);
+      }
+      return { toggled, decorations: structuralDecorations(tr.doc, toggled) };
+    },
+  },
+  props: {
+    decorations: (state) => presentationKey.getState(state)?.decorations,
+    handleDOMEvents: {
+      click: toggleDetails,
+      keydown: (view, event) => (event.key === "Enter" || event.key === " ") && toggleDetails(view, event),
+    },
+  },
+}));
 
 interface RawImageAttrs {
   src: string;
@@ -280,18 +355,15 @@ function parseSummary(value: string): string | null {
   return summary.textContent ?? "";
 }
 
-function safeHtmlDom(value: string): [string, Record<string, string>, string] | null {
+function safeHtmlDom(value: string, original?: string): [string, Record<string, string>, string] | null {
   const trimmed = value.trim();
-  if (/^<mdmeow-parse-error data-raw="[A-Za-z0-9+/=]+"\s*\/>$/.test(trimmed)) {
-    // This is only an internal lossless encoding. Show the user's original
-    // Markdown literally, without a warning badge or escaping it as HTML.
-    // Keep the encoded token in the model so saving restores its exact bytes.
+  if (original !== undefined) {
     return ["span", {
       "data-type": "html",
       "data-value": value,
       "data-mdmeow-parse-error": "true",
       contenteditable: "false",
-    }, restoreProtectedFragments(trimmed)];
+    }, original];
   }
   if (DETAILS_OPEN.test(trimmed)) return safeMarkerDom(value, "details-open");
   if (DETAILS_CLOSE.test(trimmed)) return safeMarkerDom(value, "details-close");
@@ -302,7 +374,7 @@ function safeHtmlDom(value: string): [string, Record<string, string>, string] | 
   const align = parseDivAlign(trimmed);
   if (align) return safeMarkerDom(value, "div-open", { "data-mdmeow-align": align });
 
-  const summary = parseSummary(trimmed);
+  const summary = parseSummary(DETAILS_HEADER.exec(trimmed)?.[2] ?? trimmed);
   if (summary !== null) {
     return [
       "span",
@@ -322,157 +394,8 @@ function safeHtmlDom(value: string): [string, Record<string, string>, string] | 
   return null;
 }
 
-function markerIn(
-  block: HTMLElement,
-  kind: SafeHtmlKind,
-): HTMLElement | null {
-  if (block.dataset.mdmeowSafeHtml === kind) return block;
-  return block.querySelector<HTMLElement>(`[data-mdmeow-safe-html="${kind}"]`);
-}
-
-function hideMarkerOnlyBlock(block: HTMLElement, marker: HTMLElement): void {
-  if (block === marker || block.textContent?.trim() === "") {
-    block.classList.add("mdmeow-html-marker-block");
-  }
-}
-
-function applyDivRanges(root: HTMLElement): void {
-  const blocks = [...root.children].filter(
-    (node): node is HTMLElement => node instanceof HTMLElement,
-  );
-  const stack: Array<{ index: number; align: string; marker: HTMLElement }> = [];
-
-  blocks.forEach((block, index) => {
-    const open = markerIn(block, "div-open");
-    if (open) {
-      hideMarkerOnlyBlock(block, open);
-      stack.push({
-        index,
-        align: open.dataset.mdmeowAlign ?? "left",
-        marker: open,
-      });
-    }
-
-    const close = markerIn(block, "div-close");
-    if (!close || !stack.length) return;
-    hideMarkerOnlyBlock(block, close);
-    const range = stack.pop();
-    if (!range) return;
-    for (let i = range.index + 1; i < index; i += 1) {
-      blocks[i].classList.add(`mdmeow-html-align-${range.align}`);
-    }
-  });
-}
-
-function setDetailsExpanded(
-  blocks: HTMLElement[],
-  summaryIndex: number,
-  closeIndex: number,
-  summary: HTMLElement,
-  expanded: boolean,
-): void {
-  summary.setAttribute("aria-expanded", String(expanded));
-  summary.classList.toggle("mdmeow-details-expanded", expanded);
-  for (let i = summaryIndex + 1; i < closeIndex; i += 1) {
-    blocks[i].classList.toggle("mdmeow-details-collapsed", !expanded);
-  }
-}
-
-function applyDetailsRanges(root: HTMLElement): void {
-  const blocks = [...root.children].filter(
-    (node): node is HTMLElement => node instanceof HTMLElement,
-  );
-  let openIndex = -1;
-  let summaryIndex = -1;
-  let summary: HTMLElement | null = null;
-
-  blocks.forEach((block, index) => {
-    const open = markerIn(block, "details-open");
-    if (open) {
-      hideMarkerOnlyBlock(block, open);
-      openIndex = index;
-      summaryIndex = -1;
-      summary = null;
-      return;
-    }
-
-    if (openIndex >= 0 && !summary) {
-      const candidate = markerIn(block, "summary");
-      if (candidate) {
-        summary = candidate;
-        summaryIndex = index;
-        candidate.classList.add("mdmeow-details-summary");
-      }
-    }
-
-    const close = markerIn(block, "details-close");
-    if (!close || openIndex < 0) return;
-    hideMarkerOnlyBlock(block, close);
-
-    if (summary && summaryIndex >= 0) {
-      const currentSummary = summary;
-      const currentSummaryIndex = summaryIndex;
-      const closeIndex = index;
-      const expanded = currentSummary.getAttribute("aria-expanded") === "true";
-      setDetailsExpanded(
-        blocks,
-        currentSummaryIndex,
-        closeIndex,
-        currentSummary,
-        expanded,
-      );
-
-      currentSummary.onclick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const next = currentSummary.getAttribute("aria-expanded") !== "true";
-        setDetailsExpanded(
-          blocks,
-          currentSummaryIndex,
-          closeIndex,
-          currentSummary,
-          next,
-        );
-      };
-      currentSummary.onkeydown = (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        currentSummary.click();
-      };
-    }
-
-    openIndex = -1;
-    summaryIndex = -1;
-    summary = null;
-  });
-}
-
-/** Apply the visual semantics for the safe structural HTML subset without
- * changing the ProseMirror document. This keeps Markdown round-tripping exact. */
-export function refreshSafeRawHtml(host: HTMLElement): void {
-  requestAnimationFrame(() => {
-    const root = host.querySelector<HTMLElement>(".ProseMirror");
-    if (!root) return;
-
-    for (const block of root.querySelectorAll<HTMLElement>(
-      ".mdmeow-html-marker-block, .mdmeow-html-align-left, .mdmeow-html-align-center, .mdmeow-html-align-right, .mdmeow-details-collapsed",
-    )) {
-      block.classList.remove(
-        "mdmeow-html-marker-block",
-        "mdmeow-html-align-left",
-        "mdmeow-html-align-center",
-        "mdmeow-html-align-right",
-        "mdmeow-details-collapsed",
-      );
-    }
-
-    applyDivRanges(root);
-    applyDetailsRanges(root);
-  });
-}
-
 /** Patch Milkdown's existing `html` schema after Crepe has created it. */
-export function patchHtmlMarkdown(crepe: Crepe): void {
+export function patchHtmlMarkdown(crepe: Crepe, protectedText: (token: string) => string | undefined): void {
   crepe.editor.action((ctx) => {
     const spec = (ctx.get(schemaCtx) as any).nodes?.html?.spec;
     if (!spec?.toDOM) return;
@@ -493,14 +416,28 @@ export function patchHtmlMarkdown(crepe: Crepe): void {
       }
 
       const image = parseRawImage(value);
+      if (BR_TAG.test(value.trim())) {
+        return [
+          "br",
+          {
+            "data-type": "html",
+            "data-value": value,
+            "data-mdmeow-html-br": "true",
+          },
+        ];
+      }
       if (image) return rawImageDom(value, image);
-      const safeHtml = safeHtmlDom(value);
+      const safeHtml = safeHtmlDom(value, protectedText(value.trim()));
       if (safeHtml) return safeHtml;
       return fallbackToDom(node);
     };
 
     const parseDOM = Array.isArray(spec.parseDOM) ? spec.parseDOM : [];
     spec.parseDOM = [
+      {
+        tag: 'br[data-mdmeow-html-br="true"]',
+        getAttrs: (dom: HTMLElement) => ({ value: dom.dataset.value ?? "<br>" }),
+      },
       {
         tag: 'img[data-mdmeow-html-img="true"]',
         getAttrs: (dom: HTMLElement) => ({ value: dom.dataset.value ?? "" }),
@@ -523,7 +460,8 @@ export function resolveRawHtmlImages(
   requestAnimationFrame(() => {
     host.querySelectorAll<HTMLImageElement>('img[data-mdmeow-html-img="true"]').forEach((img) => {
       const raw = img.dataset.mdmeowSrc ?? img.getAttribute("src") ?? "";
-      if (!raw) return;
+      if (!raw || img.dataset.mdmeowResolvedFor === raw) return;
+      img.dataset.mdmeowResolvedFor = raw;
       Promise.resolve(resolver(raw))
         .then((resolved) => {
           if (img.isConnected && resolved) img.src = resolved;

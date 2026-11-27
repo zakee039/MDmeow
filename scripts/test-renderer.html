@@ -1,0 +1,132 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MDmeow renderer regression tests</title>
+<!-- Run pnpm dev and open /scripts/test-renderer.html in a browser. -->
+<script type="module">
+  import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+  import "/src/styles.css";
+
+  const files = new Map();
+  const writes = [];
+  const handlers = new Map();
+  let pauseWrite = false;
+  let resumeWrite;
+  let saveAsPath;
+  let rejectedSave = false;
+
+  mockWindows("main");
+  mockIPC(async (cmd, args) => {
+    if (cmd === "get_settings") return {
+      settings: { language: "en", list_marker: "*", window: {}, shortcuts: {},
+        open_last_session: false, always_show_tabbar: true, file_associations: [],
+        proxy_url: "", auto_check_updates: false },
+      version: "test", location: "",
+    };
+    if (cmd === "plugin:event|listen") handlers.set(args.event, args.handler);
+    if (cmd === "read_document") return files.get(args.path);
+    if (cmd === "plugin:dialog|save") return saveAsPath;
+    if (cmd === "write_document") {
+      if (args.path === "unwritable.md") {
+        rejectedSave = true;
+        throw new Error("Write rejected by test fixture");
+      }
+      if (pauseWrite) await new Promise(resolve => { resumeWrite = resolve; });
+      writes.push(args);
+      return args.contents;
+    }
+    if (cmd === "get_open_with_status") return { available: false, registered_extensions: [] };
+    if (cmd.endsWith("|available_monitors")) return [];
+    return null;
+  });
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  async function until(condition, description) {
+    const deadline = performance.now() + 10000;
+    while (!condition()) {
+      if (performance.now() > deadline) throw new Error(description);
+      await delay(20);
+    }
+  }
+  const root = () => document.querySelector("#editor .ProseMirror");
+  function openFile(path, source) {
+    files.set(path, source);
+    window.__TAURI_INTERNALS__.runCallback(handlers.get("open-file"), { payload: path });
+  }
+  function typeAtEnd(paragraph, text) {
+    const range = document.createRange();
+    range.selectNodeContents(paragraph);
+    range.collapse(false);
+    root().focus();
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    document.execCommand("insertText", false, text);
+  }
+  const save = () => document.querySelector("#btn-save").click();
+  const latest = () => writes.at(-1);
+  async function run() {
+    const html = await (await fetch("/index.html")).text();
+    const shell = new DOMParser().parseFromString(html, "text/html");
+    document.body.replaceChildren(...shell.body.children);
+    await import("/src/main.ts");
+    await until(() => handlers.has("tauri://close-requested"), "Startup did not finish");
+
+    openFile("report.md", "# Report\n\n" + "Long paragraph. ".repeat(500) + "\n\nTail\n");
+    await until(() => root()?.lastElementChild?.textContent === "Tail", "Report did not mount");
+    typeAtEnd(root().lastElementChild, "-first");
+    await until(() => document.querySelector("#tabs .active.dirty"), "First edit did not register");
+    openFile("other.md", "# Other\n");
+    await until(() => root()?.querySelector("h1")?.textContent === "Other", "Other tab did not mount");
+    [...document.querySelectorAll("#tabs .tab")].find(tab => tab.textContent.includes("report.md")).click();
+    save();
+    await until(() => latest()?.path === "report.md", "Report was not saved");
+    if (!latest().contents.startsWith("# Report") || !latest().contents.includes("Tail-first")) {
+      throw new Error("Saving during mount mixed tab contents");
+    }
+
+    await until(() => root()?.lastElementChild?.textContent === "Tail-first", "Report did not remount");
+    typeAtEnd(root().lastElementChild, "-second");
+    await until(() => document.querySelector("#tabs .active.dirty"), "Second edit did not register");
+    pauseWrite = true;
+    save();
+    await until(() => resumeWrite, "Write did not start");
+    typeAtEnd(root().lastElementChild, "-third");
+    pauseWrite = false;
+    resumeWrite();
+    await until(() => latest()?.contents.includes("-second"), "Write did not finish");
+    save();
+    await until(() => latest()?.contents.includes("-third"), "Edits during save were lost");
+
+    typeAtEnd(root().lastElementChild, "-retry");
+    saveAsPath = "unwritable.md";
+    document.querySelector("#btn-save-as").click();
+    await until(() => rejectedSave, "Save As did not attempt the selected destination");
+    save();
+    await until(() => latest()?.contents.includes("-retry"), "Save As changed path after failure");
+    if (latest().path !== "report.md") throw new Error("Wrong path after Save As failure");
+
+    openFile("refs.md", "---\n\n# Heading\n\n    print('[ref]')\n\n[ref]: /url\n\nTail\n");
+    await until(() => root()?.querySelector("hr") && root().lastElementChild.textContent === "Tail", "Thematic break did not render");
+    typeAtEnd(root().lastElementChild, "-ok");
+    await until(() => document.querySelector("#tabs .active.dirty"), "Reference fixture rejected the edit");
+    save();
+    await until(() => latest()?.path === "refs.md", "Reference in indented code locked editing");
+    if (!latest().contents.includes("print('[ref]')") || !latest().contents.includes("Tail-ok")) throw new Error("Reference text changed");
+
+    openFile("fold.md", "<details>\n\n<summary>Summary</summary>\n\nInside\n\n</details>\n");
+    const summary = () => root()?.querySelector("[data-mdmeow-fold]");
+    await until(summary, "Fold control did not mount");
+    const content = () => [...root().querySelectorAll("p")].find(node => node.textContent === "Inside");
+    if (getComputedStyle(content()).display !== "none") throw new Error("Fold should start closed");
+    summary().click();
+    if (getComputedStyle(content()).display === "none") throw new Error("Fold did not expand");
+    summary().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    if (getComputedStyle(content()).display !== "none") throw new Error("Keyboard did not collapse fold");
+  }
+  try {
+    await run();
+    document.body.textContent = "PASS: tab ownership, pending saves, Save As, references, thematic breaks and folds";
+  } catch (error) {
+    document.body.textContent = "FAIL: " + error.message;
+    console.error(error);
+  }
+</script>

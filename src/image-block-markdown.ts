@@ -15,8 +15,7 @@ import type { Crepe } from "@milkdown/crepe";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/** Exactly what `Number.parseFloat(r).toFixed(2)` produces, e.g. "1.00". */
-const CREPE_RATIO = /^\d+\.\d{2}$/;
+/** Meta prefix stored in image title for resized / aligned block images. */
 const META_PREFIX = "mdmeow:image;";
 const META_RE =
   /^mdmeow:image;ratio=([0-9]+(?:\.[0-9]+)?);align=(left|center|right)$/;
@@ -67,19 +66,6 @@ function parseRunner(state: any, node: any, type: any): void {
       title: "",
       ratio: metadata.ratio,
       align: metadata.align,
-    });
-    return;
-  }
-
-  // Migrate files written by unpatched Crepe: ratio in alt, caption in title.
-  // Preserve the old resize ratio instead of throwing it away.
-  if (CREPE_RATIO.test(alt)) {
-    state.addNode(type, {
-      src,
-      caption: title,
-      title: "",
-      ratio: normalizeRatio(alt),
-      align: "center",
     });
     return;
   }

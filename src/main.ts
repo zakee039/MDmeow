@@ -126,6 +126,8 @@ const win = getCurrentWindow();
 const editorHost = document.getElementById("editor") as HTMLElement;
 const sourceShell = document.getElementById("source-shell") as HTMLElement;
 const sourceEl = document.getElementById("source") as HTMLElement;
+const docLoadingEl = document.getElementById("doc-loading") as HTMLElement | null;
+const docLoadingText = document.getElementById("doc-loading-text") as HTMLElement | null;
 const textStatsEl = document.getElementById("text-stats") as HTMLElement;
 const titleEl = document.getElementById("doc-title") as HTMLElement;
 const titleInput = document.getElementById("doc-title-input") as HTMLInputElement;
@@ -144,6 +146,7 @@ let openWithStatus: OpenWithStatus = {
   registered_extensions: [],
 };
 let switching = false;
+let mountedTab: Tab | undefined;
 /** User-selected Markdown source view. Non-Markdown tabs always use Code mode. */
 let sourceMode = false;
 /** The view that is currently mounted/visible. Kept separate from active tab
@@ -166,9 +169,75 @@ function readView(): string {
   return codeViewVisible ? codeEditor.getText() : editor.getMarkdown();
 }
 
+/** Until mounting finishes, the tab's stored text is authoritative. */
+function tabText(tab: Tab): string {
+  return mountedTab === tab && tab.dirty ? readView() : tab.content;
+}
+
 let textStatsTotal = 0;
 let textStatsTotalDirty = true;
 let textStatsFrame: number | null = null;
+let textStatsTimer: number | undefined;
+
+let loadingSeq = 0;
+let loadingShowTimer: number | undefined;
+const activeLoadings = new Map<number, string>();
+let viewLoadToken = 0;
+let dirtySyncTimer: number | undefined;
+
+function latestLoadingLabel(): string {
+  let label = "";
+  for (const value of activeLoadings.values()) label = value;
+  return label;
+}
+
+function beginLoading(label: string, immediate = false): () => void {
+  const id = ++loadingSeq;
+  activeLoadings.set(id, label);
+  const showNow = () => {
+    if (!docLoadingEl || !docLoadingText || activeLoadings.size === 0) return;
+    docLoadingText.textContent = latestLoadingLabel();
+    docLoadingEl.hidden = false;
+  };
+  if (immediate || (docLoadingEl && !docLoadingEl.hidden)) {
+    window.clearTimeout(loadingShowTimer);
+    loadingShowTimer = undefined;
+    showNow();
+  } else if (loadingShowTimer === undefined) {
+    loadingShowTimer = window.setTimeout(() => {
+      loadingShowTimer = undefined;
+      showNow();
+    }, 70);
+  }
+  let finished = false;
+  return () => {
+    if (finished) return;
+    finished = true;
+    activeLoadings.delete(id);
+    if (activeLoadings.size === 0) {
+      window.clearTimeout(loadingShowTimer);
+      loadingShowTimer = undefined;
+      if (docLoadingEl) docLoadingEl.hidden = true;
+    } else if (docLoadingEl && !docLoadingEl.hidden && docLoadingText) {
+      docLoadingText.textContent = latestLoadingLabel();
+    }
+  };
+}
+
+function paintFrame(): Promise<void> {
+  return new Promise((resolve) =>
+    requestAnimationFrame(() => window.setTimeout(resolve, 0)),
+  );
+}
+
+function shouldShowRenderLoading(md: string): boolean {
+  if (docLoadingEl && !docLoadingEl.hidden) return true;
+  if (md.length >= 6000) return true;
+  const mathDelims = md.match(/\$\$/g)?.length ?? 0;
+  if (mathDelims >= 12) return true;
+  const fences = md.match(/^```/gm)?.length ?? 0;
+  return fences >= 8;
+}
 
 function statsDocumentText(): string {
   return codeViewVisible ? codeEditor.getText() : editor.plainText();
@@ -200,48 +269,111 @@ function updateTextStats(): void {
   });
 }
 
-function scheduleTextStats(recount = false): void {
+function scheduleTextStats(recount = false, debounced = false): void {
   if (recount) textStatsTotalDirty = true;
+  if (debounced) {
+    window.clearTimeout(textStatsTimer);
+    textStatsTimer = window.setTimeout(() => {
+      textStatsTimer = undefined;
+      if (textStatsFrame === null) {
+        textStatsFrame = requestAnimationFrame(updateTextStats);
+      }
+    }, 150);
+    return;
+  }
+  window.clearTimeout(textStatsTimer);
+  textStatsTimer = undefined;
   if (textStatsFrame !== null) return;
   textStatsFrame = requestAnimationFrame(updateTextStats);
 }
 
 /** Load an existing document without ever adopting a lossy preview as source. */
-function writeView(md: string, scrollTop = 0): void {
+async function writeView(
+  md: string,
+  scrollTop = 0,
+  options?: { focusAfter?: boolean },
+): Promise<void> {
+  const token = ++viewLoadToken;
   const tab = tabBar.active;
+  mountedTab = undefined;
+  window.clearTimeout(dirtySyncTimer);
+  dirtySyncTimer = undefined;
+
   if (codeViewVisible) {
-    void codeEditor.setDocument(md, tab?.path ?? null, scrollTop);
+    const ready = codeEditor.setDocument(md, tab?.path ?? null, scrollTop);
+    mountedTab = tab; // CodeMirror installs text before loading the language.
+    switching = false;
+    await ready;
+    if (token !== viewLoadToken) return;
     scheduleTextStats(true);
     updateIntegrityWarning();
+    if (options?.focusAfter) codeEditor.focus();
     return;
   }
+
+  const heavy = shouldShowRenderLoading(md);
+  const endLoading = heavy
+    ? beginLoading(
+        t("loading.rendering", { name: baseName(tab?.path ?? null) }),
+        true,
+      )
+    : null;
   switching = true;
-  let safe = false;
   try {
-    editor.setContent(md);
-    // The renderer may normalize harmless formatting, but it must not
-    // change Markdown structure or discard unknown source content.
-    // Local parse failures are represented by lossless inline placeholders.
-    // The rest of the document remains in WYSIWYG mode.
-    safe = true;
-  } catch (error) {
-    console.warn("Markdown preview conversion failed; original source kept.", error);
-  }
-  if (!safe) {
-    if (tab) tab.previewUnsafe = true;
-    setViewVisibility(tab);
-    void codeEditor.setDocument(md, tab?.path ?? null, scrollTop);
+    if (heavy) {
+      await paintFrame();
+      if (token !== viewLoadToken) return;
+    }
+
+    let safe = false;
+    try {
+      const applied = await editor.setContent(md, {
+        isCancelled: () => token !== viewLoadToken,
+        yieldBeforeMount: heavy,
+      });
+      if (!applied || token !== viewLoadToken) return;
+      // The renderer may normalize harmless formatting, but it must not
+      // change Markdown structure or discard unknown source content.
+      // Local parse failures are represented by lossless inline placeholders.
+      // The rest of the document remains in WYSIWYG mode.
+      safe = true;
+    } catch (error) {
+      console.warn("Markdown preview conversion failed; original source kept.", error);
+    }
+
+    if (token !== viewLoadToken) return;
+
+    if (!safe) {
+      if (tab) tab.previewUnsafe = true;
+      setViewVisibility(tab);
+      const ready = codeEditor.setDocument(md, tab?.path ?? null, scrollTop);
+      mountedTab = tab;
+      switching = false;
+      await ready;
+      if (token !== viewLoadToken) return;
+      scheduleTextStats(true);
+      updateIntegrityWarning();
+      if (options?.focusAfter) codeEditor.focus();
+      return;
+    }
+
+    mountedTab = tab;
+    switching = false;
+    editor.setSpellcheck(settings.spellcheck);
     scheduleTextStats(true);
-    switching = false;
     updateIntegrityWarning();
-    return;
+    requestAnimationFrame(() => {
+      if (token !== viewLoadToken) return;
+      editorHost.scrollTop = scrollTop;
+      if (options?.focusAfter) editor.focus();
+      switching = false;
+    });
+  } finally {
+    endLoading?.();
+    if (token === viewLoadToken && codeViewVisible) {
+      switching = false;
+    }
   }
-  scheduleTextStats(true);
-  updateIntegrityWarning();
-  requestAnimationFrame(() => {
-    editorHost.scrollTop = scrollTop;
-    switching = false;
-  });
 }
 
 function viewScrollTop(): number {
@@ -343,24 +475,18 @@ async function commitTitleRename(): Promise<void> {
     return;
   }
   try {
-    const content = readView();
-    const scrollTop = viewScrollTop();
-    const wasCodeView = codeViewVisible;
     const nextPath = await invoke<string>("rename_document", {
       path: tab.path,
       newName,
     });
+    const content = tabText(tab);
     tab.path = nextPath;
-    editor.setDocPath(nextPath);
-    setViewVisibility(tab);
-    if (wasCodeView !== codeViewVisible) {
-      if (codeViewVisible) {
-        await codeEditor.setDocument(content, nextPath, scrollTop);
-      } else {
-        writeView(content, scrollTop);
-      }
-    } else if (codeViewVisible) {
-      void codeEditor.setLanguageForPath(nextPath);
+    if (tab === tabBar.active) {
+      const top = mountedTab === tab ? viewScrollTop() : tab.scrollTop;
+      tab.content = content;
+      editor.setDocPath(nextPath);
+      setViewVisibility(tab);
+      await writeView(content, top);
     }
     tabBar.render();
     updateSourceButton();
@@ -500,23 +626,37 @@ function updateIntegrityWarning(): void {
   if (blocked) banner.textContent = t("dialog.markdownSourceProtected");
 }
 
-function markDirtyFromView(): void {
+function syncActiveDirtyNow(): void {
+  window.clearTimeout(dirtySyncTimer);
+  dirtySyncTimer = undefined;
   const tab = tabBar.active;
-  if (!tab) return;
+  if (!tab || mountedTab !== tab) return;
   tab.content = readView();
   tab.dirty = tab.content !== tab.saved;
   tabBar.refreshDirty();
   updateTitle();
-  // No persist here: editing text changes nothing in settings.toml.
 }
 
-async function fileReadable(path: string): Promise<boolean> {
-  try {
-    await invoke<string>("read_document", { path });
-    return true;
-  } catch {
-    return false;
+function markDirtyFromView(immediate = false): void {
+  const tab = tabBar.active;
+  if (!tab) return;
+  if (immediate || codeViewVisible) {
+    syncActiveDirtyNow();
+    return;
   }
+  // Avoid serializing large ProseMirror documents on every keystroke; mark
+  // dirty immediately and reconcile against `tab.saved` after typing pauses.
+  if (!tab.dirty) {
+    tab.dirty = true;
+    tabBar.refreshDirty();
+    updateTitle();
+  }
+  window.clearTimeout(dirtySyncTimer);
+  dirtySyncTimer = window.setTimeout(() => {
+    dirtySyncTimer = undefined;
+    if (switching || codeViewVisible || tab !== tabBar.active) return;
+    syncActiveDirtyNow();
+  }, 300);
 }
 
 // --- tab wiring -------------------------------------------------------------
@@ -524,24 +664,28 @@ async function fileReadable(path: string): Promise<boolean> {
 tabBar.onStructureChange = () => persistSoon();
 
 tabBar.onActivate = (next: Tab, prev: Tab | null) => {
-  if (prev) {
-    prev.content = prev.dirty ? readView() : prev.saved;
+  window.clearTimeout(dirtySyncTimer);
+  dirtySyncTimer = undefined;
+  if (prev && prev === mountedTab) {
+    prev.content = tabText(prev);
+    prev.dirty = prev.content !== prev.saved;
     prev.scrollTop = viewScrollTop();
   }
   editor.setDocPath(next.path);
   setViewVisibility(next);
-  writeView(next.content, next.scrollTop);
   editor.setSpellcheck(settings.spellcheck);
   codeEditor.setAlternateRows(settings.code_alternate_rows);
   codeEditor.setLineWrap(settings.code_line_wrap);
   updateTitle();
   updateSourceButton();
-  scheduleTextStats(true);
-  (codeViewVisible ? codeEditor : editor).focus();
+  void writeView(next.content, next.scrollTop, { focusAfter: true });
   persistSoon();
 };
 
 tabBar.onCloseRequest = async (tab: Tab) => {
+  if (tab === tabBar.active && dirtySyncTimer !== undefined) {
+    syncActiveDirtyNow();
+  }
   if (tab.dirty) {
     const discard = await ask(
       t("dialog.discardChanges", { name: baseName(tab.path) }),
@@ -554,18 +698,18 @@ tabBar.onCloseRequest = async (tab: Tab) => {
 };
 
 editor.onChange = () => {
-  if (switching || codeViewVisible) return;
-  markDirtyFromView();
-  scheduleTextStats(true);
+  if (switching || codeViewVisible || mountedTab !== tabBar.active) return;
+  markDirtyFromView(false);
+  scheduleTextStats(true, true);
 };
 editor.onSelectionChange = () => {
   if (!codeViewVisible) scheduleTextStats();
 };
 
 codeEditor.onChange = () => {
-  if (!codeViewVisible) return;
-  markDirtyFromView();
-  scheduleTextStats(true);
+  if (!codeViewVisible || mountedTab !== tabBar.active) return;
+  markDirtyFromView(true);
+  scheduleTextStats(true, true);
 };
 codeEditor.onSelectionChange = () => {
   if (codeViewVisible) scheduleTextStats();
@@ -573,25 +717,10 @@ codeEditor.onSelectionChange = () => {
 
 /** Rebuilding a preview for settings must not turn normalization into a user edit. */
 function reloadPreviewSafely(): void {
-  if (codeViewVisible) return;
   const tab = tabBar.active;
-  const wasDirty = tab?.dirty ?? false;
-  switching = true;
-  void editor.reload().then(() => {
-    editor.setSpellcheck(settings.spellcheck);
-    switching = false;
-    if (tab !== tabBar.active) return;
-    if (wasDirty) markDirtyFromView();
-  }).catch((error) => {
-    switching = false;
-    console.warn("Preview reload failed; retaining original source.", error);
-    if (tab && tab === tabBar.active) {
-      tab.previewUnsafe = true;
-      setViewVisibility(tab);
-      writeView(tab.content);
-      updateSourceButton();
-    }
-  });
+  if (codeViewVisible || !tab) return;
+  tab.content = tabText(tab);
+  void writeView(tab.content, mountedTab === tab ? viewScrollTop() : tab.scrollTop);
 }
 
 function applyProxySettings(reloadEditor: boolean): void {
@@ -689,33 +818,41 @@ async function openPath(path: string): Promise<void> {
     return;
   }
 
-  let text: string;
+  const endOpening = beginLoading(
+    t("loading.opening", { name: baseName(path) }),
+    false,
+  );
   try {
-    text = await invoke<string>("read_document", { path });
-  } catch (e) {
-    await message(String(e), { title: "MDmeow", kind: "error" });
-    return;
-  }
+    let text: string;
+    try {
+      text = await invoke<string>("read_document", { path });
+    } catch (e) {
+      endOpening();
+      await message(String(e), { title: "MDmeow", kind: "error" });
+      return;
+    }
 
-  const cur = tabBar.active;
-  if (cur && !cur.path && !cur.dirty && cur.content === "") {
-    cur.path = path;
-    cur.saved = text;
-    cur.content = text;
-    cur.dirty = false;
-    editor.setDocPath(path);
-    setViewVisibility(cur);
-    writeView(text);
-    tabBar.render();
-    editor.setSpellcheck(settings.spellcheck);
-    updateSourceButton();
-    (codeViewVisible ? codeEditor : editor).focus();
-    updateTitle();
-  } else {
-    tabBar.add(path, text); // triggers onActivate -> editor.setContent
-  }
+    const cur = tabBar.active;
+    if (cur && !cur.path && !cur.dirty && cur.content === "") {
+      cur.path = path;
+      cur.saved = text;
+      cur.content = text;
+      cur.dirty = false;
+      cur.previewUnsafe = false;
+      editor.setDocPath(path);
+      setViewVisibility(cur);
+      tabBar.render();
+      updateSourceButton();
+      updateTitle();
+      await writeView(text, 0, { focusAfter: true });
+    } else {
+      tabBar.add(path, text); // triggers onActivate -> writeView
+    }
 
-  persistSoon();
+    persistSoon();
+  } finally {
+    endOpening();
+  }
 }
 
 async function openDialog(): Promise<void> {
@@ -755,47 +892,56 @@ async function wireFileDrop(): Promise<void> {
   });
 }
 
-async function saveDoc(forceWrite = false): Promise<boolean> {
+// Order writes per tab so an older save cannot overwrite a newer one.
+const pendingSaves = new WeakMap<Tab, Promise<boolean>>();
+
+function saveTab(tab: Tab, destination?: string): Promise<boolean> {
+  const write = async (): Promise<boolean> => {
+    const path = destination ?? tab.path;
+    if (!path) return false;
+    if (!destination && !tab.dirty) return true;
+    const md = tabText(tab);
+    const preserveSource = !tab.dirty || mountedTab !== tab || codeViewVisible ||
+      editor.protectedFragmentCount > 0;
+    try {
+      await invoke<string>("write_document", { path, contents: md, preserveSource });
+    } catch (error) {
+      await message(String(error), { title: "MDmeow", kind: "error" });
+      return false;
+    }
+
+    // The user may have edited or switched tabs while the write was in flight.
+    const current = tabText(tab);
+    const pathChanged = destination !== undefined && path !== tab.path;
+    tab.content = current;
+    tab.saved = md;
+    tab.dirty = current !== md;
+    if (destination) tab.path = path;
+    if (pathChanged && tab === tabBar.active) {
+      const top = mountedTab === tab ? viewScrollTop() : tab.scrollTop;
+      editor.setDocPath(path);
+      setViewVisibility(tab);
+      await writeView(current, top);
+    }
+    if (pathChanged) tabBar.render();
+    else tabBar.refreshDirty();
+    updateSourceButton();
+    updateTitle();
+    persistSoon();
+    return true;
+  };
+  const previous = pendingSaves.get(tab);
+  const pending = previous ? previous.then(write, write) : write();
+  pendingSaves.set(tab, pending);
+  return pending.finally(() => {
+    if (pendingSaves.get(tab) === pending) pendingSaves.delete(tab);
+  });
+}
+
+async function saveDoc(): Promise<boolean> {
   const tab = tabBar.active;
   if (!tab) return false;
-  if (!tab.path) return saveAs();
-
-  // Preserve the exact source when the WYSIWYG document was never edited.
-  const md = !tab.dirty && !codeViewVisible ? tab.saved : readView();
-  // Ctrl+S on an untouched file must never rewrite its original bytes.
-  if (!forceWrite && !tab.dirty) return true;
-  let written: string;
-  try {
-    // Source mode is authoritative: never run the table formatter on raw text.
-    written = await invoke<string>("write_document", {
-      path: tab.path,
-      contents: md,
-      // Never let backend table formatting touch opaque protected snippets.
-      preserveSource: codeViewVisible || editor.protectedFragmentCount > 0,
-    });
-  } catch (e) {
-    await message(String(e), { title: "MDmeow", kind: "error" });
-    return false;
-  }
-  if (codeViewVisible) {
-    // Code mode shows raw text, so reflect backend formatting back when needed.
-    if (written !== md) writeView(written, viewScrollTop());
-    tab.saved = written;
-    tab.content = written;
-  } else {
-    // Preview mode: re-loading the document into Crepe (`replaceAll`) would
-    // wipe the undo history, and the backend's table beautification is
-    // invisible in the rendered view anyway. Leave the editor untouched and
-    // take its own serialization as the new clean baseline — the file on disk
-    // holds `written`, which round-trips to the same rendered document.
-    tab.saved = md;
-    tab.content = md;
-  }
-  tab.dirty = false;
-  tabBar.refreshDirty();
-  updateTitle();
-  persistSoon();
-  return true;
+  return tab.path ? saveTab(tab) : saveAs();
 }
 
 async function saveAs(): Promise<boolean> {
@@ -806,31 +952,7 @@ async function saveAs(): Promise<boolean> {
     defaultPath: tab.path ?? `${stem(tab.path)}.md`,
     filters: [{ name: "Documents / Code", extensions: knownExtensions() }],
   });
-  if (!dest) return false;
-
-  const content = readView();
-  const scrollTop = viewScrollTop();
-  const wasCodeView = codeViewVisible;
-  tab.path = dest;
-  editor.setDocPath(dest);
-  setViewVisibility(tab);
-  if (wasCodeView !== codeViewVisible) {
-    if (codeViewVisible) {
-      await codeEditor.setDocument(content, dest, scrollTop);
-    } else {
-      writeView(content, scrollTop);
-    }
-  } else if (codeViewVisible) {
-    void codeEditor.setLanguageForPath(dest);
-  }
-  const ok = await saveDoc(true);
-  if (ok) {
-    tabBar.render();
-    updateSourceButton();
-    updateTitle();
-    persistSoon();
-  }
-  return ok;
+  return dest && tabBar.tabs.includes(tab) ? saveTab(tab, dest) : false;
 }
 
 async function closeActiveTab(): Promise<void> {
@@ -849,7 +971,7 @@ async function exportHtml(): Promise<void> {
   if (!dest) return;
   try {
     const html = await invoke<string>("render_html", {
-      markdown: readView(),
+      markdown: tab ? tabText(tab) : "",
       title: stem(tab?.path ?? null),
       docPath: tab?.path ?? null,
     });
@@ -860,26 +982,37 @@ async function exportHtml(): Promise<void> {
   }
 }
 
+let dismissPrintFrame: (() => void) | undefined;
+
 async function exportPdf(): Promise<void> {
   const tab = tabBar.active;
-  const html = await invoke<string>("render_html", {
-    markdown: readView(),
-    title: stem(tab?.path ?? null),
-    docPath: tab?.path ?? null,
-  });
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.cssText =
-    "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
-  frame.srcdoc = html;
-  frame.onload = () => {
-    window.setTimeout(() => {
-      frame.contentWindow?.focus();
-      frame.contentWindow?.print();
-      window.setTimeout(() => frame.remove(), 1500);
-    }, 350);
-  };
-  document.body.appendChild(frame);
+  try {
+    const html = await invoke<string>("render_html", {
+      markdown: tab ? tabText(tab) : "",
+      title: stem(tab?.path ?? null),
+      docPath: tab?.path ?? null,
+      forPrint: true,
+    });
+    dismissPrintFrame?.();
+    const frame = document.createElement("iframe");
+    frame.setAttribute("sandbox", "allow-scripts allow-modals");
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;left:-200vw;top:0;width:100vw;height:100vh;border:0;";
+    const finished = (event: MessageEvent) => {
+      if (event.source !== frame.contentWindow || event.data !== "mdmeow:printed") return;
+      dismissPrintFrame?.();
+    };
+    dismissPrintFrame = () => {
+      window.removeEventListener("message", finished);
+      frame.remove();
+      dismissPrintFrame = undefined;
+    };
+    window.addEventListener("message", finished);
+    frame.srcdoc = html;
+    document.body.appendChild(frame);
+  } catch (error) {
+    await message(String(error), { title: "MDmeow", kind: "error" });
+  }
 }
 
 // --- source view --------------------------------------------------------
@@ -939,6 +1072,7 @@ function updateShortcutTitles(): void {
 let sourceSwitchBusy = false;
 
 async function toggleSource(): Promise<void> {
+  if (dirtySyncTimer !== undefined) syncActiveDirtyNow();
   const tab = tabBar.active;
   if (sourceSwitchBusy || !tab || !isMarkdownPath(tab.path)) return;
 
@@ -947,7 +1081,7 @@ async function toggleSource(): Promise<void> {
   // selection anchors cannot be recovered once its DOM is display:none.
   const hint = codeViewVisible ? codeEditor.cursorAnchor() : editor.cursorAnchor();
   const frac = viewScrollFraction();
-  const md = !tab.dirty && !codeViewVisible ? tab.saved : readView();
+  const md = tabText(tab);
   tab.content = md;
   const toCode = !codeViewVisible;
 
@@ -957,15 +1091,8 @@ async function toggleSource(): Promise<void> {
     if (!toCode) tab.previewUnsafe = false;
     setViewVisibility(tab);
 
-    if (toCode) {
-      // CodeMirror's setDocument loads language support asynchronously, then
-      // schedules a frame that resets scrollTop. Await it before restoring.
-      switching = true;
-      try { await codeEditor.setDocument(md, tab.path, 0); }
-      finally { switching = false; }
-    } else {
-      writeView(md);
-    }
+    await writeView(md);
+    if (tab !== tabBar.active) return;
     tab.dirty = tab.content !== tab.saved;
     tabBar.refreshDirty();
     updateSourceButton();
@@ -1611,6 +1738,7 @@ let closing = false;
 async function quitApp(): Promise<void> {
   if (closing) return;
   closing = true;
+  if (dirtySyncTimer !== undefined) syncActiveDirtyNow();
   if (tabBar.tabs.some((tab) => tab.dirty)) {
     const quit = await ask(t("dialog.unsavedQuit"), {
       title: "MDmeow",
@@ -1826,23 +1954,26 @@ async function restoreTabs(): Promise<void> {
   }
 
   const files = settings.open_files ?? [];
-  const readable: string[] = [];
+  const loaded: Array<{ path: string; text: string }> = [];
   for (const path of files) {
-    if (path && (await fileReadable(path))) {
-      readable.push(path);
+    if (!path) continue;
+    try {
+      const text = await invoke<string>("read_document", { path });
+      loaded.push({ path, text });
+    } catch {
+      /* file removed or unreadable since last session */
     }
   }
 
-  if (readable.length === 0) {
+  if (loaded.length === 0) {
     tabBar.add(null, "");
     return;
   }
 
-  for (const path of readable) {
-    const text = await invoke<string>("read_document", { path });
+  for (const { path, text } of loaded) {
     tabBar.add(path, text, false);
   }
-  const idx = Math.min(Math.max(settings.active_tab ?? 0, 0), readable.length - 1);
+  const idx = Math.min(Math.max(settings.active_tab ?? 0, 0), loaded.length - 1);
   tabBar.activate(tabBar.tabs[idx].id);
 }
 

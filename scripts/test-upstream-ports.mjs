@@ -15,7 +15,7 @@ const bullet = (text) => ({
 const paragraph = (text) => ({type:'paragraph', children:[{type:'text',value:text}]});
 const serialize = (root, marker) => {
   let config;
-  configureMarkdownSerializer({get: () => ({}), set: (_, value) => {config=value;}}, marker);
+  configureMarkdownSerializer({get: () => ({}), set: (_, value) => {config=value;}}, () => marker);
   return toMarkdown(root, config);
 };
 for (const marker of ['-', '*', '+']) {

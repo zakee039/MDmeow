@@ -190,6 +190,49 @@ body {
 }
 #integrity-warning[hidden] { display: none !important; }
 
+#doc-loading {
+  position: fixed;
+  inset: 40px 0 0 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  user-select: none;
+}
+#doc-loading[hidden] { display: none !important; }
+.doc-loading-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(82vw, 420px);
+  padding: 10px 18px;
+  border: 1px solid color-mix(in srgb, var(--accent, #39c5bb) 35%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 96%, white);
+  color: var(--fg);
+  font-size: 13px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+}
+#doc-loading-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-loading-spinner {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border: 2px solid color-mix(in srgb, var(--accent, #39c5bb) 25%, var(--border));
+  border-top-color: var(--accent, #39c5bb);
+  border-radius: 50%;
+  animation: mdmeow-spin 0.75s linear infinite;
+}
+@keyframes mdmeow-spin {
+  to { transform: rotate(360deg); }
+}
+
 #text-stats {
   position: fixed;
   right: 18px;

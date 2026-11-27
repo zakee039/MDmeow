@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+{{PRINT_CSP}}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}}</title>
 <style>{{KATEX_CSS}}</style>
@@ -12,16 +13,21 @@
 <article class="markdown-body">
 {{BODY}}
 </article>
-<script>{{KATEX_JS}}</script>
-<script>{{AUTO_RENDER_JS}}</script>
-<script>{{HLJS_JS}}</script>
-<script>
+<script nonce="{{NONCE}}">{{KATEX_JS}}</script>
+<script nonce="{{NONCE}}">{{AUTO_RENDER_JS}}</script>
+<script nonce="{{NONCE}}">{{HLJS_JS}}</script>
+<script nonce="{{NONCE}}">
   document.addEventListener("DOMContentLoaded", function () {
+    for (const node of document.querySelectorAll(".markdown-body [data-math-style]")) {
+      window.katex.render(node.textContent, node, {
+        displayMode: node.getAttribute("data-math-style") === "display",
+        throwOnError: false
+      });
+    }
     if (window.renderMathInElement) {
       window.renderMathInElement(document.body, {
+        ignoredClasses: ["katex", "katex-error"],
         delimiters: [
-          { left: "$$", right: "$$", display: true },
-          { left: "$", right: "$", display: false },
           { left: "\\(", right: "\\)", display: false },
           { left: "\\[", right: "\\]", display: true }
         ],
@@ -30,6 +36,13 @@
     }
     if (window.hljs) window.hljs.highlightAll();
   });
+  if ({{FOR_PRINT}}) {
+    window.addEventListener("afterprint", () => parent.postMessage("mdmeow:printed", "*"), { once: true });
+    window.addEventListener("load", async () => {
+      await document.fonts.ready;
+      window.print();
+    }, { once: true });
+  }
 </script>
 </body>
 </html>
