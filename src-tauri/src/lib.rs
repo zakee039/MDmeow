@@ -106,6 +106,8 @@ pub fn run() {
             commands::rename_document,
             commands::render_html,
             commands::read_image_data_url,
+            commands::resolve_document_link,
+            commands::open_local_document_link,
             proxy::test_proxy,
             proxy::fetch_remote_image_data_url,
             update::check_for_update,

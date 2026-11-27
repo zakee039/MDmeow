@@ -126,6 +126,9 @@ const EN = {
   "dialog.notNow": "Not now",
   "dialog.noticeTitle": "MDmeow",
   "dialog.errorTitle": "Error",
+  "dialog.linkNotFound": "Linked file not found: {path}",
+  "dialog.linkBlocked": "Opening this file type directly is blocked for safety: {path}",
+  "dialog.linkUnsaved": "Save the current document first to open relative links.",
 
   "editor.parseFailed": "This part could not be parsed",
   "editor.placeholder": "Write here — “/” for blocks, the ⠿ button to change the current one",
@@ -334,6 +337,9 @@ const DE: Record<I18nKey, string> = {
   "dialog.notNow": "Später",
   "dialog.noticeTitle": "MDmeow",
   "dialog.errorTitle": "Fehler",
+  "dialog.linkNotFound": "Verknüpfte Datei nicht gefunden: {path}",
+  "dialog.linkBlocked": "Das direkte Öffnen dieses Dateityps ist aus Sicherheitsgründen blockiert: {path}",
+  "dialog.linkUnsaved": "Speichere das aktuelle Dokument zuerst, um relative Links zu öffnen.",
 
   "editor.parseFailed": "Dieser Abschnitt konnte nicht verarbeitet werden",
   "editor.placeholder": "Hier schreiben — „/“ für Blöcke, den ⠿-Knopf für den aktuellen Block",
@@ -540,6 +546,9 @@ const ZH_CN: Record<I18nKey, string> = {
   "dialog.notNow": "暂不",
   "dialog.noticeTitle": "MDmeow",
   "dialog.errorTitle": "操作失败",
+  "dialog.linkNotFound": "找不到链接指向的本地文件：{path}",
+  "dialog.linkBlocked": "出于安全限制，不支持直接打开该类型的本地文件：{path}",
+  "dialog.linkUnsaved": "请先保存当前文档，再打开相对路径链接。",
 
   "editor.parseFailed": "该部分解析失败",
   "editor.placeholder": "在此输入 — 输入“/”插入内容块，点击 ⠿ 更改当前块类型",
@@ -745,6 +754,9 @@ const JA: Record<I18nKey, string> = {
   "dialog.notNow": "後で",
   "dialog.noticeTitle": "MDmeow",
   "dialog.errorTitle": "エラー",
+  "dialog.linkNotFound": "リンク先のローカルファイルが見つかりません: {path}",
+  "dialog.linkBlocked": "安全上の理由により、この種類のローカルファイルは直接開けません: {path}",
+  "dialog.linkUnsaved": "相対リンクを開くには、先に現在のドキュメントを保存してください。",
 
   "editor.parseFailed": "この部分の解析に失敗しました",
   "editor.placeholder": "ここに入力 — 「/」でブロックを挿入、⠿ ボタンで現在のブロック種類を変更",

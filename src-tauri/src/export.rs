@@ -24,6 +24,7 @@ fn markdown_options() -> Options<'static> {
     opts.extension.footnotes = true;
     opts.extension.superscript = true;
     opts.extension.math_dollars = true;
+    opts.extension.math_latex = true;
     opts.render.r#unsafe = true;
     opts
 }
@@ -160,6 +161,20 @@ mod tests {
         assert!(out.contains("<span data-math-style=\"inline\">x^2</span>"));
         assert!(out.contains("data-math-style=\"display\""));
         assert!(out.contains("<code class=\"language-js\">"));
+    }
+
+    #[test]
+    fn exposes_latex_paren_and_bracket_math_delimiters() {
+        let out = render_html(
+            "Inline: \\( E=mc^2 \\)\n\n\\[\n\\operatorname{softmax}([0,\\ln2])\n\\]\n",
+            "Doc",
+            None,
+            false,
+        );
+        assert!(out.contains("data-math-style=\"inline\""));
+        assert!(out.contains("E=mc^2"));
+        assert!(out.contains("data-math-style=\"display\""));
+        assert!(out.contains("\\operatorname{softmax}"));
     }
 
     #[test]

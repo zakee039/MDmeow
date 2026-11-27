@@ -20,7 +20,7 @@ import type { Node as ProseNode } from "@milkdown/kit/prose/model";
 import { t } from "./i18n";
 
 const PROTECTION_TOKEN_RE = /^<mdmeow-parse-error\b/i;
-const MORE_COMMENT_RE = /^<!--\s*more\s*-->$/i;
+const HTML_COMMENT_RE = /^<!--(?:(?!-->)[\s\S])*-->$/;
 const BR_TAG_RE = /^<br\s*\/?>$/i;
 const DETAILS_OPEN_RE = /^<details\b([^<>]*)>$/i;
 const DETAILS_HEADER_RE = /^(<details\b[^<>]*>)\s*(<summary\b[\s\S]*<\/summary\s*>)$/i;
@@ -52,6 +52,32 @@ const VOID_TAGS = new Set([
 
 const INTERACTIVE_SELECTOR =
   "input, button, select, textarea, output, canvas, meter, progress, form, fieldset";
+const RICH_NESTED_SELECTOR =
+  "div, section, article, table, figure, header, footer, aside, nav, ul, ol, svg";
+const NON_CARD_ROOT_TAGS = new Set([
+  "DETAILS",
+  "A",
+  "KBD",
+  "IMG",
+  "P",
+  "CENTER",
+  "SPAN",
+  "RUBY",
+  "RT",
+  "RP",
+  "MARK",
+  "SUB",
+  "SUP",
+  "SMALL",
+  "U",
+  "INS",
+  "FONT",
+  "STRONG",
+  "B",
+  "EM",
+  "I",
+  "CODE",
+]);
 
 const HEIGHT_MSG_TYPE = "mdmeow-widget-height";
 const MIN_WIDGET_HEIGHT = 28;
@@ -66,6 +92,7 @@ interface BlockInfo {
   hasEmbeddedScript: boolean;
   hasEmbeddedStyle: boolean;
   hasInteractiveControl: boolean;
+  hasRichVisualLayout: boolean;
 }
 
 export interface HtmlWidgetGroup {
@@ -94,15 +121,8 @@ export type HtmlWidgetMeta =
 
 export const htmlWidgetKey = new PluginKey<HtmlWidgetPluginState>("mdmeow-html-widget");
 
-const activeFrames = new Map<string, HTMLIFrameElement>();
 let messageListenerAttached = false;
 let frameSeq = 0;
-
-function pruneDisconnectedFrames(): void {
-  for (const [id, frame] of activeFrames) {
-    if (!frame.isConnected) activeFrames.delete(id);
-  }
-}
 
 function ensureHeightMessageListener(): void {
   if (messageListenerAttached || typeof window === "undefined") return;
@@ -110,17 +130,18 @@ function ensureHeightMessageListener(): void {
   window.addEventListener("message", (event: MessageEvent) => {
     const data = event.data as { type?: unknown; id?: unknown; height?: unknown } | null;
     if (!data || data.type !== HEIGHT_MSG_TYPE || typeof data.id !== "string") return;
-    const frame = activeFrames.get(data.id);
-    if (!frame) return;
-    if (!frame.isConnected) {
-      activeFrames.delete(data.id);
+    const frames = document.querySelectorAll<HTMLIFrameElement>(
+      "iframe.mdmeow-widget-frame[data-mdmeow-widget-id]",
+    );
+    for (const frame of Array.from(frames)) {
+      if (frame.dataset.mdmeowWidgetId !== data.id) continue;
+      if (event.source !== frame.contentWindow) return;
+      const height = Number(data.height);
+      if (!Number.isFinite(height) || height <= 0) return;
+      const clamped = Math.max(MIN_WIDGET_HEIGHT, Math.min(MAX_WIDGET_HEIGHT, Math.ceil(height)));
+      frame.style.height = `${clamped}px`;
       return;
     }
-    if (event.source !== frame.contentWindow) return;
-    const height = Number(data.height);
-    if (!Number.isFinite(height) || height <= 0) return;
-    const clamped = Math.max(MIN_WIDGET_HEIGHT, Math.min(MAX_WIDGET_HEIGHT, Math.ceil(height)));
-    frame.style.height = `${clamped}px`;
   });
 }
 
@@ -150,7 +171,7 @@ function isHandledBySafeHtml(trimmed: string): boolean {
   if (
     !trimmed ||
     PROTECTION_TOKEN_RE.test(trimmed) ||
-    MORE_COMMENT_RE.test(trimmed) ||
+    HTML_COMMENT_RE.test(trimmed) ||
     BR_TAG_RE.test(trimmed) ||
     DETAILS_OPEN_RE.test(trimmed) ||
     DETAILS_HEADER_RE.test(trimmed) ||
@@ -175,6 +196,37 @@ function isHandledBySafeHtml(trimmed: string): boolean {
   return false;
 }
 
+function hasRelativeImg(root: DocumentFragment): boolean {
+  for (const img of Array.from(root.querySelectorAll("img"))) {
+    const src = (img.getAttribute("src") ?? "").trim();
+    if (!src) continue;
+    if (/^(?:data|blob):/i.test(src)) continue;
+    return true;
+  }
+  return false;
+}
+
+function detectRichVisualLayout(root: DocumentFragment, elements: Element[]): boolean {
+  if (hasRelativeImg(root)) return false;
+  if (root.querySelector("svg") !== null) return true;
+  if (elements.length === 1 && elements[0].tagName === "TABLE") return true;
+  if (elements.length === 1 && NON_CARD_ROOT_TAGS.has(elements[0].tagName)) {
+    return false;
+  }
+  const hasStyledEl = root.querySelector("[style]") !== null;
+  if (!hasStyledEl) return false;
+  // Require real visual card structure (nested block/table/svg elements or
+  // box styling on the root container) so plain inline tags stay untouched.
+  for (const el of elements) {
+    if (el.querySelector(RICH_NESTED_SELECTOR) !== null) return true;
+    const style = el.getAttribute("style") ?? "";
+    if (/(?:display\s*:\s*(?:flex|grid)|border|background|padding|box-shadow|border-radius)/i.test(style)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"> {
   const none: Omit<BlockInfo, "index" | "pos" | "end"> = {
     kind: "none",
@@ -182,6 +234,7 @@ function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"
     hasEmbeddedScript: false,
     hasEmbeddedStyle: false,
     hasInteractiveControl: false,
+    hasRichVisualLayout: false,
   };
   const trimmed = raw.trim();
   if (isHandledBySafeHtml(trimmed) || !trimmed.startsWith("<")) return none;
@@ -218,6 +271,7 @@ function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"
       hasEmbeddedScript: true,
       hasEmbeddedStyle: false,
       hasInteractiveControl: false,
+      hasRichVisualLayout: false,
     };
   }
 
@@ -232,6 +286,7 @@ function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"
       hasEmbeddedScript: false,
       hasEmbeddedStyle: true,
       hasInteractiveControl: false,
+      hasRichVisualLayout: false,
     };
   }
 
@@ -239,6 +294,7 @@ function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"
     template.content.querySelector("script") !== null || hasInlineEventAttr(template.content);
   const hasEmbeddedStyle = template.content.querySelector("style") !== null;
   const hasInteractiveControl = template.content.querySelector(INTERACTIVE_SELECTOR) !== null;
+  const hasRichVisualLayout = detectRichVisualLayout(template.content, elements);
 
   return {
     kind: "fragment",
@@ -246,7 +302,48 @@ function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"
     hasEmbeddedScript,
     hasEmbeddedStyle,
     hasInteractiveControl,
+    hasRichVisualLayout,
   };
+}
+
+function escapeHtmlText(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Extract raw HTML from either a single-atom HTML block (e.g. `<div>`, `<table>`,
+ *  `<script>`, `<style>`) or a paragraph whose inline children form a complete
+ *  non-CommonMark-block HTML element (e.g. `<canvas>fallback</canvas>`,
+ *  `<progress>68%</progress>`, `<video>...</video>`). */
+function extractRawHtmlFromBlock(block: ProseNode): string | null {
+  if (block.childCount === 1 && block.firstChild?.type.name === "html") {
+    return String(block.firstChild.attrs?.value ?? "");
+  }
+  if (
+    block.type.name !== "paragraph" ||
+    block.childCount < 2 ||
+    block.firstChild?.type.name !== "html" ||
+    block.lastChild?.type.name !== "html"
+  ) {
+    return null;
+  }
+
+  let out = "";
+  for (let i = 0; i < block.childCount; i++) {
+    const child = block.child(i);
+    if (child.type.name === "html") {
+      out += String(child.attrs?.value ?? "");
+    } else if (child.isText && child.marks.length === 0) {
+      out += escapeHtmlText(child.text ?? "");
+    } else if (child.type.name === "hardbreak") {
+      out += "\n";
+    } else {
+      return null;
+    }
+  }
+
+  const trimmed = out.trim();
+  if (!trimmed.startsWith("<") || !trimmed.endsWith(">")) return null;
+  return out;
 }
 
 /** Scan a ProseMirror document and group raw HTML blocks that form interactive
@@ -255,8 +352,8 @@ function classifyHtmlBlock(raw: string): Omit<BlockInfo, "index" | "pos" | "end"
 export function collectHtmlWidgetGroups(doc: ProseNode): HtmlWidgetGroup[] {
   const blocks: BlockInfo[] = [];
   doc.forEach((block, pos, index) => {
-    const atom = block.firstChild;
-    if (block.childCount !== 1 || atom?.type.name !== "html") {
+    const raw = extractRawHtmlFromBlock(block);
+    if (raw === null) {
       blocks.push({
         index,
         pos,
@@ -266,10 +363,10 @@ export function collectHtmlWidgetGroups(doc: ProseNode): HtmlWidgetGroup[] {
         hasEmbeddedScript: false,
         hasEmbeddedStyle: false,
         hasInteractiveControl: false,
+        hasRichVisualLayout: false,
       });
       return;
     }
-    const raw = String(atom.attrs?.value ?? "");
     blocks.push({
       index,
       pos,
@@ -317,7 +414,8 @@ export function collectHtmlWidgetGroups(doc: ProseNode): HtmlWidgetGroup[] {
     const hasScript = fragment.hasEmbeddedScript || trailingScripts.length > 0;
     const hasStyle =
       leadingStyles.length > 0 || trailingStyles.length > 0 || fragment.hasEmbeddedStyle;
-    const isWidget = hasScript || hasStyle || fragment.hasInteractiveControl;
+    const isWidget =
+      hasScript || hasStyle || fragment.hasInteractiveControl || fragment.hasRichVisualLayout;
 
     if (!isWidget) continue;
 
@@ -343,13 +441,42 @@ export function collectHtmlWidgetGroups(doc: ProseNode): HtmlWidgetGroup[] {
   return groups;
 }
 
-/** Build the sandboxed iframe `srcdoc` document for a widget group. */
+function stripScriptsForStaticHtml(html: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  template.content.querySelectorAll("script").forEach((el) => el.remove());
+  const stack: Element[] = [...template.content.children];
+  while (stack.length > 0) {
+    const el = stack.pop()!;
+    for (const attr of Array.from(el.attributes)) {
+      if (
+        /^on[a-z]+$/i.test(attr.name) ||
+        (/^(?:href|src|xlink:href)$/i.test(attr.name) &&
+          /^\s*javascript:/i.test(attr.value))
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+    for (const child of Array.from(el.children)) stack.push(child);
+  }
+  const wrapper = document.createElement("div");
+  wrapper.appendChild(template.content.cloneNode(true));
+  return wrapper.innerHTML;
+}
+
+/** Build the sandboxed iframe `srcdoc` document for a widget group.
+ *  Static groups (`!group.hasScript`) strip all scripts/handlers and lock CSP
+ *  with a per-frame nonce so ONLY the height reporter can execute. */
 export function buildWidgetSrcdoc(group: HtmlWidgetGroup, frameId: string): string {
-  const csp =
-    "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:;";
+  const nonce = group.hasScript ? "" : crypto.randomUUID().replace(/-/g, "");
+  const csp = group.hasScript
+    ? "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:;"
+    : `default-src 'none'; script-src 'nonce-${nonce}'; script-src-attr 'none'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:;`;
   const safeId = JSON.stringify(frameId);
   const styleBlock = group.styles.join("\n");
-  const scriptBlock = group.scripts.join("\n");
+  const bodyHtml = group.hasScript ? group.html : stripScriptsForStaticHtml(group.html);
+  const scriptBlock = group.hasScript ? group.scripts.join("\n") : "";
+  const reporterOpenTag = group.hasScript ? "<script>" : `<script nonce="${nonce}">`;
 
   return [
     "<!doctype html>",
@@ -361,16 +488,19 @@ export function buildWidgetSrcdoc(group: HtmlWidgetGroup, frameId: string): stri
     "*, *::before, *::after { box-sizing: border-box; }",
     "html, body { margin: 0; padding: 0; height: auto; background: transparent; overflow-x: auto; overflow-y: hidden; }",
     'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif; line-height: 1.5; color: #213b3a; }',
+    ":where(table) { width: 100%; border-collapse: collapse; font-size: 14px; }",
+    ":where(th, td) { padding: 8px 12px; border: 1px solid #dce6e5; text-align: left; }",
+    ":where(th) { background: #f3f6f5; font-weight: 600; }",
     "#__mdmeow_widget_root__ { display: flow-root; padding: 2px; }",
     "</style>",
     styleBlock,
     "</head>",
     "<body>",
     '<div id="__mdmeow_widget_root__">',
-    group.html,
+    bodyHtml,
     "</div>",
     scriptBlock,
-    "<script>",
+    reporterOpenTag,
     "(function () {",
     `  var id = ${safeId};`,
     "  var root = document.getElementById('__mdmeow_widget_root__');",
@@ -411,10 +541,14 @@ function buildWidgetDecorations(
   allowed: boolean,
   sourceVisible: Set<string>,
 ): DecorationSet {
-  if (!allowed || groups.length === 0) return DecorationSet.empty;
+  if (groups.length === 0) return DecorationSet.empty;
 
   const decorations: Decoration[] = [];
   for (const group of groups) {
+    // Scripted widgets require explicit user approval; static zero-script
+    // HTML/SVG cards render safely right away under a nonce-locked CSP.
+    if (group.hasScript && !allowed) continue;
+
     const showingSource = sourceVisible.has(group.key);
     if (showingSource) {
       decorations.push(
@@ -452,7 +586,7 @@ function buildWidgetDecorations(
     );
   }
 
-  return DecorationSet.create(doc, decorations);
+  return decorations.length ? DecorationSet.create(doc, decorations) : DecorationSet.empty;
 }
 
 function createSourceBarElement(view: EditorView, group: HtmlWidgetGroup): HTMLElement {
@@ -488,7 +622,6 @@ function createSourceBarElement(view: EditorView, group: HtmlWidgetGroup): HTMLE
 
 function createWidgetCardElement(view: EditorView, group: HtmlWidgetGroup): HTMLElement {
   ensureHeightMessageListener();
-  pruneDisconnectedFrames();
 
   const shell = document.createElement("div");
   shell.className = "mdmeow-widget-shell";
@@ -518,11 +651,11 @@ function createWidgetCardElement(view: EditorView, group: HtmlWidgetGroup): HTML
   const frameId = `mdmeow-w-${++frameSeq}-${Math.random().toString(36).slice(2, 8)}`;
   const iframe = document.createElement("iframe");
   iframe.className = "mdmeow-widget-frame";
+  iframe.dataset.mdmeowWidgetId = frameId;
   iframe.setAttribute("sandbox", "allow-scripts");
   iframe.setAttribute("referrerpolicy", "no-referrer");
   iframe.setAttribute("title", t("widget.badge"));
   iframe.style.height = "120px";
-  activeFrames.set(frameId, iframe);
   iframe.srcdoc = buildWidgetSrcdoc(group, frameId);
 
   shell.append(tools, iframe);
@@ -536,11 +669,12 @@ export const htmlWidgetPlugin = $prose(
       state: {
         init: (_, state) => {
           const groups = collectHtmlWidgetGroups(state.doc);
+          const sourceVisible = new Set<string>();
           return {
             allowed: false,
-            sourceVisible: new Set<string>(),
+            sourceVisible,
             groups,
-            decorations: DecorationSet.empty,
+            decorations: buildWidgetDecorations(state.doc, groups, false, sourceVisible),
           };
         },
         apply(tr, prev) {
@@ -592,5 +726,5 @@ export function retranslateWidgets(host: HTMLElement): void {
 }
 
 export function disposeAllWidgetFrames(): void {
-  activeFrames.clear();
+  // Frames are matched via live DOM attributes; nothing to clear globally.
 }

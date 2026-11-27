@@ -368,11 +368,14 @@ async function writeView(
     const shouldPromptWidgets = Boolean(
       tab &&
       tab === tabBar.active &&
-      widgetSummary.count > 0 &&
+      widgetSummary.scriptedCount > 0 &&
       tab.htmlWidgetDecision === undefined,
     );
     if (shouldPromptWidgets && tab) {
-      openWidgetPrompt(tab, widgetSummary);
+      openWidgetPrompt(tab, {
+        count: widgetSummary.scriptedCount,
+        hasScript: true,
+      });
     }
     requestAnimationFrame(() => {
       if (token !== viewLoadToken) return;
@@ -714,6 +717,9 @@ editor.onChange = () => {
 editor.onSelectionChange = () => {
   if (!codeViewVisible) scheduleTextStats();
 };
+editor.onOpenLocalLink = (href) => {
+  void openLocalLink(href);
+};
 
 codeEditor.onChange = () => {
   if (!codeViewVisible || mountedTab !== tabBar.active) return;
@@ -862,6 +868,59 @@ async function openPath(path: string): Promise<void> {
     persistSoon();
   } finally {
     endOpening();
+  }
+}
+
+interface ResolvedDocumentLink {
+  path: string;
+  fragment: string | null;
+  exists: boolean;
+  is_markdown: boolean;
+  can_open_externally: boolean;
+}
+
+async function openLocalLink(href: string): Promise<void> {
+  const docPath = tabBar.active?.path ?? null;
+  let resolved: ResolvedDocumentLink;
+  try {
+    resolved = await invoke<ResolvedDocumentLink>("resolve_document_link", {
+      docPath,
+      href,
+    });
+  } catch (e) {
+    if (!docPath) {
+      await showAppMessage(t("dialog.linkUnsaved"), "info");
+    } else {
+      await showAppMessage(String(e), "error");
+    }
+    return;
+  }
+
+  if (!resolved.exists) {
+    await showAppMessage(t("dialog.linkNotFound", { path: resolved.path }), "error");
+    return;
+  }
+
+  if (resolved.is_markdown) {
+    await openPath(resolved.path);
+    if (resolved.fragment && !codeViewVisible) {
+      const frag = resolved.fragment;
+      window.setTimeout(() => {
+        editor.scrollToAnchor(frag);
+      }, 120);
+    }
+    return;
+  }
+
+  if (!resolved.can_open_externally) {
+    await showAppMessage(t("dialog.linkBlocked", { path: resolved.path }), "info");
+    return;
+  }
+
+  try {
+    await invoke("open_local_document_link", { docPath, href });
+  } catch (e) {
+    await showAppMessage(String(e), "error");
   }
 }
 

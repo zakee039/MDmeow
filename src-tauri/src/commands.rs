@@ -2,6 +2,7 @@
 
 use serde::Serialize;
 use tauri::State;
+use tauri_plugin_opener::OpenerExt;
 
 use crate::settings::Settings;
 use crate::windows_integration::OpenWithStatus;
@@ -219,4 +220,207 @@ pub fn render_html(markdown: String, title: String, doc_path: Option<String>, fo
 #[tauri::command]
 pub fn read_image_data_url(doc_path: Option<String>, src: String) -> Result<String, String> {
     assets::to_data_url(doc_path.as_deref(), &src)
+}
+
+#[derive(Serialize)]
+pub struct ResolvedDocumentLink {
+    pub path: String,
+    pub fragment: Option<String>,
+    pub exists: bool,
+    pub is_markdown: bool,
+    pub can_open_externally: bool,
+}
+
+fn clean_display_path(path: &std::path::Path) -> String {
+    let s = path.display().to_string();
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(unc) = s.strip_prefix(r"\\?\UNC\") {
+            return format!(r"\\{unc}");
+        }
+        if let Some(rest) = s.strip_prefix(r"\\?\") {
+            return rest.to_string();
+        }
+    }
+    s
+}
+
+fn is_safe_external_link_ext(ext: Option<&str>) -> bool {
+    matches!(
+        ext.map(str::to_ascii_lowercase).as_deref(),
+        Some(
+            "html"
+                | "htm"
+                | "xhtml"
+                | "pdf"
+                | "svg"
+                | "png"
+                | "jpg"
+                | "jpeg"
+                | "gif"
+                | "webp"
+                | "bmp"
+                | "ico"
+                | "avif"
+                | "txt"
+                | "log"
+                | "csv"
+                | "tsv"
+                | "json"
+                | "xml"
+                | "yaml"
+                | "yml"
+                | "toml"
+                | "ini"
+                | "css"
+                | "mp3"
+                | "wav"
+                | "ogg"
+                | "mp4"
+                | "webm"
+                | "mov"
+                | "docx"
+                | "xlsx"
+                | "pptx"
+                | "rtf"
+                | "epub"
+        )
+    )
+}
+
+fn resolve_document_link_impl(
+    doc_path: Option<&str>,
+    href: &str,
+) -> Result<ResolvedDocumentLink, String> {
+    let trimmed = href.trim();
+    if trimmed.is_empty() {
+        return Err("Empty link target.".to_string());
+    }
+    let (raw_path_part, fragment) = match trimmed.find('#') {
+        Some(idx) => {
+            let frag = trimmed[idx..].trim();
+            (
+                trimmed[..idx].trim(),
+                if frag.len() > 1 {
+                    Some(frag.to_string())
+                } else {
+                    None
+                },
+            )
+        }
+        None => (trimmed, None),
+    };
+    let path_without_query = raw_path_part.split('?').next().unwrap_or(raw_path_part);
+    let decoded = assets::percent_decode(path_without_query.trim());
+    if decoded.is_empty() {
+        return Err("Empty file path.".to_string());
+    }
+
+    let candidate = std::path::PathBuf::from(&decoded);
+    let joined = if candidate.is_absolute() {
+        candidate
+    } else {
+        let base = doc_path
+            .map(std::path::Path::new)
+            .and_then(std::path::Path::parent)
+            .ok_or_else(|| "Save the current document first to open relative links.".to_string())?;
+        base.join(candidate)
+    };
+
+    let exists = joined.is_file();
+    let final_path = if exists {
+        std::fs::canonicalize(&joined).unwrap_or(joined)
+    } else {
+        joined
+    };
+    let ext = final_path.extension().and_then(|e| e.to_str());
+    let is_markdown = matches!(
+        ext.map(str::to_ascii_lowercase).as_deref(),
+        Some("md" | "markdown" | "mdx")
+    );
+    let can_open_externally = is_safe_external_link_ext(ext);
+
+    Ok(ResolvedDocumentLink {
+        path: clean_display_path(&final_path),
+        fragment,
+        exists,
+        is_markdown,
+        can_open_externally,
+    })
+}
+
+/// Resolve a relative or local file link against the active document's folder.
+#[tauri::command]
+pub fn resolve_document_link(
+    doc_path: Option<String>,
+    href: String,
+) -> Result<ResolvedDocumentLink, String> {
+    resolve_document_link_impl(doc_path.as_deref(), &href)
+}
+
+/// Open a safe non-executable local file referenced from Markdown (e.g. `.html`,
+/// `.pdf`, images) with the system's default application.
+#[tauri::command]
+pub fn open_local_document_link(
+    app: tauri::AppHandle,
+    doc_path: Option<String>,
+    href: String,
+) -> Result<(), String> {
+    let resolved = resolve_document_link_impl(doc_path.as_deref(), &href)?;
+    if !resolved.exists {
+        return Err(format!("Linked file does not exist: {}", resolved.path));
+    }
+    if !resolved.can_open_externally {
+        return Err(format!(
+            "Opening this file type directly is blocked for safety: {}",
+            resolved.path
+        ));
+    }
+    app.opener()
+        .open_path(&resolved.path, None::<&str>)
+        .map_err(|e| format!("Cannot open {}: {e}", resolved.path))
+}
+
+#[cfg(test)]
+mod link_tests {
+    use super::resolve_document_link_impl;
+
+    #[test]
+    fn resolves_relative_markdown_and_html_and_blocks_executables() {
+        let base = std::env::temp_dir().join(format!(
+            "mdmeow_link_test_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&base).unwrap();
+        let doc = base.join("index.md");
+        let note = base.join("note 1.md");
+        let html = base.join("demo.html");
+        let bat = base.join("danger.bat");
+        std::fs::write(&doc, "# hi").unwrap();
+        std::fs::write(&note, "# note").unwrap();
+        std::fs::write(&html, "<p>ok</p>").unwrap();
+        std::fs::write(&bat, "echo hi").unwrap();
+
+        let md_link =
+            resolve_document_link_impl(doc.to_str(), "./note%201.md#section-2").unwrap();
+        assert!(md_link.exists);
+        assert!(md_link.is_markdown);
+        assert_eq!(md_link.fragment.as_deref(), Some("#section-2"));
+
+        let html_link = resolve_document_link_impl(doc.to_str(), "./demo.html").unwrap();
+        assert!(html_link.exists);
+        assert!(!html_link.is_markdown);
+        assert!(html_link.can_open_externally);
+
+        let bat_link = resolve_document_link_impl(doc.to_str(), "./danger.bat").unwrap();
+        assert!(bat_link.exists);
+        assert!(!bat_link.is_markdown);
+        assert!(!bat_link.can_open_externally);
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
 }

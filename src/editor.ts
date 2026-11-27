@@ -1,6 +1,7 @@
 // Thin wrapper around Milkdown Crepe: one editor instance, documents are
 // swapped in place (tabbed editing keeps a single instance — see tabs.ts).
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Crepe } from "@milkdown/crepe";
 import { isMermaidLanguage, renderMermaid } from "./mermaid";
 import "@milkdown/crepe/theme/common/style.css";
@@ -50,7 +51,14 @@ import {
   patchHtmlMarkdown,
   resolveRawHtmlImages,
   safeHtmlPresentationPlugin,
+  setHtmlLinkHandler,
 } from "./html-markdown";
+import {
+  patchLatexDelimitersMarkdown,
+  preserveBracketMathPlugin,
+  remarkLatexDelimitersPlugin,
+} from "./latex-delimiters";
+import { classifyHref, scrollToHeadingAnchor } from "./link-navigation";
 import {
   disposeAllWidgetFrames,
   htmlWidgetKey,
@@ -123,11 +131,16 @@ export class Editor {
   onChange: () => void = () => {};
   /** Fires whenever the ProseMirror selection changes. */
   onSelectionChange: () => void = () => {};
+  /** Fires when the user activates a relative/local file link inside the document. */
+  onOpenLocalLink: (href: string) => void = () => {};
 
   constructor(host: HTMLElement) {
     this.host = host;
     this.host.addEventListener("click", this.handleCodeToolClick);
     this.host.addEventListener("click", this.handleLatexPreviewClick);
+    this.host.addEventListener("click", this.handleEditorLinkClick);
+    document.addEventListener("click", this.handleTooltipLinkClick, true);
+    setHtmlLinkHandler((href) => this.navigateLink(href));
     this.codeLineObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         const target =
@@ -316,6 +329,45 @@ export class Editor {
     });
   };
 
+  scrollToAnchor(hash: string): boolean {
+    return scrollToHeadingAnchor(this.host, hash);
+  }
+
+  navigateLink(rawHref: string): void {
+    const info = classifyHref(rawHref);
+    if (info.kind === "anchor") {
+      this.scrollToAnchor(info.hash);
+    } else if (info.kind === "external") {
+      void openUrl(info.url);
+    } else if (info.kind === "local") {
+      this.onOpenLocalLink(info.href);
+    }
+  }
+
+  private handleEditorLinkClick = (event: MouseEvent): void => {
+    if (event.button !== 0 || !(event.ctrlKey || event.metaKey)) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const anchor = target?.closest<HTMLAnchorElement>(".ProseMirror a[href]");
+    if (!anchor) return;
+    const rawHref = anchor.getAttribute("href");
+    if (!rawHref) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.navigateLink(rawHref);
+  };
+
+  private handleTooltipLinkClick = (event: MouseEvent): void => {
+    if (event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const anchor = target?.closest<HTMLAnchorElement>(".milkdown-link-preview a[href]");
+    if (!anchor) return;
+    const rawHref = anchor.getAttribute("href");
+    if (!rawHref) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.navigateLink(rawHref);
+  };
+
   /** Bullet-list marker written on save. Read by the live serializer. */
   setListMarker(marker: ListMarker): void {
     this.listMarker = marker;
@@ -440,6 +492,8 @@ export class Editor {
         });
       })
       .use(safePreserveEmptyLinePlugin)
+      .use(remarkLatexDelimitersPlugin)
+      .use(preserveBracketMathPlugin)
       .use(markFencedLatexPlugin)
       .use(linkFromClipboard)
       .use(findPlugin)
@@ -487,6 +541,7 @@ export class Editor {
     this.crepe = crepe;
     patchImageBlockMarkdown(crepe);
     patchTableCellMarkdown(crepe);
+    patchLatexDelimitersMarkdown(crepe);
     patchHtmlMarkdown(crepe, (token) => this.protectedTokens.get(token));
     this.blockMenu = installBlockMenu(crepe);
     if (markdown) await this.setContent(markdown);
@@ -823,12 +878,14 @@ export class Editor {
   }
 
   /** Interactive HTML web widgets detected in the active document. */
-  htmlWidgetSummary(): { count: number; hasScript: boolean } {
+  htmlWidgetSummary(): { count: number; scriptedCount: number; hasScript: boolean } {
     const view = this.view();
     const groups = view ? (htmlWidgetKey.getState(view.state)?.groups ?? []) : [];
+    const scriptedCount = groups.filter((g) => g.hasScript).length;
     return {
       count: groups.length,
-      hasScript: groups.some((g) => g.hasScript),
+      scriptedCount,
+      hasScript: scriptedCount > 0,
     };
   }
 
