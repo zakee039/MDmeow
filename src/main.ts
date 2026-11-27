@@ -7,7 +7,7 @@ import {
   primaryMonitor,
 } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
-import { open, save, ask, message } from "@tauri-apps/plugin-dialog";
+import { open, save, message } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { Editor } from "./editor";
@@ -296,6 +296,7 @@ async function writeView(
   const token = ++viewLoadToken;
   const tab = tabBar.active;
   mountedTab = undefined;
+  closeWidgetPrompt();
   window.clearTimeout(dirtySyncTimer);
   dirtySyncTimer = undefined;
 
@@ -330,6 +331,7 @@ async function writeView(
       const applied = await editor.setContent(md, {
         isCancelled: () => token !== viewLoadToken,
         yieldBeforeMount: heavy,
+        allowHtmlWidgets: tab?.htmlWidgetDecision === "allow",
       });
       if (!applied || token !== viewLoadToken) return;
       // The renderer may normalize harmless formatting, but it must not
@@ -362,10 +364,20 @@ async function writeView(
     editor.setSpellcheck(settings.spellcheck);
     scheduleTextStats(true);
     updateIntegrityWarning();
+    const widgetSummary = editor.htmlWidgetSummary();
+    const shouldPromptWidgets = Boolean(
+      tab &&
+      tab === tabBar.active &&
+      widgetSummary.count > 0 &&
+      tab.htmlWidgetDecision === undefined,
+    );
+    if (shouldPromptWidgets && tab) {
+      openWidgetPrompt(tab, widgetSummary);
+    }
     requestAnimationFrame(() => {
       if (token !== viewLoadToken) return;
       editorHost.scrollTop = scrollTop;
-      if (options?.focusAfter) editor.focus();
+      if (options?.focusAfter && !shouldPromptWidgets) editor.focus();
       switching = false;
     });
   } finally {
@@ -492,10 +504,7 @@ async function commitTitleRename(): Promise<void> {
     updateSourceButton();
     persistSoon();
   } catch (err) {
-    await message(t("dialog.renameError", { err: String(err) }), {
-      title: "MDmeow",
-      kind: "error",
-    });
+    await showAppMessage(t("dialog.renameError", { err: String(err) }), "error");
   } finally {
     cancelTitleRename();
   }
@@ -561,10 +570,7 @@ async function registerFileAssociations(extensions: string[]): Promise<void> {
       openWithStatus.registered_extensions,
     );
   } catch (err) {
-    await message(t("dialog.openWithError", { err: String(err) }), {
-      title: "MDmeow",
-      kind: "error",
-    });
+    await showAppMessage(t("dialog.openWithError", { err: String(err) }), "error");
     throw err;
   }
 }
@@ -587,10 +593,7 @@ async function setOpenWithRegistration(register: boolean): Promise<void> {
     settings.open_with_prompt_dismissed = register ? false : true;
     persistSoon();
   } catch (err) {
-    await message(t("dialog.openWithError", { err: String(err) }), {
-      title: "MDmeow",
-      kind: "error",
-    });
+    await showAppMessage(t("dialog.openWithError", { err: String(err) }), "error");
   }
 }
 
@@ -605,9 +608,14 @@ async function initializeOpenWithIntegration(): Promise<void> {
     return;
   }
 
-  const register = await ask(t("dialog.openWithPrompt"), {
-    title: "MDmeow",
-    kind: "info",
+  const register = await showAppDialog<boolean>({
+    title: t("dialog.noticeTitle"),
+    message: t("dialog.openWithPrompt"),
+    buttons: [
+      { label: t("dialog.register"), value: true },
+      { label: t("dialog.notNow"), value: false },
+    ],
+    cancelValue: false,
   });
   if (register) {
     await setOpenWithRegistration(true);
@@ -687,11 +695,12 @@ tabBar.onCloseRequest = async (tab: Tab) => {
     syncActiveDirtyNow();
   }
   if (tab.dirty) {
-    const discard = await ask(
-      t("dialog.discardChanges", { name: baseName(tab.path) }),
-      { title: "MDmeow", kind: "warning" },
-    );
-    if (!discard) return;
+    const choice = await askSaveBeforeClose(tab);
+    if (choice === "cancel") return;
+    if (choice === "save") {
+      const saved = await saveTabOrAs(tab);
+      if (!saved) return;
+    }
   }
   tabBar.remove(tab.id);
   persistSoon();
@@ -828,7 +837,7 @@ async function openPath(path: string): Promise<void> {
       text = await invoke<string>("read_document", { path });
     } catch (e) {
       endOpening();
-      await message(String(e), { title: "MDmeow", kind: "error" });
+      await showAppMessage(String(e), "error");
       return;
     }
 
@@ -839,6 +848,7 @@ async function openPath(path: string): Promise<void> {
       cur.content = text;
       cur.dirty = false;
       cur.previewUnsafe = false;
+      cur.htmlWidgetDecision = undefined;
       editor.setDocPath(path);
       setViewVisibility(cur);
       tabBar.render();
@@ -906,7 +916,7 @@ function saveTab(tab: Tab, destination?: string): Promise<boolean> {
     try {
       await invoke<string>("write_document", { path, contents: md, preserveSource });
     } catch (error) {
-      await message(String(error), { title: "MDmeow", kind: "error" });
+      await showAppMessage(String(error), "error");
       return false;
     }
 
@@ -938,21 +948,27 @@ function saveTab(tab: Tab, destination?: string): Promise<boolean> {
   });
 }
 
-async function saveDoc(): Promise<boolean> {
-  const tab = tabBar.active;
-  if (!tab) return false;
-  return tab.path ? saveTab(tab) : saveAs();
-}
-
-async function saveAs(): Promise<boolean> {
-  const tab = tabBar.active;
-  if (!tab) return false;
-
+async function saveAsTab(tab: Tab): Promise<boolean> {
   const dest = await save({
     defaultPath: tab.path ?? `${stem(tab.path)}.md`,
     filters: [{ name: "Documents / Code", extensions: knownExtensions() }],
   });
   return dest && tabBar.tabs.includes(tab) ? saveTab(tab, dest) : false;
+}
+
+async function saveTabOrAs(tab: Tab): Promise<boolean> {
+  return tab.path ? saveTab(tab) : saveAsTab(tab);
+}
+
+async function saveDoc(): Promise<boolean> {
+  const tab = tabBar.active;
+  if (!tab) return false;
+  return saveTabOrAs(tab);
+}
+
+async function saveAs(): Promise<boolean> {
+  const tab = tabBar.active;
+  return tab ? saveAsTab(tab) : false;
 }
 
 async function closeActiveTab(): Promise<void> {
@@ -976,9 +992,9 @@ async function exportHtml(): Promise<void> {
       docPath: tab?.path ?? null,
     });
     await invoke("write_document", { path: dest, contents: html });
-    await message(t("dialog.htmlExported"), { title: "MDmeow" });
+    await showAppMessage(t("dialog.htmlExported"), "info");
   } catch (e) {
-    await message(String(e), { title: "MDmeow", kind: "error" });
+    await showAppMessage(String(e), "error");
   }
 }
 
@@ -1011,7 +1027,7 @@ async function exportPdf(): Promise<void> {
     frame.srcdoc = html;
     document.body.appendChild(frame);
   } catch (error) {
-    await message(String(error), { title: "MDmeow", kind: "error" });
+    await showAppMessage(String(error), "error");
   }
 }
 
@@ -1140,6 +1156,207 @@ const sourceFindTarget: FindTarget = {
 function openFind(withReplace: boolean): void {
   findBar.bind(() => (codeViewVisible ? sourceFindTarget : editorFindTarget));
   findBar.open(withReplace);
+}
+
+// --- HTML widget confirmation modal -------------------------------------
+
+const widgetPromptEl = document.getElementById("widget-prompt") as HTMLElement;
+const widgetPromptMessageEl = document.getElementById("widget-prompt-message") as HTMLElement;
+const widgetPromptShowBtn = document.getElementById("widget-prompt-show") as HTMLButtonElement;
+const widgetPromptHideBtn = document.getElementById("widget-prompt-hide") as HTMLButtonElement;
+const widgetPromptCloseBtn = document.getElementById("widget-prompt-close") as HTMLButtonElement;
+
+let widgetPromptTarget: { tab: Tab; count: number; hasScript: boolean } | null = null;
+
+function renderWidgetPromptMessage(): void {
+  if (!widgetPromptTarget) return;
+  const key = widgetPromptTarget.hasScript
+    ? "widget.prompt.message"
+    : "widget.prompt.messageNoScript";
+  widgetPromptMessageEl.textContent = t(key, {
+    name: baseName(widgetPromptTarget.tab.path),
+    count: widgetPromptTarget.count,
+  });
+}
+
+function openWidgetPrompt(
+  tab: Tab,
+  summary: { count: number; hasScript: boolean },
+): void {
+  widgetPromptTarget = { tab, count: summary.count, hasScript: summary.hasScript };
+  renderWidgetPromptMessage();
+  widgetPromptEl.hidden = false;
+  requestAnimationFrame(() => {
+    if (!widgetPromptEl.hidden) widgetPromptShowBtn.focus();
+  });
+}
+
+function closeWidgetPrompt(): void {
+  widgetPromptTarget = null;
+  widgetPromptEl.hidden = true;
+}
+
+function dismissWidgetPromptAsHide(): void {
+  const target = widgetPromptTarget;
+  closeWidgetPrompt();
+  if (!target || target.tab !== tabBar.active) return;
+  target.tab.htmlWidgetDecision = "deny";
+  if (!codeViewVisible) {
+    editor.setHtmlWidgetsAllowed(false);
+    editor.focus();
+  }
+}
+
+function wireWidgetPrompt(): void {
+  widgetPromptShowBtn.addEventListener("click", () => {
+    const target = widgetPromptTarget;
+    closeWidgetPrompt();
+    if (!target || target.tab !== tabBar.active) return;
+    target.tab.htmlWidgetDecision = "allow";
+    if (!codeViewVisible) {
+      editor.setHtmlWidgetsAllowed(true);
+      editor.focus();
+    }
+  });
+  widgetPromptHideBtn.addEventListener("click", () => {
+    dismissWidgetPromptAsHide();
+  });
+  widgetPromptCloseBtn.addEventListener("click", () => {
+    const target = widgetPromptTarget;
+    closeWidgetPrompt();
+    if (!target) return;
+    void tabBar.onCloseRequest(target.tab);
+  });
+  onLangChange(() => {
+    if (!widgetPromptEl.hidden) renderWidgetPromptMessage();
+  });
+}
+
+// --- Shared in-app modal dialog -----------------------------------------
+
+type SavePromptChoice = "save" | "discard" | "cancel";
+
+interface AppDialogButton<T> {
+  label: string;
+  value: T;
+}
+
+interface AppDialogOptions<T> {
+  title: string;
+  message: string;
+  buttons: AppDialogButton<T>[];
+  cancelValue: T;
+  restoreEditorFocusOnCancel?: boolean;
+}
+
+const appDialogEl = document.getElementById("app-dialog") as HTMLElement;
+const appDialogTitleEl = document.getElementById("app-dialog-title") as HTMLElement;
+const appDialogMessageEl = document.getElementById("app-dialog-message") as HTMLElement;
+const appDialogActionsEl = document.getElementById("app-dialog-actions") as HTMLElement;
+
+let appDialogPending: {
+  cancel: () => void;
+} | null = null;
+
+function showAppDialog<T>(options: AppDialogOptions<T>): Promise<T> {
+  if (appDialogPending) {
+    appDialogPending.cancel();
+  }
+  return new Promise<T>((resolve) => {
+    let settled = false;
+    const finish = (value: T, isCancel = false) => {
+      if (settled) return;
+      settled = true;
+      appDialogPending = null;
+      appDialogEl.hidden = true;
+      appDialogActionsEl.replaceChildren();
+      resolve(value);
+      if (isCancel && options.restoreEditorFocusOnCancel) {
+        (codeViewVisible ? codeEditor : editor).focus();
+      }
+    };
+
+    appDialogPending = {
+      cancel: () => finish(options.cancelValue, true),
+    };
+
+    appDialogTitleEl.textContent = options.title;
+    appDialogMessageEl.textContent = options.message;
+    appDialogActionsEl.replaceChildren();
+
+    let firstBtn: HTMLButtonElement | null = null;
+    for (const item of options.buttons) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mdmeow-modal-btn";
+      btn.textContent = item.label;
+      btn.addEventListener("click", () => finish(item.value, item.value === options.cancelValue));
+      appDialogActionsEl.appendChild(btn);
+      if (!firstBtn) firstBtn = btn;
+    }
+
+    appDialogEl.hidden = false;
+    requestAnimationFrame(() => {
+      if (!appDialogEl.hidden) firstBtn?.focus();
+    });
+  });
+}
+
+function showAppMessage(text: string, kind: "info" | "error" = "info"): Promise<void> {
+  return showAppDialog<void>({
+    title: kind === "error" ? t("dialog.errorTitle") : t("dialog.noticeTitle"),
+    message: text,
+    buttons: [{ label: t("dialog.ok"), value: undefined }],
+    cancelValue: undefined,
+  });
+}
+
+function askSaveBeforeClose(tab: Tab): Promise<SavePromptChoice> {
+  return showAppDialog<SavePromptChoice>({
+    title: t("savePrompt.title"),
+    message: t("savePrompt.message", { name: baseName(tab.path) }),
+    buttons: [
+      { label: t("savePrompt.save"), value: "save" },
+      { label: t("savePrompt.discard"), value: "discard" },
+      { label: t("savePrompt.cancel"), value: "cancel" },
+    ],
+    cancelValue: "cancel",
+    restoreEditorFocusOnCancel: true,
+  });
+}
+
+async function resolveDirtyTabsBeforeExit(customMessage?: string): Promise<boolean> {
+  if (dirtySyncTimer !== undefined) syncActiveDirtyNow();
+  const dirtyTabs = tabBar.tabs.filter((tab) => tab.dirty);
+  if (dirtyTabs.length === 0) return true;
+
+  const text =
+    customMessage ??
+    (dirtyTabs.length === 1
+      ? t("savePrompt.message", { name: baseName(dirtyTabs[0].path) })
+      : t("savePrompt.messageMulti", { count: dirtyTabs.length }));
+
+  const choice = await showAppDialog<SavePromptChoice>({
+    title: t("savePrompt.title"),
+    message: text,
+    buttons: [
+      { label: t("savePrompt.save"), value: "save" },
+      { label: t("savePrompt.discard"), value: "discard" },
+      { label: t("savePrompt.cancel"), value: "cancel" },
+    ],
+    cancelValue: "cancel",
+    restoreEditorFocusOnCancel: true,
+  });
+
+  if (choice === "cancel") return false;
+  if (choice === "discard") return true;
+
+  for (const tab of dirtyTabs) {
+    if (!tabBar.tabs.includes(tab) || !tab.dirty) continue;
+    const saved = await saveTabOrAs(tab);
+    if (!saved) return false;
+  }
+  return true;
 }
 
 // --- about panel --------------------------------------------------------
@@ -1340,13 +1557,7 @@ async function checkVersion(silent: boolean): Promise<void> {
 
 async function usePreparedVersion(): Promise<void> {
   if (!preparedVersion) return;
-  if (tabBar.tabs.some((tab) => tab.dirty)) {
-    const proceed = await ask(t("update.unsavedInstall"), {
-      title: "MDmeow",
-      kind: "warning",
-    });
-    if (!proceed) return;
-  }
+  if (!(await resolveDirtyTabsBeforeExit(t("update.unsavedInstall")))) return;
 
   await captureGeometry();
   await flushSettings();
@@ -1610,7 +1821,9 @@ function wireShortcuts(): void {
         closeExportMenu();
         return;
       }
-      const dismiss = settingsPanel.isOpen ? () => settingsPanel.close()
+      const dismiss = !appDialogEl.hidden ? () => appDialogPending?.cancel()
+        : !widgetPromptEl.hidden ? dismissWidgetPromptAsHide
+        : settingsPanel.isOpen ? () => settingsPanel.close()
         : !mikuEasterEl.hidden ? closeMikuEaster
         : !aboutEl.hidden ? closeAbout
         : findBar.isOpen ? () => findBar.close()
@@ -1738,16 +1951,9 @@ let closing = false;
 async function quitApp(): Promise<void> {
   if (closing) return;
   closing = true;
-  if (dirtySyncTimer !== undefined) syncActiveDirtyNow();
-  if (tabBar.tabs.some((tab) => tab.dirty)) {
-    const quit = await ask(t("dialog.unsavedQuit"), {
-      title: "MDmeow",
-      kind: "warning",
-    });
-    if (!quit) {
-      closing = false;
-      return;
-    }
+  if (!(await resolveDirtyTabsBeforeExit())) {
+    closing = false;
+    return;
   }
   window.clearTimeout(geometryCaptureTimer);
   await captureGeometry();
@@ -2048,6 +2254,7 @@ async function bootstrap(): Promise<void> {
   }
 
   await editor.init("");
+  wireWidgetPrompt();
 
   // Show the window early so a slow or failing later step can never leave it
   // stuck hidden in the taskbar.

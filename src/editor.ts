@@ -51,6 +51,13 @@ import {
   resolveRawHtmlImages,
   safeHtmlPresentationPlugin,
 } from "./html-markdown";
+import {
+  disposeAllWidgetFrames,
+  htmlWidgetKey,
+  htmlWidgetPlugin,
+  retranslateWidgets,
+  type HtmlWidgetMeta,
+} from "./html-widget";
 import { mikuCreamCodeMirrorTheme } from "./miku-cream";
 import {
   PROTECTION_TOKEN_PATTERN,
@@ -438,6 +445,7 @@ export class Editor {
       .use(findPlugin)
       .use(imageToolbarPlugin)
       .use(safeHtmlPresentationPlugin)
+      .use(htmlWidgetPlugin)
       .use($prose(() => new Plugin({
         view: () => ({
           // Document transactions are observed immediately, not after
@@ -665,7 +673,11 @@ export class Editor {
    * the load was superseded before mounting. */
   async setContent(
     markdown: string,
-    options?: { isCancelled?: () => boolean; yieldBeforeMount?: boolean },
+    options?: {
+      isCancelled?: () => boolean;
+      yieldBeforeMount?: boolean;
+      allowHtmlWidgets?: boolean;
+    },
   ): Promise<boolean> {
     if (!this.crepe) return false;
     const cancelled = options?.isCancelled ?? (() => false);
@@ -761,7 +773,11 @@ export class Editor {
         if (raw !== undefined) expected.set(token, raw);
       }
       this.protectedTokens = expected;
+      this.setHtmlWidgetsAllowed(false, true);
       this.crepe.editor.action(replaceAll(prepared, true));
+      if (options?.allowHtmlWidgets) {
+        this.setHtmlWidgetsAllowed(true, true);
+      }
       if (expected.size) {
         const missing = new Set(expected.keys());
         this.view()?.state.doc.descendants((node) => {
@@ -806,6 +822,35 @@ export class Editor {
     return this.protectedTokens.size;
   }
 
+  /** Interactive HTML web widgets detected in the active document. */
+  htmlWidgetSummary(): { count: number; hasScript: boolean } {
+    const view = this.view();
+    const groups = view ? (htmlWidgetKey.getState(view.state)?.groups ?? []) : [];
+    return {
+      count: groups.length,
+      hasScript: groups.some((g) => g.hasScript),
+    };
+  }
+
+  /** Enable or disable sandboxed HTML widget rendering for the active document. */
+  setHtmlWidgetsAllowed(allowed: boolean, resetSource = false): void {
+    const view = this.view();
+    if (!view) return;
+    const prev = this.programmaticDocumentUpdate;
+    this.programmaticDocumentUpdate = true;
+    try {
+      view.dispatch(
+        view.state.tr.setMeta(htmlWidgetKey, {
+          type: "setAllowed",
+          allowed,
+          resetSource,
+        } satisfies HtmlWidgetMeta),
+      );
+    } finally {
+      this.programmaticDocumentUpdate = prev;
+    }
+  }
+
   /** Allow only semantic-preserving Markdown normalization in WYSIWYG.
    * The original bytes remain the tab's saved baseline until an explicit edit.
    * Unknown/lost nodes and front matter always fall back to source mode. */
@@ -834,6 +879,7 @@ export class Editor {
    *  reload — it is only visible on an empty document). */
   retranslate(): void {
     this.blockMenu?.retranslate();
+    retranslateWidgets(this.host);
   }
 
   /** Insert plain text at the cursor (used for emoji). */
@@ -1026,6 +1072,7 @@ export class Editor {
   }
 
   async destroy(): Promise<void> {
+    disposeAllWidgetFrames();
     if (this.lineNumberFrame !== null) {
       window.cancelAnimationFrame(this.lineNumberFrame);
       this.lineNumberFrame = null;

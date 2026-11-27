@@ -14,6 +14,8 @@ export interface Tab {
   dirty: boolean;
   /** WYSIWYG cannot round-trip this tab's Markdown without changing it. */
   previewUnsafe: boolean;
+  /** Per-session user choice for rendering sandboxed HTML widgets in this tab. */
+  htmlWidgetDecision?: "allow" | "deny";
   scrollTop: number;
 }
 

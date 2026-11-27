@@ -61,6 +61,25 @@
         <button type="button" role="menuitem" data-act="html" data-i18n="menu.exportHtml">Export HTML</button>
         <button type="button" role="menuitem" data-act="pdf" data-i18n="menu.exportPdf">Export PDF</button>
       </div>
+      <div id="widget-prompt" class="mdmeow-modal" hidden>
+        <div class="mdmeow-modal-card" role="dialog" aria-modal="true" aria-labelledby="widget-prompt-title">
+          <h2 id="widget-prompt-title" data-i18n="widget.prompt.title">Interactive web widgets detected</h2>
+          <p id="widget-prompt-message" class="mdmeow-modal-message"></p>
+          <p id="widget-prompt-note" class="mdmeow-modal-note" data-i18n="widget.prompt.note">Widgets run inside an isolated sandbox with no access to local files or the network.</p>
+          <div class="mdmeow-modal-actions">
+            <button id="widget-prompt-show" type="button" class="mdmeow-modal-btn" data-i18n="widget.prompt.show">Show</button>
+            <button id="widget-prompt-hide" type="button" class="mdmeow-modal-btn" data-i18n="widget.prompt.hide">Don't show</button>
+            <button id="widget-prompt-close" type="button" class="mdmeow-modal-btn" data-i18n="widget.prompt.close">Close document</button>
+          </div>
+        </div>
+      </div>
+      <div id="app-dialog" class="mdmeow-modal" hidden>
+        <div class="mdmeow-modal-card" role="dialog" aria-modal="true" aria-labelledby="app-dialog-title">
+          <h2 id="app-dialog-title"></h2>
+          <p id="app-dialog-message" class="mdmeow-modal-message"></p>
+          <div id="app-dialog-actions" class="mdmeow-modal-actions"></div>
+        </div>
+      </div>
       <div id="about" hidden>
         <div class="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
           <button class="about-close" data-i18n-aria="about.close" aria-label="Close">&times;</button>

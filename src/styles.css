@@ -938,7 +938,7 @@ body {
 #editor .milkdown .ProseMirror { font-size: var(--editor-font-size); }
 
 /* --- find / replace bar --- */
-#tabs[hidden], #find-bar[hidden], #about[hidden], #open-menu[hidden], #export-menu[hidden],
+#tabs[hidden], #find-bar[hidden], #about[hidden], #widget-prompt[hidden], #app-dialog[hidden], #open-menu[hidden], #export-menu[hidden],
 #emoji-picker[hidden], #settings-panel[hidden] { display: none; }
 
 /* --- settings panel (fast fade over the editor) --- */
@@ -1655,4 +1655,141 @@ body.mdmeow-file-drag::after {
   color: var(--crepe-color-error, #c42b1c);
   font-size: 0.85em;
   white-space: pre-wrap;
+}
+
+/* Sandboxed HTML web widgets inside WYSIWYG. */
+#editor .milkdown .mdmeow-widget-shell {
+  position: relative;
+  margin: 18px 0;
+  border-radius: 12px;
+}
+#editor .milkdown .mdmeow-widget-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+#editor .milkdown .mdmeow-widget-shell:hover .mdmeow-widget-tools,
+#editor .milkdown .mdmeow-widget-shell:focus-within .mdmeow-widget-tools {
+  opacity: 1;
+}
+#editor .milkdown .mdmeow-widget-frame {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+}
+#editor .milkdown .mdmeow-widget-source-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 16px 0 8px;
+  padding: 6px 10px;
+  border: 1px solid #c6e9e5;
+  border-radius: 8px;
+  background: #effaf8;
+  font-size: 12px;
+}
+#editor .milkdown .mdmeow-widget-badge {
+  color: #176f68;
+  font-weight: 600;
+}
+#editor .milkdown .mdmeow-widget-btn {
+  padding: 3px 9px;
+  border: 1px solid #a8dad4;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #147a74;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+#editor .milkdown .mdmeow-widget-btn:hover {
+  background: #ddf4f1;
+  border-color: #7cc9c0;
+}
+
+/* Shared in-app confirmation dialogs (widget prompt & unsaved-changes prompt). */
+.mdmeow-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 20, 19, 0.38);
+  backdrop-filter: blur(3px);
+}
+#app-dialog {
+  z-index: 130;
+}
+.mdmeow-modal-card {
+  width: min(440px, calc(100vw - 40px));
+  padding: 24px 26px 22px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+}
+.mdmeow-modal-card h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--fg);
+}
+.mdmeow-modal-message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+.mdmeow-modal-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(57, 197, 187, 0.09);
+  color: var(--bar-fg);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.mdmeow-modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mdmeow-modal-btn {
+  min-width: 78px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+.mdmeow-modal-btn:hover {
+  background: var(--hover, rgba(0, 0, 0, 0.05));
+}
+.mdmeow-modal-btn:focus-visible {
+  outline: 2px solid var(--accent, #39c5bb);
+  outline-offset: 2px;
 }
