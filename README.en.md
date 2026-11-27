@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · **English** · [日本語](README.ja.md) · [Deutsch](README.de.md)
 
-**Website：[mdmeow.zakee.fun](https://mdmeow.zakee.fun/en.html)**
+**Website: [mdmeow.zakee.fun](https://mdmeow.zakee.fun/en.html)**
 
 A lightweight, fast and polished WYSIWYG Markdown editor. **Open it. Get to work.**
 
@@ -14,24 +14,27 @@ A lightweight, fast and polished WYSIWYG Markdown editor. **Open it. Get to work
 
 MDmeow is a lightweight, fast and polished WYSIWYG Markdown editor built with **Tauri + Milkdown/Crepe**. It keeps Markdown files clean and portable while providing a direct, comfortable editing experience.
 
-The default **Miku Cream** rendering system combines a bright document surface, the `#39C5BB` accent, subtle code colors, KaTeX math, compact tables and a restrained desktop UI.
+The default **Miku Cream** rendering system combines a bright document surface, the `#39C5BB` accent, subtle code colors, KaTeX math, sandboxed HTML / SVG / Canvas widgets, compact tables and a restrained desktop UI. If you publish on Typecho, **we recommend pairing MDmeow with the companion Typecho theme [miku-cream](https://github.com/zakee039/miku-cream)** for consistent visuals and rendering between your local notes and published posts.
 
 **Fast to open, comfortable to read, natural to edit.**
 
 ## Highlights
 
-- **WYSIWYG Markdown** for headings, lists, quotes, tasks, tables, links, images and footnotes.
+- **WYSIWYG Markdown** for headings, lists, quotes, tasks, tables, links and images, with automatic lossless source protection for unsupported fragments (such as YAML frontmatter).
+- **Sandboxed HTML / SVG / Canvas web widgets**:
+  - Static rich HTML cards, inline `<svg>` diagrams and complex `rowspan`/`colspan` HTML `<table>` blocks render automatically inside a zero-script, nonce-locked sandbox with auto-sizing height.
+  - Scripted interactive widgets (such as sliders and `<canvas>` drawings) run inside a strictly isolated `<iframe sandbox="allow-scripts">` (no local file or network access) only after per-document approval (`Show` / `Don't show` / `Close document`), with a one-click toggle back to source.
+- **Lossless native HTML typography**: allowlisted rendering for `<details>`/`<summary>`, `<div|p align>`, `<center>`, `<a href>`, `<hr>`, `<kbd>`, `<sub>`, `<sup>`, `<mark>`, `<u>`/`<ins>`, `<small>`, `<ruby>`/`<rt>`/`<rp>`, safe `<span style>`/`<font color>`, and hidden `<!-- ... -->` comments.
+- **Lossless KaTeX math**: supports both `$…$` / `$$…$$` and `\(...\)` / `\[...\]` in WYSIWYG editing and standalone HTML / PDF export while preserving your original delimiters.
+- **Heading anchors and local relative links**: click links in the hover preview card or `Ctrl/Cmd+Click` in the editor to smoothly jump to `#heading` anchors, open relative `.md` files in new MDmeow tabs, or open safe local files (such as `.html` or `.pdf`) in the default system app while blocking executables.
+- **Mermaid diagram previews**: lazily renders `mermaid` code blocks into flowcharts, sequence, class, state, pie, Gantt, mindmap and XY charts without mutating the Markdown source.
 - **Markdown source view** with line numbers, syntax colors and subtle alternating rows; `Ctrl/Cmd+/` by default.
-- **Multiple tabs and session restore**.
-- **Save / Save As** with familiar desktop behavior.
-- **Rename from the title area**.
-- **HTML / PDF export**.
-- **Image support** for standard Markdown and common HTML `<img>` forms.
-- **KaTeX math** for inline and block equations.
-- **Mermaid diagram previews** for flowcharts and other diagrams in `mermaid` code blocks, without changing the Markdown source.
+- **Multiple tabs, session restore & unified in-app dialogs**: consistent Miku Cream rounded modal cards for unsaved changes (`Save` / `Don't save` / `Cancel`), widget prompts and notices.
+- **Save / Save As & inline title rename**: familiar desktop behavior (`Ctrl/Cmd+Shift+S` for Save As) and click-to-rename directly in the title bar.
+- **HTML / PDF export**: self-contained offline HTML pages and native PDF printing.
+- **Image support** for standard Markdown and common HTML `<img>` forms resolved relative to the current document.
 - **Code blocks** with syntax highlighting, independent line numbers and copy feedback.
-- **Rebindable shortcuts**.
-- **Windows file associations** selectable by extension.
+- **Rebindable shortcuts & Windows file associations** selectable by extension.
 - **Four UI languages**: 简体中文, English, 日本語 and Deutsch, plus system language detection.
 
 ## Quick viewing for other text files
@@ -77,40 +80,54 @@ AppImage is the simplest option. Debian / Ubuntu users can use `.deb`; Fedora / 
 
 A universal Intel + Apple Silicon `.dmg` is provided. Community builds are currently not Apple Developer ID signed/notarized.
 
-## Markdown and images
+## Markdown, HTML and web widgets
 
-MDmeow keeps standard Markdown first:
+MDmeow keeps standard Markdown first while cleanly rendering common HTML authoring constructs without altering your source on save:
 
 ```md
 ![diagram](./assets/diagram.png)
 
 <img src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
 
-<!--more-->
+<details>
+  <summary>Expand details</summary>
+  Supports <mark>highlights</mark>, <kbd>Ctrl</kbd> + <kbd>S</kbd>, and <ruby>詞<rt>word</rt></ruby>.
+</details>
+
+<!-- Comments stay hidden in WYSIWYG and intact in source -->
 ```
 
-Both image forms render in the editor. Images support titles, alignment, 25%–200% scaling and deletion.
+- **Images**: titles, alignment, 25%–200% scaling and deletion.
+- **Links**: smooth in-document `#anchor` navigation, relative `.md` tab opening, and safe local file opening.
+- **Widget security**: scripted HTML / `<canvas>` widgets never execute in the host WebView; they run in an offline, opaque-origin `<iframe sandbox="allow-scripts">` only after explicit per-document confirmation.
 
 ## Math
 
-KaTeX renders inline and block equations:
+KaTeX renders inline and block equations using either dollar signs or LaTeX parenthesis/bracket delimiters, preserving original delimiters verbatim:
 
 ```text
-$E = mc^2$
+$E = mc^2$    or    \( E = mc^2 \)
 
 $$
 \int_a^b f(x)\,dx
 $$
+
+\[
+\operatorname{softmax}([0,\ln2,\ln3])=\left[\frac16,\frac26,\frac36\right]
+\]
 ```
 
-## Miku Cream
+## Miku Cream & companion Typecho theme
 
-- bright Cream document background
-- `#39C5BB` accent
+- bright Cream document background and `#39C5BB` accent
 - shared semantic code colors between Markdown code blocks and Code mode
-- code background matches the document
-- alternating code rows default to `#FAFFFF` and are configurable
+- code background matches the document, with configurable `#FAFFFF` alternating rows
 - independent fonts and sizes for document and source views
+- unified rounded in-app dialogs and crisp editor toolbar icons
+
+> **Recommended for Typecho users: [miku-cream](https://github.com/zakee039/miku-cream)**
+>
+> If you run a Typecho blog, we recommend pairing MDmeow with the matching [miku-cream](https://github.com/zakee039/miku-cream) theme. Both share the same Miku Cream palette, code block presentation, KaTeX math (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`), and sandboxed interactive HTML / SVG / Canvas widget rendering so notes authored in MDmeow look and work consistently on your blog.
 
 ## Files and windows
 
@@ -199,6 +216,7 @@ Pushing a `vX.Y.Z` tag triggers GitHub Actions to build Windows, Linux x64, Linu
 | WYSIWYG Markdown | Milkdown Crepe / ProseMirror |
 | Source / Code mode | CodeMirror |
 | Math | KaTeX |
+| Diagrams | Mermaid (lazy-loaded) |
 | Markdown → HTML | comrak |
 | Export syntax highlighting | highlight.js |
 | Windows installer | WiX / MSI |

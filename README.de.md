@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **Deutsch**
 
-**Website：[mdmeow.zakee.fun](https://mdmeow.zakee.fun)**
+**Website: [mdmeow.zakee.fun](https://mdmeow.zakee.fun)**
 
 Ein leichter, schneller und angenehm gestalteter WYSIWYG-Markdown-Editor. **Öffnen und sofort arbeiten.**
 
@@ -14,24 +14,22 @@ Ein leichter, schneller und angenehm gestalteter WYSIWYG-Markdown-Editor. **Öff
 
 MDmeow ist ein leichter, schneller und angenehm gestalteter WYSIWYG-Markdown-Editor auf Basis von **Tauri + Milkdown/Crepe**. Markdown-Dateien bleiben sauber und portabel, während die Bearbeitung direkt und natürlich bleibt.
 
-Das Standarddesign **Miku Cream** kombiniert einen hellen Dokumenthintergrund, den Akzent `#39C5BB`, dezente Codefarben, KaTeX-Formeln, kompakte Tabellen und eine zurückhaltende Desktop-Oberfläche.
+Das Standarddesign **Miku Cream** kombiniert einen hellen Dokumenthintergrund, den Akzent `#39C5BB`, dezente Codefarben, KaTeX-Formeln, isolierte HTML-/SVG-/Canvas-Widgets, kompakte Tabellen und eine zurückhaltende Desktop-Oberfläche. Für Typecho-Blogs empfehlen wir die gemeinsame Nutzung mit dem passenden Typecho-Theme **[miku-cream](https://github.com/zakee039/miku-cream)**.
 
 **Schnell geöffnet, angenehm zu lesen, natürlich zu bearbeiten.**
 
 ## Hauptfunktionen
 
-- WYSIWYG-Markdown für Überschriften, Listen, Zitate, Aufgaben, Tabellen, Links, Bilder und Fußnoten
+- WYSIWYG-Markdown für Überschriften, Listen, Zitate, Aufgaben, Tabellen, Links und Bilder inkl. automatischem Quellschutz (z. B. für YAML-Frontmatter)
+- **Sandboxed HTML- / SVG- / Canvas-Widgets**: statische HTML-Karten, `<svg>`-Grafiken und komplexe HTML-Tabellen rendern automatisch in einer skriptfreien Sandbox; interaktive Widgets mit `<script>` oder `<canvas>` laufen erst nach Bestätigung pro Dokument in einer isolierten Offline-Sandbox (`allow-scripts` ohne lokalen Datei- oder Netzwerkzugriff)
+- **Verlustfreies natives HTML**: `<details>`/`<summary>`, `<div|p align>`, `<center>`, `<a href>`, `<hr>`, `<kbd>`, `<sub>`, `<sup>`, `<mark>`, `<u>`/`<ins>`, `<small>`, `<ruby>`/`<rt>`/`<rp>`, sichere `<span style>`/`<font color>` sowie ausgeblendete `<!-- ... -->`-Kommentare
+- **KaTeX-Formeln**: verlustfreie Unterstützung für `$…$` / `$$…$$` sowie `\(...\)` / `\[...\]` im Editor und beim HTML-/PDF-Export
+- **Überschriften-Anker & lokale relative Links**: Klick in der Link-Vorschau oder `Ctrl/Cmd+Klick` springt sanft zu `#anker`, öffnet relative `.md`-Dateien direkt als Tab und sichere lokale Dateien (z. B. `.html`, PDF) in der Standard-App (ausführbare Dateien werden blockiert)
+- Mermaid-Diagrammvorschau für `mermaid`-Codeblöcke (Lazy-Loading), ohne den Markdown-Quelltext zu verändern
 - Markdown-Quellansicht mit Zeilennummern, Syntaxfarben und dezenten Wechselzeilen
-- mehrere Tabs und Sitzungswiederherstellung
-- Speichern / Speichern unter
-- Dateiname direkt im Titelbereich ändern
-- HTML- / PDF-Export
-- Markdown-Bilder und gängige HTML-`<img>`-Formen
-- KaTeX-Formeln
-- Mermaid-Diagrammvorschau für Flussdiagramme und weitere Diagramme in `mermaid`-Codeblöcken, ohne den Markdown-Quelltext zu verändern
-- Codeblöcke mit Syntaxhervorhebung, Zeilennummern und Kopierfeedback
-- frei belegbare Tastenkürzel
-- Windows-Dateizuordnungen nach Erweiterung
+- mehrere Tabs, Sitzungswiederherstellung und einheitliche In-App-Dialoge im Miku-Cream-Stil
+- Speichern / Speichern unter, Dateiname direkt im Titelbereich ändern, HTML- / PDF-Export
+- Codeblöcke mit Syntaxhervorhebung, Zeilennummern und Kopierfeedback, frei belegbare Tastenkürzel, Windows-Dateizuordnungen
 - vier UI-Sprachen: 简体中文, English, 日本語 und Deutsch
 
 ## Andere Textdateien schnell ansehen
@@ -58,28 +56,34 @@ MDmeow-<version>-macOS-universal.dmg
 
 Windows bietet Portable EXE und MSI. Linux erhält AppImage / deb / rpm. Für macOS gibt es ein universelles DMG für Intel und Apple Silicon.
 
-## Markdown, Bilder und Mathematik
+## Markdown, HTML und Mathematik
 
-Standard-Markdown steht im Vordergrund. Markdown-Bilder und gängige HTML-`<img>`-Formen werden unterstützt. Bilder können ausgerichtet, von 25% bis 200% skaliert und gelöscht werden.
+Standard-Markdown steht im Vordergrund. Markdown-Bilder, gängige HTML-`<img>`-Formen, `<details>`, `<ruby>`, `<kbd>`, statische `<svg>`-Diagramme und isolierte interaktive HTML-/Canvas-Widgets werden verlustfrei dargestellt. Bilder können ausgerichtet, von 25% bis 200% skaliert und gelöscht werden.
 
-KaTeX rendert Inline- und Blockformeln.
+KaTeX rendert Inline- und Blockformeln mit `$`/`$$` sowie `\(...\)`/`\[...\]` unter Beibehaltung der Original-Begrenzer:
 
 ```text
-$E = mc^2$
+$E = mc^2$    /    \( E = mc^2 \)
 
 $$
 \int_a^b f(x)\,dx
 $$
+
+\[
+\operatorname{softmax}([0,\ln2,\ln3])=\left[\frac16,\frac26,\frac36\right]
+\]
 ```
 
-## Miku Cream
+## Miku Cream & passendes Typecho-Theme
 
-- heller Cream-Hintergrund
-- Akzent `#39C5BB`
-- gemeinsame semantische Codefarben für Markdown-Codeblöcke und Code-Modus
-- Code-Hintergrund entspricht dem Dokument
-- Wechselzeilen standardmäßig `#FAFFFF`
+- heller Cream-Hintergrund und Akzent `#39C5BB`
+- gemeinsame semantische Codefarben für Markdown-Codeblöcke und Code-Modus, Wechselzeilen standardmäßig `#FAFFFF`
 - getrennte Schriftarten und Größen für Dokument und Quelle
+- einheitliche abgerundete Dialoge und kontrastreiche Tabellen-/Toolbar-Symbole
+
+> **Empfehlung für Typecho-Nutzer: [miku-cream](https://github.com/zakee039/miku-cream)**
+>
+> Wenn du einen Typecho-Blog betreibst, empfehlen wir die gleichzeitige Nutzung des passenden Typecho-Themes **[miku-cream](https://github.com/zakee039/miku-cream)**. Beide teilen dasselbe Miku-Cream-Design, Codeblöcke, KaTeX-Formeln (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`) sowie die isolierte Darstellung interaktiver HTML-/SVG-/Canvas-Widgets.
 
 ## Dateien und Fenster
 

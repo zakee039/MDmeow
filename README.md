@@ -14,24 +14,27 @@
 
 MDmeow 是一款轻量、快速、精美的 WYSIWYG Markdown 编辑器，基于 **Tauri + Milkdown/Crepe** 构建。它尽量保持 Markdown 文件本身的纯净与可迁移性，同时提供自然、直接的即时排版体验。
 
-当前采用 **Miku Cream** 渲染体系：亮色文档背景、`#39C5BB` 初音青强调色、浅色代码高亮、KaTeX 数学公式、紧凑表格与克制的桌面端界面。
+当前采用 **Miku Cream** 渲染体系：亮色文档背景、`#39C5BB` 初音青强调色、浅色代码高亮、KaTeX 数学公式、沙盒 HTML / SVG / Canvas 小组件、紧凑表格与克制的桌面端界面。如果你也在使用 Typecho 写博客，**推荐同步搭配同款视觉与渲染体系的 Typecho 主题 [miku-cream](https://github.com/zakee039/miku-cream)**，实现本地笔记与线上文章的一致体验。
 
 **打开快、阅读舒服、编辑自然。**
 
 ## 主要特性
 
-- **所见即所得 Markdown**：标题、列表、引用、任务列表、表格、链接、图片、脚注等常见语法可直接阅读和编辑。
+- **所见即所得 Markdown**：标题、列表、引用、任务列表、表格、链接、图片等常见语法可直接阅读和编辑，并对无法无损往返的局部语法（如 YAML Frontmatter）自动启用源码保护，绝不破坏原文。
+- **沙盒 HTML / SVG / Canvas 网页小组件**：
+  - 纯静态富样式 HTML 卡片、原生 `<svg>` 图示与复杂合并单元格 HTML `<table>` 自动在零脚本 `nonce` 沙盒中渲染并自适应高度，不打断阅读；
+  - 带 `<script>` 或交互事件的网页小组件（如交互滑块、`<canvas>` 绘图等）在严格受限沙盒（无本地文件访问、无外网访问）中按文档弹窗确认（`显示` / `不显示` / `关闭文档`）后运行，支持随时一键切回源码。
+- **常用原生 HTML 排版无损渲染**：安全白名单渲染 `<details>` / `<summary>` 折叠块、`<div|p align>` / `<center>` 对齐、`<a href>`、`<hr>`、`<kbd>`、`<sub>`、`<sup>`、`<mark>`、`<u>` / `<ins>`、`<small>`、`<ruby>` / `<rt>` / `<rp>` 注音、安全样式 `<span style>` / `<font color>`，并自动隐藏 `<!-- ... -->` 注释，保存时完整保留原始 HTML。
+- **无损 KaTeX 数学公式**：同时支持行内 `$…$`、`\(...\)` 与块级 `$$…$$`、`\[...\]`，编辑与 HTML / PDF 导出均完整保留原始定界符。
+- **文内锚点与本地相对链接**：在悬浮链接卡片内直接点击，或在正文中 `Ctrl/Cmd+点击`，支持平滑跳转并高亮文内 `#标题锚点`、直接在新标签页打开相对 `.md` 文档，以及用系统默认应用打开安全的本地文件（如 `.html`、PDF、图片等，自动拦截可执行文件）。
+- **Mermaid 图表预览**：在所见即所得模式下，将 `mermaid` 代码块懒加载渲染为流程图、时序图、类图、状态图、饼图、甘特图、思维导图等图表，保留原始 Markdown 源码。
 - **Markdown 源码视图**：一键切换原始 Markdown，带独立行号、语法高亮和轻量隔行着色；默认快捷键 `Ctrl/Cmd+/`。
-- **多标签页与会话恢复**：同时打开多个文档，并可恢复上一次会话。
-- **保存 / 另存为**：保留传统桌面编辑器的直觉操作，另存为默认快捷键 `Ctrl/Cmd+Shift+S`。
-- **标题栏直接重命名**：点击当前文件名即可原地修改文件名。
-- **HTML / PDF 导出**：HTML 导出为独立页面，PDF 通过系统打印流程输出。
+- **多标签页与统一弹窗体验**：支持多标签页与会话恢复；未保存关闭（`保存` / `不保存` / `取消`）、退出确认、小组件提示等全部采用统一的 Miku Cream 圆角内嵌弹窗。
+- **保存 / 另存为与标题栏重命名**：保留传统桌面编辑器的直觉操作，另存为默认快捷键 `Ctrl/Cmd+Shift+S`；点击标题栏文件名即可原地重命名。
+- **HTML / PDF 导出**：HTML 导出为离线独立页面（内嵌 KaTeX、highlight.js 与本地图片），PDF 通过系统打印流程输出。
 - **图片兼容**：支持标准 Markdown 图片和常见 HTML `<img>`，相对路径以当前 Markdown 文件为基准解析。
-- **KaTeX 数学公式**：支持行内 `$…$` 与块级 `$$…$$`。
-- **Mermaid 图表预览**：在所见即所得模式下，将 `mermaid` 代码块渲染为流程图等图表，保留原始 Markdown 源码。
 - **代码块体验**：语法高亮、独立行号、复制反馈与轻量隔行着色。
-- **可配置快捷键**：设置页中可直接录入新的组合键。
-- **Windows 文件关联**：可在设置中选择要由 MDmeow 打开的文件后缀。
+- **可配置快捷键与 Windows 文件关联**：设置页可直接录入新组合键，并按后缀选择由 MDmeow 打开的文件类型。
 - **四种界面语言**：简体中文、English、日本語、Deutsch，也可以跟随系统语言。
 
 ## 顺手查看其它文本文件
@@ -79,44 +82,58 @@ MDmeow-<版本>-macOS-universal.dmg
 
 提供 Intel + Apple Silicon 通用 `.dmg`。当前社区构建未做 Apple Developer ID 签名 / 公证，如 Gatekeeper 阻止首次启动，可在 Finder 中右键应用并选择“打开”。
 
-## Markdown 与图片
+## Markdown、HTML 与网页小组件
 
-MDmeow 优先保持标准 Markdown：
+MDmeow 优先保持标准 Markdown，同时兼顾笔记和博客里常见的 HTML 写法，所有源码在编辑与保存过程中无损保留：
 
 ```md
 ![diagram](./assets/diagram.png)
 
 <img src="./assets/diagram.png" alt="diagram" style="zoom:50%;" data-align="center">
 
-<!--more-->
+<details>
+  <summary>点击展开说明</summary>
+  这里可以放补充内容，支持 <mark>高亮</mark>、<kbd>Ctrl</kbd> + <kbd>S</kbd> 与 <ruby>词向量<rt>embedding</rt></ruby>。
+</details>
+
+<!-- 隐藏注释在 WYSIWYG 模式下不显示，但会完整保留在源码中 -->
 ```
 
-两种图片写法都会在编辑器中渲染；`<!--more-->` 会保留在 Markdown 文件中，但不会干扰 WYSIWYG 阅读。
-
-图片支持标题、左 / 中 / 右对齐、25% ～ 200% 缩放与删除。
+- **图片**：支持标题、左 / 中 / 右对齐、25% ～ 200% 缩放与删除。
+- **链接跳转**：支持 `#标题锚点` 平滑跳转、相对 `.md` 标签页内打开，以及 `.html` / PDF 等安全本地文件用系统默认程序打开。
+- **网页小组件安全模型**：带内嵌 `<script>` 或交互事件的 HTML / `<canvas>` 小组件绝不会在主窗口中执行，而是隔离在无同源权限、禁外网的 `<iframe sandbox="allow-scripts">` 中，且按文档征得你的明确同意后才渲染。
 
 ## 数学公式
 
-使用 KaTeX 渲染数学公式：
+使用 KaTeX 无损渲染行内与块级数学公式，同时兼容美元符和 LaTeX 括号定界符：
 
 ```text
-$E = mc^2$
+$E = mc^2$    或    \( E = mc^2 \)
 
 $$
 \int_a^b f(x)\,dx
 $$
+
+\[
+\operatorname{softmax}([0,\ln2,\ln3])=\left[\frac16,\frac26,\frac36\right]
+\]
 ```
 
-## Miku Cream
+无论是编辑器内实时预览、修改保存还是导出独立 HTML / PDF，都会保持你原本书写的定界符格式。
+
+## Miku Cream 与 Typecho 配套主题
 
 MDmeow 默认使用 **Miku Cream** 视觉体系：
 
-- 亮色 Cream 文档背景
-- `#39C5BB` 主强调色
-- Markdown 代码块与 Code 模式共享语义配色
-- 代码背景与文档背景保持一致
+- 亮色 Cream 文档背景与 `#39C5BB` 主强调色
+- Markdown 代码块与 Code 模式共享语义配色，代码背景与文档背景统一
 - 代码隔行默认使用极浅的 `#FAFFFF`，可在设置中修改
 - 正文与源码字体、字号可以独立设置
+- 统一的圆角内嵌弹窗与清晰的表格 / 悬浮工具栏图标
+
+> **Typecho 博客推荐同步使用：[miku-cream](https://github.com/zakee039/miku-cream)**
+>
+> 如果你使用 Typecho 搭建个人博客，推荐同步搭配同系列的 [miku-cream](https://github.com/zakee039/miku-cream) 主题。两者共享同一套 Miku Cream 配色、代码块、KaTeX 公式（含 `$...$`、`$$...$$`、`\(...\)`、`\[...\]`）以及受限沙盒 HTML / SVG / Canvas 交互小组件渲染逻辑，让你在 MDmeow 里写完的笔记直接发布到 Typecho 也能保持高度一致的观感与交互体验。
 
 目标不是让界面显得“功能很多”，而是让内容本身更舒服。
 
@@ -230,6 +247,7 @@ pnpm release:macos
 | WYSIWYG Markdown | Milkdown Crepe / ProseMirror |
 | 源码 / Code 模式 | CodeMirror |
 | 数学公式 | KaTeX |
+| 图表预览 | Mermaid（按需懒加载） |
 | Markdown → HTML | comrak |
 | 导出语法高亮 | highlight.js |
 | Windows 安装器 | WiX / MSI |
